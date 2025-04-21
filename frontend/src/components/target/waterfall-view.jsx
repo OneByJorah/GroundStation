@@ -36,12 +36,12 @@ import {
     setTargetFPS,
     setIsPlaying,
     setSettingsDialogOpen,
-} from './waterfall-slice.jsx'
+} from './target-sat-slice.jsx'
 import WaterFallSettingsDialog from "./waterfall-dialog.jsx";
 import IQVisualizer from "./iq-visualizer.jsx";
 import {enqueueSnackbar} from "notistack";
 
-const WaterfallDisplay = React.memo(({deviceId = 0}) => {
+const MiniWaterfallDisplay = React.memo(({deviceId = 0}) => {
     const dispatch = useDispatch();
     const waterFallCanvasRef = useRef(null);
     const visualIQCanvasRef = useRef(null);
@@ -70,9 +70,8 @@ const WaterfallDisplay = React.memo(({deviceId = 0}) => {
         targetFPS,
         isPlaying,
         autoDBRange,
-    } = useSelector((state) => state.waterfall);
-    const {gridEditable} = useSelector((state) => state.targetSatTrack);
-    const [samples, setSamples] = useState([]);
+        gridEditable
+    } = useSelector((state) => state.targetSatTrack);
     const [scrollFactor, setScrollFactor] = useState(1);
     const accumulatedRowsRef = useRef(0);
 
@@ -118,7 +117,6 @@ const WaterfallDisplay = React.memo(({deviceId = 0}) => {
 
     socket.on('sdr-fft-data', (data) => {
         // Add new FFT data to the waterfall buffer
-        setSamples(data);
         waterfallDataRef.current.unshift(data);
 
         // Keep only the most recent rows based on canvas height
@@ -566,4 +564,4 @@ const WaterfallDisplay = React.memo(({deviceId = 0}) => {
     );
 });
 
-export default WaterfallDisplay;
+export default MiniWaterfallDisplay;
