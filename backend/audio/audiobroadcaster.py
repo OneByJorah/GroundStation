@@ -27,8 +27,9 @@
 import logging
 import queue
 import threading
+import time
 from copy import deepcopy
-from typing import Dict
+from typing import Any, Dict
 
 # Configure logging
 logger = logging.getLogger("audio-broadcaster")
@@ -56,7 +57,13 @@ class AudioBroadcaster(threading.Thread):
         self.running = True
 
         # Statistics
-        self.stats = {"messages_received": 0, "messages_broadcast": 0, "errors": 0}
+        self.stats: Dict[str, Any] = {
+            "messages_received": 0,
+            "messages_broadcast": 0,
+            "errors": 0,
+            "queue_timeouts": 0,
+            "last_activity": None,
+        }
 
     def subscribe(self, name: str, maxsize: int = 10) -> queue.Queue:
         """
@@ -106,6 +113,7 @@ class AudioBroadcaster(threading.Thread):
                 # Get audio from input queue (blocking with timeout)
                 audio_message = self.input_queue.get(timeout=1.0)
                 self.stats["messages_received"] += 1
+                self.stats["last_activity"] = time.time()
 
                 # Broadcast to all subscribers
                 with self.subscribers_lock:
@@ -140,6 +148,7 @@ class AudioBroadcaster(threading.Thread):
 
             except queue.Empty:
                 # No data available - continue waiting
+                self.stats["queue_timeouts"] += 1
                 continue
 
             except Exception as e:
