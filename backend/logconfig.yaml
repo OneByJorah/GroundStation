@@ -293,6 +293,12 @@ loggers:
       - default
     propagate: no
 
+  hardware-handler:
+    level: INFO
+    handlers:
+      - default
+    propagate: no
+
 root:
   level: DEBUG
   handlers:
