@@ -144,19 +144,14 @@ def satdump_process_recording(
         "baseband",
         str(recording_file),
         str(output_path),
-        "--samplerate",
-        str(samplerate),
-        "--baseband_format",
-        baseband_format,
+        f"--samplerate={samplerate}",
+        f"--baseband_format={baseband_format}",
         "--fill_missing",
         "--dc_block",
     ]
 
     if start_timestamp:
-        cmd.extend(["--start_timestamp", str(start_timestamp)])
-
-    if finish_processing:
-        cmd.append("--finish_processing")
+        cmd.append(f"--start_timestamp={start_timestamp}")
 
     # Log command
     if _progress_queue:
