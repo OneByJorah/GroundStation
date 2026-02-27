@@ -174,3 +174,66 @@ test.describe('Satellite Info Page', () => {
     await expect(content).toBeVisible();
   });
 });
+
+test.describe('TLE Sources CRUD', () => {
+  test('should allow adding, editing, and deleting a TLE source', async ({ page }) => {
+    await page.goto('/satellites/tlesources');
+    await page.waitForLoadState('domcontentloaded');
+
+    const sourceName = `E2E Source ${Date.now()}`;
+    const updatedName = `${sourceName} Updated`;
+    const url = `https://example.com/${Date.now()}.txt`;
+
+    await page.getByRole('button', { name: /add/i }).click();
+
+    const addDialog = page.getByRole('dialog');
+    await addDialog.getByLabel(/name/i).fill(sourceName);
+    await addDialog.getByLabel(/url/i).fill(url);
+    await addDialog.getByRole('button', { name: /submit|add|create|save/i }).click();
+    await expect(addDialog).toBeHidden();
+
+    const row = page.locator('.MuiDataGrid-row').filter({ hasText: sourceName });
+    await expect(row).toBeVisible();
+    await row.getByRole('checkbox').check({ force: true });
+
+    await page.getByRole('button', { name: /^edit$/i }).click();
+    const editDialog = page.getByRole('dialog');
+    await editDialog.getByLabel(/name/i).fill(updatedName);
+    await editDialog.getByRole('button', { name: /edit|submit|save/i }).click();
+    await expect(editDialog).toBeHidden();
+
+    const updatedRow = page.locator('.MuiDataGrid-row').filter({ hasText: updatedName });
+    await expect(updatedRow).toBeVisible();
+    await updatedRow.getByRole('checkbox').check({ force: true });
+
+    await page.getByRole('button', { name: /^delete$/i }).click();
+    const deleteDialog = page.getByRole('dialog');
+    await deleteDialog.getByRole('button', { name: /^delete$/i }).click();
+    await expect(page.locator('.MuiDataGrid-row').filter({ hasText: updatedName })).toHaveCount(0);
+  });
+});
+
+test.describe('Satellite Groups CRUD', () => {
+  test('should allow adding and deleting a satellite group', async ({ page }) => {
+    await page.goto('/satellites/groups');
+    await page.waitForLoadState('domcontentloaded');
+
+    const groupName = `E2E Group ${Date.now()}`;
+
+    await page.getByRole('button', { name: /add/i }).click();
+
+    const formDialog = page.getByRole('dialog').filter({ hasText: /add a new satellite group/i }).first();
+    await formDialog.getByRole('textbox', { name: /^name$/i }).fill(groupName);
+    await formDialog.getByRole('button', { name: /submit/i }).click();
+    await expect(formDialog).toBeHidden();
+
+    const row = page.locator('.MuiDataGrid-row').filter({ hasText: groupName });
+    await expect(row).toBeVisible();
+    await row.getByRole('checkbox').check({ force: true });
+
+    await page.getByRole('button', { name: /^delete$/i }).click();
+    const deleteDialog = page.getByRole('dialog');
+    await deleteDialog.getByRole('button', { name: /^delete$/i }).click();
+    await expect(page.locator('.MuiDataGrid-row').filter({ hasText: groupName })).toHaveCount(0);
+  });
+});

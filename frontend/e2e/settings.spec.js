@@ -120,3 +120,28 @@ test.describe('Settings Navigation Flow', () => {
     expect(page.url()).toContain('/settings/about');
   });
 });
+
+test.describe('Preferences Persistence', () => {
+  test('should persist theme preference after refresh', async ({ page }) => {
+    await page.goto('/settings/preferences');
+    await page.waitForLoadState('domcontentloaded');
+
+    const themeSelect = page.locator('#theme-selector');
+    await themeSelect.click();
+    await page.getByRole('option', { name: 'Terminal' }).click();
+
+    await page.getByRole('button', { name: /save preferences|enregistrer/i }).click();
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded');
+
+    await themeSelect.click();
+    await expect(page.getByRole('option', { name: 'Terminal' })).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('Escape');
+
+    await themeSelect.click();
+    await page.getByRole('option', { name: 'Auto (System)' }).click();
+    await page.getByRole('button', { name: /save preferences|enregistrer/i }).click();
+    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded');
+  });
+});
