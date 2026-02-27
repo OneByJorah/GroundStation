@@ -175,6 +175,58 @@ test.describe('Satellite Info Page', () => {
   });
 });
 
+test.describe('Satellite List CRUD', () => {
+  test('should allow adding, editing, and deleting a satellite', async ({ page }) => {
+    await page.goto('/satellites/satellites');
+    await page.waitForLoadState('domcontentloaded');
+
+    const baseId = Date.now() % 100000;
+    const noradId = String(80000 + baseId);
+    const name = `E2E Sat ${noradId}`;
+    const updatedName = `${name} Updated`;
+    const tle1 = '1 25544U 98067A   20029.54791585  .00001264  00000-0  29621-4 0  9994';
+    const tle2 = '2 25544  51.6449  18.9183 0004869  73.6915  35.7994 15.49191311210139';
+
+    await page.getByRole('button', { name: /^add$/i }).click();
+    const addDialog = page.getByRole('dialog', { name: /add satellite/i });
+    await expect(addDialog).toBeVisible();
+    await addDialog.getByRole('textbox', { name: /^name$/i }).fill(name);
+    await addDialog.locator('input[name="norad_id"]').fill(noradId);
+    await addDialog.getByRole('textbox', { name: /tle line 1/i }).fill(tle1);
+    await addDialog.getByRole('textbox', { name: /tle line 2/i }).fill(tle2);
+    await addDialog.getByRole('button', { name: /^submit$/i }).click();
+    await expect(addDialog).toBeHidden();
+
+    const searchInput = page.getByRole('textbox', { name: /search satellites/i });
+    await searchInput.fill(noradId);
+    await page.waitForTimeout(800);
+
+    const row = page.locator('.MuiDataGrid-row').filter({ hasText: name });
+    await expect(row).toBeVisible();
+    await row.getByRole('checkbox').check({ force: true });
+
+    await page.getByRole('button', { name: /^edit$/i }).click();
+    const editDialog = page.getByRole('dialog', { name: /edit satellite/i });
+    await expect(editDialog).toBeVisible();
+    await editDialog.getByRole('textbox', { name: /^name$/i }).fill(updatedName);
+    await editDialog.getByRole('textbox', { name: /tle line 1/i }).fill(tle1);
+    await editDialog.getByRole('textbox', { name: /tle line 2/i }).fill(tle2);
+    await editDialog.getByRole('button', { name: /^edit$/i }).click();
+    await expect(editDialog).toBeHidden();
+
+    await searchInput.fill(updatedName);
+    await page.waitForTimeout(800);
+    const updatedRow = page.locator('.MuiDataGrid-row').filter({ hasText: updatedName });
+    await expect(updatedRow).toBeVisible();
+    await updatedRow.getByRole('checkbox').check({ force: true });
+
+    await page.getByRole('button', { name: /^delete$/i }).click();
+    const deleteDialog = page.getByRole('dialog');
+    await deleteDialog.getByRole('button', { name: /^delete$/i }).click();
+    await expect(page.locator('.MuiDataGrid-row').filter({ hasText: updatedName })).toHaveCount(0);
+  });
+});
+
 test.describe('TLE Sources CRUD', () => {
   test('should allow adding, editing, and deleting a TLE source', async ({ page }) => {
     await page.goto('/satellites/tlesources');

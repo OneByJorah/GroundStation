@@ -26,6 +26,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from common.common import logger, serialize_object
 from db.models import Groups, Satellites, Transmitters
 
+DATETIME_FIELDS = {"decayed", "launched", "deployed", "added", "updated"}
+
+
+def _coerce_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str):
+        if not value.strip():
+            return None
+        try:
+            if value.endswith("Z"):
+                value = value.replace("Z", "+00:00")
+            return datetime.fromisoformat(value)
+        except ValueError:
+            logger.warning(f"Failed to parse datetime value: {value}")
+            return None
+    return value
+
 
 async def fetch_satellites_for_group_id(session: AsyncSession, group_id: Union[str, UUID4]) -> dict:
     """
@@ -217,6 +237,9 @@ async def edit_satellite(session: AsyncSession, satellite_id: uuid.UUID, **kwarg
     try:
         allowed_fields = {column.name for column in Satellites.__table__.columns}
         kwargs = {key: value for key, value in kwargs.items() if key in allowed_fields}
+        for field in DATETIME_FIELDS:
+            if field in kwargs:
+                kwargs[field] = _coerce_datetime(kwargs[field])
 
         # Check if the satellite exists
         stmt = select(Satellites).filter(Satellites.norad_id == satellite_id)
