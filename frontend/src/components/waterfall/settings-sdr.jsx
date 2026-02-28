@@ -488,28 +488,47 @@ const SdrAccordion = ({
                                             py: 0.25,
                                             borderRadius: 1,
                                             bgcolor: 'transparent',
-                                            border: '1px solid',
-                                            borderColor: refLockValue === true
-                                                ? 'success.main'
-                                                : refLockValue === false
-                                                    ? 'error.main'
-                                                    : 'divider',
                                         }}
                                     >
                                         <Box sx={{display: 'flex', justifyContent: 'space-between', gap: 1}}>
                                             <Typography variant="caption" color="text.secondary">
                                                 Ref Clock Lock
                                             </Typography>
-                                            <Typography
-                                                variant="caption"
-                                                sx={{fontFamily: 'monospace'}}
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 0.5,
+                                                    fontFamily: 'monospace',
+                                                }}
                                             >
-                                                {refLockValue === true
-                                                    ? 'Locked'
-                                                    : refLockValue === false
-                                                        ? 'Unlocked'
-                                                        : '—'}
-                                            </Typography>
+                                                <Box
+                                                    sx={{
+                                                        width: 8,
+                                                        height: 8,
+                                                        borderRadius: '50%',
+                                                        bgcolor:
+                                                            refLockValue === true
+                                                                ? 'success.main'
+                                                                : refLockValue === false
+                                                                    ? 'error.main'
+                                                                    : 'text.disabled',
+                                                        boxShadow:
+                                                            refLockValue === true
+                                                                ? '0 0 6px rgba(76, 175, 80, 0.6)'
+                                                                : refLockValue === false
+                                                                    ? '0 0 6px rgba(244, 67, 54, 0.6)'
+                                                                    : 'none',
+                                                    }}
+                                                />
+                                                <Typography variant="caption" sx={{fontFamily: 'monospace'}}>
+                                                    {refLockValue === true
+                                                        ? 'Locked'
+                                                        : refLockValue === false
+                                                            ? 'Unlocked'
+                                                            : '—'}
+                                                </Typography>
+                                            </Box>
                                         </Box>
                                     </Box>
                                 )}
