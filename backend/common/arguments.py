@@ -17,43 +17,58 @@
 import argparse
 import os
 import secrets
+from pathlib import Path
+
+from common.appconfig import load_app_config
 
 parser = argparse.ArgumentParser(description="Start the Ground Station app with custom arguments.")
-parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to run the server on")
-parser.add_argument("--port", type=int, default=5000, help="Port to run the server on")
-parser.add_argument("--db", type=str, default="data/db/gs.db", help="Path to the database file")
+parser.add_argument(
+    "--config",
+    type=str,
+    default=None,
+    help="Path to the main app configuration file (defaults to data/configs/app_config.json)",
+)
+parser.add_argument("--host", type=str, default=None, help="Host to run the server on")
+parser.add_argument("--port", type=int, default=None, help="Port to run the server on")
+parser.add_argument("--db", type=str, default=None, help="Path to the database file")
 parser.add_argument(
     "--temp-db",
     action="store_true",
+    default=None,
     help="Use a temporary /tmp/<random>.db database path (first-time mode)",
 )
 parser.add_argument(
     "--log-level",
     type=str,
-    default="INFO",
+    default=None,
     choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
     help="Set the logging level",
 )
 parser.add_argument(
-    "--log-config", type=str, default="logconfig.yaml", help="Path to the logger configuration file"
+    "--log-config", type=str, default=None, help="Path to the logger configuration file"
 )
 parser.add_argument(
     "--secret-key",
     type=str,
-    default="YOUR_RANDOM_SECRET_KEY",
+    default=None,
     help="Secret key used for user authentication",
 )
-parser.add_argument("--track-interval", type=int, default=2, help="Seconds between track updates")
+parser.add_argument(
+    "--track-interval-ms",
+    type=int,
+    default=None,
+    help="Milliseconds between track updates",
+)
 parser.add_argument(
     "--enable-soapy-discovery",
     type=lambda x: str(x).lower() in ("true", "1", "t"),
-    default=False,
+    default=None,
     help="Enable periodic SoapySDR server discovery",
 )
 parser.add_argument(
     "--runonce-soapy-discovery",
     type=lambda x: str(x).lower() in ("true", "1", "t"),
-    default=True,
+    default=None,
     help="Run the SoapySDR server discovery once on startup",
 )
 
@@ -68,12 +83,47 @@ if os.environ.get("ALEMBIC_CONTEXT"):
         log_level="INFO",
         log_config="logconfig.yaml",
         secret_key="YOUR_RANDOM_SECRET_KEY",
-        track_interval=2,
+        track_interval_ms=2000,
         enable_soapy_discovery=False,
         runonce_soapy_discovery=True,
     )
 else:
-    arguments = parser.parse_args()
+    _raw_args = parser.parse_args()
+
+    if _raw_args.config:
+        _config_path = Path(_raw_args.config)
+    else:
+        if Path("data").is_dir():
+            _config_path = Path("data/configs/app_config.json")
+        elif Path("backend/data").is_dir():
+            _config_path = Path("backend/data/configs/app_config.json")
+        else:
+            _config_path = Path("data/configs/app_config.json")
+    _file_config = load_app_config(_config_path)
+
+    def _pick(cli_value, key):
+        return cli_value if cli_value is not None else _file_config.get(key)
+
+    file_track_interval_ms = _file_config.get("track_interval_ms")
+    if file_track_interval_ms is None and "track_interval" in _file_config:
+        file_track_interval_ms = int(float(_file_config["track_interval"]) * 1000)
+
+    cli_track_interval_ms = _raw_args.track_interval_ms
+
+    arguments = argparse.Namespace(
+        host=_pick(_raw_args.host, "host"),
+        port=_pick(_raw_args.port, "port"),
+        db=_pick(_raw_args.db, "db"),
+        temp_db=_pick(_raw_args.temp_db, "temp_db"),
+        log_level=_pick(_raw_args.log_level, "log_level"),
+        log_config=_pick(_raw_args.log_config, "log_config"),
+        secret_key=_pick(_raw_args.secret_key, "secret_key"),
+        track_interval_ms=(
+            cli_track_interval_ms if cli_track_interval_ms is not None else file_track_interval_ms
+        ),
+        enable_soapy_discovery=_pick(_raw_args.enable_soapy_discovery, "enable_soapy_discovery"),
+        runonce_soapy_discovery=_pick(_raw_args.runonce_soapy_discovery, "runonce_soapy_discovery"),
+    )
 
 if getattr(arguments, "temp_db", False):
     temp_db_path = os.path.join("/tmp", f"{secrets.token_hex(8)}.db")

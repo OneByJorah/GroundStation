@@ -192,15 +192,17 @@ class SatelliteTracker:
         """Main tracking loop."""
         # Validate interval
         assert (
-            0 < args.track_interval < 6
-        ), f"track_interval must be between 2 and 5, got {args.track_interval}"
+            0 < args.track_interval_ms < 6000
+        ), f"track_interval_ms must be between 1 and 5999, got {args.track_interval_ms}"
+
+        interval_seconds = args.track_interval_ms / 1000.0
 
         tracker: Dict[str, Any] = {}
 
         logger.info(
             "Tracker process started (pid=%s, interval=%ss)",
             self.process.pid,
-            args.track_interval,
+            interval_seconds,
         )
         while True:
             # Update CPU and memory usage periodically
@@ -398,14 +400,14 @@ class SatelliteTracker:
                 else:
                     loop_duration = 0
 
-                if loop_duration > args.track_interval:
+                if loop_duration > interval_seconds:
                     logger.warning(
                         f"Single tracking loop iteration took longer "
                         f"({loop_duration}) than the configured "
-                        f"interval ({args.track_interval})"
+                        f"interval ({interval_seconds})"
                     )
 
-                remaining_time_to_sleep = max((args.track_interval - loop_duration), 0)
+                remaining_time_to_sleep = max((interval_seconds - loop_duration), 0)
 
                 # Clean up data states
                 self.state_manager.cleanup_data_states()
