@@ -25,26 +25,26 @@
 export const themeConfigs = {
     dark: {
         mode: 'dark',
-        primary: { main: '#5cc8ff' },
-        secondary: { main: '#ff8f5a' },
+        primary: { main: '#9a9fa6' },
+        secondary: { main: '#d6926b' },
         success: { main: '#59d98b' },
         warning: { main: '#ffcc66' },
         error: { main: '#ff5d6c' },
-        info: { main: '#7c90ff' },
+        info: { main: '#8f969e' },
         background: {
-            default: '#0d0f13',
-            paper: '#151a21',
-            elevated: '#1d2430',
-            titleBar: '#11161c',
+            default: '#111213',
+            paper: '#1a1c1e',
+            elevated: '#23262a',
+            titleBar: '#171a1d',
         },
         border: {
-            main: '#293241',
-            light: '#344154',
-            dark: '#1d2430',
+            main: '#383c42',
+            light: '#454a51',
+            dark: '#2b2f35',
         },
         overlay: {
-            light: 'rgba(92, 200, 255, 0.08)',
-            medium: 'rgba(92, 200, 255, 0.15)',
+            light: 'rgba(154, 159, 166, 0.06)',
+            medium: 'rgba(154, 159, 166, 0.12)',
             dark: 'rgba(0, 0, 0, 0.6)',
         },
         status: {

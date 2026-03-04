@@ -40,7 +40,7 @@ export function setupTheme(themeName = 'dark') {
             colorSchemeSelector: 'data-toolpad-color-scheme',
         },
         shape: {
-            //borderRadius: 4,
+            borderRadius: 6,
         },
         typography: {
             //htmlFontSize: 16,
@@ -180,7 +180,7 @@ export function setupTheme(themeName = 'dark') {
                         boxShadow: isDark
                             ? '0 2px 4px rgba(0, 0, 0, 0.5)'
                             : '0 2px 8px rgba(0, 0, 0, 0.15)',
-                        backdropFilter: 'blur(8px)',
+                        backdropFilter: 'blur(4px)',
                     }),
                 },
             },
@@ -196,12 +196,12 @@ export function setupTheme(themeName = 'dark') {
             },
             MuiSelect: {
                 styleOverrides: {
-                    root: {
-                        backgroundColor: isDark ? "#121212" : "#ffffff",
+                    root: ({ theme }) => ({
+                        backgroundColor: theme.palette.background.paper,
                         //fontFamily: "Monospace, monospace",
                         //fontSize: "0.8rem",
                         //fontSpacing: "0.05rem",
-                    }
+                    }),
                 },
             },
             MuiMenuItem: {
@@ -215,30 +215,30 @@ export function setupTheme(themeName = 'dark') {
             },
             MuiAutocomplete: {
                 styleOverrides: {
-                    root: {
-                        backgroundColor: isDark ? "#121212" : "#ffffff",
-                    }
+                    root: ({ theme }) => ({
+                        backgroundColor: theme.palette.background.paper,
+                    }),
                 },
             },
             MuiListSubheader: {
                 styleOverrides: {
-                    root: {
-                        backgroundColor: isDark ? "#1e1e1e" : "#f5f5f5",
-                    }
+                    root: ({ theme }) => ({
+                        backgroundColor: theme.palette.background.elevated,
+                    }),
                 },
             },
             MuiFilledInput: {
                 styleOverrides: {
-                    root: {
-                        backgroundColor: isDark ? "#121212" : "#f5f5f5",
-                    }
+                    root: ({ theme }) => ({
+                        backgroundColor: theme.palette.background.paper,
+                    }),
                 },
             },
             MuiTextField: {
                 styleOverrides: {
-                    root: {
-                        backgroundColor: isDark ? "#121212" : "#ffffff",
-                    }
+                    root: ({ theme }) => ({
+                        backgroundColor: theme.palette.background.paper,
+                    }),
                 },
             },
             MuiFormHelperText: {
