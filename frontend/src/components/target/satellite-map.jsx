@@ -158,6 +158,89 @@ const MapSlider = function ({handleSliderChange}) {
     );
 };
 
+const MapSettingsButton = React.memo(function MapSettingsButton() {
+    const { t } = useTranslation('target');
+    const dispatch = useDispatch();
+
+    const handleClick = () => {
+        dispatch(setOpenMapSettingsDialog(true));
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.map_settings')} onClick={handleClick}>
+            <SettingsIcon/>
+        </Fab>
+    );
+});
+
+const CenterHomeButton = React.memo(function CenterHomeButton() {
+    const { t } = useTranslation('target');
+    const {location} = useSelector(state => state.location);
+
+    const handleClick = () => {
+        if (location && location.lat != null && location.lon != null) {
+            MapObject.setView([location.lat, location.lon], MapObject.getZoom());
+        }
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.go_home')} onClick={handleClick} disabled={!location}>
+            <HomeIcon/>
+        </Fab>
+    );
+});
+
+const CenterMapButton = React.memo(function CenterMapButton() {
+    const { t } = useTranslation('target');
+    const targetCoordinates = [0, 0];
+
+    const handleClick = () => {
+        MapObject.setView(targetCoordinates, MapObject.getZoom());
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.go_to_center')} onClick={handleClick}>
+            <FilterCenterFocusIcon/>
+        </Fab>
+    );
+});
+
+const FullscreenMapButton = React.memo(function FullscreenMapButton() {
+    const { t } = useTranslation('target');
+
+    const handleMapFullscreen = () => {
+        const mapContainer = MapObject.getContainer();
+        if (!document.fullscreenElement) {
+            if (mapContainer.requestFullscreen) {
+                mapContainer.requestFullscreen();
+            } else if (mapContainer.mozRequestFullScreen) {
+                mapContainer.mozRequestFullScreen();
+            } else if (mapContainer.webkitRequestFullscreen) {
+                mapContainer.webkitRequestFullscreen();
+            } else if (mapContainer.msRequestFullscreen) {
+                mapContainer.msRequestFullscreen();
+            }
+        } else {
+            // Exit fullscreen if we're already in it
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.go_fullscreen')} onClick={handleMapFullscreen}>
+            <FullscreenIcon/>
+        </Fab>
+    );
+});
+
 const TargetSatelliteMapContainer = ({}) => {
     const {socket} = useSocket();
     const dispatch = useDispatch();
@@ -214,83 +297,6 @@ const TargetSatelliteMapContainer = ({}) => {
             },
         });
         return null;
-    }
-
-    function MapSettingsButton() {
-        const { t } = useTranslation('target');
-        const handleClick = () => {
-            dispatch(setOpenMapSettingsDialog(true));
-        };
-
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.map_settings')} onClick={handleClick}>
-                <SettingsIcon/>
-            </Fab>
-        );
-    }
-
-    function CenterHomeButton() {
-        const { t } = useTranslation('target');
-        const handleClick = () => {
-            if (location && location.lat != null && location.lon != null) {
-                MapObject.setView([location.lat, location.lon], MapObject.getZoom());
-            }
-        };
-
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.go_home')} onClick={handleClick} disabled={!location}>
-                <HomeIcon/>
-            </Fab>
-        );
-    }
-
-    function CenterMapButton() {
-        const { t } = useTranslation('target');
-        const targetCoordinates = [0, 0];
-        const handleClick = () => {
-            MapObject.setView(targetCoordinates, MapObject.getZoom());
-        };
-
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.go_to_center')} onClick={handleClick}>
-                <FilterCenterFocusIcon/>
-            </Fab>
-        );
-    }
-
-    function FullscreenMapButton() {
-        const { t } = useTranslation('target');
-        const handleMapFullscreen = () => {
-            const mapContainer = MapObject.getContainer();
-            if (!document.fullscreenElement) {
-                if (mapContainer.requestFullscreen) {
-                    mapContainer.requestFullscreen();
-                } else if (mapContainer.mozRequestFullScreen) {
-                    mapContainer.mozRequestFullScreen();
-                } else if (mapContainer.webkitRequestFullscreen) {
-                    mapContainer.webkitRequestFullscreen();
-                } else if (mapContainer.msRequestFullscreen) {
-                    mapContainer.msRequestFullscreen();
-                }
-            } else {
-                // Exit fullscreen if we're already in it
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-            }
-        };
-
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.go_fullscreen')} onClick={handleMapFullscreen}>
-                <FullscreenIcon/>
-            </Fab>
-        );
     }
 
     useEffect(() => {

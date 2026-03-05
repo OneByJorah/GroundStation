@@ -90,6 +90,67 @@ L.Icon.Default.mergeOptions({
 
 const storageMapZoomValueKey = 'overview-map-zoom-level';
 
+const CenterHomeButton = React.memo(function CenterHomeButton() {
+    const { t } = useTranslation('overview');
+    const {location} = useSelector((state) => state.location);
+
+    const handleClick = () => {
+        if (location && location.lat != null && location.lon != null) {
+            MapObject.setView([location.lat, location.lon], MapObject.getZoom());
+        }
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.go_home')} onClick={handleClick} disabled={!location}>
+            <HomeIcon/>
+        </Fab>
+    );
+});
+
+const CenterMapButton = React.memo(function CenterMapButton() {
+    const { t } = useTranslation('overview');
+    const targetCoordinates = [0, 0];
+
+    const handleClick = () => {
+        MapObject.setView(targetCoordinates, MapObject.getZoom());
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.go_to_center')} onClick={handleClick}>
+            <FilterCenterFocusIcon/>
+        </Fab>
+    );
+});
+
+const FullscreenMapButton = React.memo(function FullscreenMapButton() {
+    const { t } = useTranslation('overview');
+
+    const handleMapFullscreen = () => {
+        MapObject.toggleFullscreen();
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.go_fullscreen')} onClick={handleMapFullscreen}>
+            <FullscreenIcon/>
+        </Fab>
+    );
+});
+
+const MapSettingsButton = React.memo(function MapSettingsButton() {
+    const { t } = useTranslation('overview');
+    const dispatch = useDispatch();
+
+    const handleClick = () => {
+        dispatch(setOpenMapSettingsDialog(true));
+    };
+
+    return (
+        <Fab size="small" color="primary" aria-label={t('map_controls.map_settings')} onClick={handleClick}>
+            <SettingsIcon/>
+        </Fab>
+    );
+});
+
 const SatelliteMapContainer = ({handleSetTrackingOnBackend}) => {
     const {socket} = useSocket();
     const dispatch = useDispatch();
@@ -174,58 +235,6 @@ const SatelliteMapContainer = ({handleSetTrackingOnBackend}) => {
             },
         });
         return null;
-    }
-
-    function CenterHomeButton() {
-        const { t } = useTranslation('overview');
-        const handleClick = () => {
-            if (location && location.lat != null && location.lon != null) {
-                MapObject.setView([location.lat, location.lon], MapObject.getZoom());
-            }
-        };
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.go_home')} onClick={handleClick} disabled={!location}>
-                <HomeIcon/>
-            </Fab>
-        );
-    }
-
-    function CenterMapButton() {
-        const { t } = useTranslation('overview');
-        const targetCoordinates = [0, 0];
-        const handleClick = () => {
-            MapObject.setView(targetCoordinates, MapObject.getZoom());
-        };
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.go_to_center')} onClick={handleClick}>
-                <FilterCenterFocusIcon/>
-            </Fab>
-        );
-    }
-
-    function FullscreenMapButton() {
-        const { t } = useTranslation('overview');
-        const handleMapFullscreen = () => {
-            MapObject.toggleFullscreen();
-        };
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.go_fullscreen')} onClick={handleMapFullscreen}>
-                <FullscreenIcon/>
-            </Fab>
-        );
-    }
-
-    function MapSettingsButton() {
-        const { t } = useTranslation('overview');
-        const handleClick = () => {
-            dispatch(setOpenMapSettingsDialog(true));
-        };
-
-        return (
-            <Fab size="small" color="primary" aria-label={t('map_controls.map_settings')} onClick={handleClick}>
-                <SettingsIcon/>
-            </Fab>
-        );
     }
 
     function satelliteUpdate(now) {
