@@ -30,21 +30,35 @@ import {
     Typography,
     Box,
     Divider,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { setPassesTableColumnVisibility } from './target-slice.jsx';
+import {
+    setPassesTableColumnVisibility,
+    setPassesTablePageSize,
+} from './target-slice.jsx';
 
 const TargetPassesTableSettingsDialog = ({ open, onClose }) => {
     const { t } = useTranslation('target');
     const dispatch = useDispatch();
     const columnVisibility = useSelector(state => state.targetSatTrack.passesTableColumnVisibility);
+    const passesTablePageSize = useSelector(state => state.targetSatTrack.passesTablePageSize);
+
+    const rowsPerPageOptions = [5, 10, 15, 20];
 
     const handleColumnToggle = (columnName) => {
         dispatch(setPassesTableColumnVisibility({
             ...columnVisibility,
             [columnName]: !columnVisibility[columnName]
         }));
+    };
+
+    const handleRowsPerPageChange = (event) => {
+        dispatch(setPassesTablePageSize(event.target.value));
     };
 
     const columns = [
@@ -81,6 +95,27 @@ const TargetPassesTableSettingsDialog = ({ open, onClose }) => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {t('passes_table_settings.description')}
                 </Typography>
+
+                <Box sx={{ mb: 2 }}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel id="target-passes-table-rows-per-page-label">
+                            {t('passes_table_settings.rows_per_page')}
+                        </InputLabel>
+                        <Select
+                            labelId="target-passes-table-rows-per-page-label"
+                            value={passesTablePageSize}
+                            label={t('passes_table_settings.rows_per_page')}
+                            onChange={handleRowsPerPageChange}
+                        >
+                            {rowsPerPageOptions.map((option) => (
+                                <MenuItem key={option} value={option}>
+                                    {option}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Divider sx={{ mt: 2 }} />
+                </Box>
 
                 {Object.entries(columnsByCategory).map(([category, cols]) => (
                     <Box key={category} sx={{ mb: 2 }}>

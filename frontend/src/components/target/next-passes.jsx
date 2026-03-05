@@ -35,7 +35,13 @@ import { useTranslation } from 'react-i18next';
 import { enUS, elGR } from '@mui/x-data-grid/locales';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { fetchNextPasses, updateSatellitePassesWithElevationCurves, setPassesTableColumnVisibility, setOpenPassesTableSettingsDialog } from './target-slice.jsx';
+import {
+    fetchNextPasses,
+    updateSatellitePassesWithElevationCurves,
+    setPassesTableColumnVisibility,
+    setPassesTablePageSize,
+    setOpenPassesTableSettingsDialog
+} from './target-slice.jsx';
 import {calculateElevationCurvesForPasses} from '../../utils/elevation-curve-calculator.js';
 import TargetPassesTableSettingsDialog from './target-passes-table-settings-dialog.jsx';
 import { useUserTimeSettings } from '../../hooks/useUserTimeSettings.jsx';
@@ -103,11 +109,19 @@ const DurationFormatter = React.memo(function DurationFormatter({params, value, 
 });
 
 
-const MemoizedStyledDataGrid = React.memo(function MemoizedStyledDataGrid({satellitePasses, passesLoading, columnVisibility, onColumnVisibilityChange}) {
+const MemoizedStyledDataGrid = React.memo(function MemoizedStyledDataGrid({
+    satellitePasses,
+    passesLoading,
+    columnVisibility,
+    onColumnVisibilityChange,
+    pageSize = 15,
+    onPageSizeChange
+}) {
     const apiRef = useGridApiRef();
     const { t, i18n } = useTranslation('target');
     const currentLanguage = i18n.language;
     const dataGridLocale = currentLanguage === 'el' ? elGR : enUS;
+    const [page, setPage] = useState(0);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -334,14 +348,21 @@ const MemoizedStyledDataGrid = React.memo(function MemoizedStyledDataGrid({satel
             columnVisibilityModel={columnVisibility}
             onColumnVisibilityModelChange={onColumnVisibilityChange}
             initialState={{
-                pagination: { paginationModel: { pageSize: 15 } },
                 sorting: {
                     sortModel: [{ field: 'event_start', sort: 'asc' }],
                 },
             }}
+            paginationModel={{
+                pageSize: pageSize,
+                page: page,
+            }}
+            onPaginationModelChange={(model) => {
+                setPage(model.page);
+                if (onPageSizeChange && model.pageSize !== pageSize) {
+                    onPageSizeChange(model.pageSize);
+                }
+            }}
             columns={columns}
-            pageSize={10}
-            rowsPerPageOptions={[5, 10, 15, 20]}
             disableSelectionOnClick
         />
     );
@@ -349,7 +370,8 @@ const MemoizedStyledDataGrid = React.memo(function MemoizedStyledDataGrid({satel
     return (
         prevProps.satellitePasses === nextProps.satellitePasses &&
         prevProps.passesLoading === nextProps.passesLoading &&
-        prevProps.columnVisibility === nextProps.columnVisibility
+        prevProps.columnVisibility === nextProps.columnVisibility &&
+        prevProps.pageSize === nextProps.pageSize
     );
 });
 
@@ -368,6 +390,7 @@ const NextPassesIsland = React.memo(function NextPassesIsland() {
         satelliteId,
         gridEditable,
         passesTableColumnVisibility,
+        passesTablePageSize,
         openPassesTableSettingsDialog
     } = useSelector(state => state.targetSatTrack);
     const { location } = useSelector(state => state.location);
@@ -473,6 +496,10 @@ const NextPassesIsland = React.memo(function NextPassesIsland() {
         dispatch(setPassesTableColumnVisibility(newModel));
     };
 
+    const handlePageSizeChange = (newPageSize) => {
+        dispatch(setPassesTablePageSize(newPageSize));
+    };
+
     const handleOpenSettings = () => {
         dispatch(setOpenPassesTableSettingsDialog(true));
     };
@@ -538,6 +565,8 @@ const NextPassesIsland = React.memo(function NextPassesIsland() {
                         passesLoading={passesLoading}
                         columnVisibility={passesTableColumnVisibility}
                         onColumnVisibilityChange={handleColumnVisibilityChange}
+                        pageSize={passesTablePageSize}
+                        onPageSizeChange={handlePageSizeChange}
                     />
                 </div>
             </div>

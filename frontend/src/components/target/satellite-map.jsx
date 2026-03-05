@@ -26,7 +26,7 @@ import {
     Polygon,
     useMapEvents,
 } from 'react-leaflet';
-import {Box, Fab, Slider, Typography} from "@mui/material";
+import {Box, Fab, Slider, Typography, Tooltip, IconButton} from "@mui/material";
 import {SatelliteAlt} from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
@@ -157,21 +157,6 @@ const MapSlider = function ({handleSliderChange}) {
         </Box>
     );
 };
-
-const MapSettingsButton = React.memo(function MapSettingsButton() {
-    const { t } = useTranslation('target');
-    const dispatch = useDispatch();
-
-    const handleClick = () => {
-        dispatch(setOpenMapSettingsDialog(true));
-    };
-
-    return (
-        <Fab size="small" color="primary" aria-label={t('map_controls.map_settings')} onClick={handleClick}>
-            <SettingsIcon/>
-        </Fab>
-    );
-});
 
 const CenterHomeButton = React.memo(function CenterHomeButton() {
     const { t } = useTranslation('target');
@@ -467,6 +452,10 @@ const TargetSatelliteMapContainer = ({}) => {
         };
     }, [noradId]);
 
+    const handleOpenSettings = useCallback(() => {
+        dispatch(setOpenMapSettingsDialog(true));
+    }, [dispatch]);
+
     return (
         <>
             <TitleBar
@@ -483,6 +472,19 @@ const TargetSatelliteMapContainer = ({}) => {
                         <Typography variant="subtitle2" sx={{fontWeight: 'bold'}}>
                             {t('satellite_map.title')}
                         </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title={t('map_settings.title')}>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    onClick={handleOpenSettings}
+                                    sx={{ padding: '2px' }}
+                                >
+                                    <SettingsIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
                     </Box>
                 </Box>
             </TitleBar>
@@ -506,7 +508,6 @@ const TargetSatelliteMapContainer = ({}) => {
                 <TileLayer url={getTileLayerById(tileLayerID)['url']}/>
 
                 <Box sx={{'& > :not(style)': {m: 1}}} style={{right: 5, top: 5, position: 'absolute'}}>
-                    <MapSettingsButton/>
                     <CenterHomeButton/>
                     <CenterMapButton/>
                     <FullscreenMapButton/>

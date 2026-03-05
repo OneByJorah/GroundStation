@@ -26,6 +26,7 @@
   "passes_table_settings": {
     "title": "Passes Table Settings",
     "description": "Choose which columns to display in the passes table",
+    "rows_per_page": "Rows per page",
     "category_time": "Time Information",
     "category_basic": "Basic Information",
     "category_distance": "Distance Information",

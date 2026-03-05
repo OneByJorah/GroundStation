@@ -29,7 +29,7 @@ import {
     useMapEvents,
 } from 'react-leaflet';
 import L from 'leaflet';
-import {Box, Fab, useTheme, Typography} from '@mui/material';
+import {Box, Fab, useTheme, Typography, Tooltip, IconButton} from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FilterCenterFocusIcon from '@mui/icons-material/FilterCenterFocus';
@@ -136,21 +136,6 @@ const FullscreenMapButton = React.memo(function FullscreenMapButton() {
     );
 });
 
-const MapSettingsButton = React.memo(function MapSettingsButton() {
-    const { t } = useTranslation('overview');
-    const dispatch = useDispatch();
-
-    const handleClick = () => {
-        dispatch(setOpenMapSettingsDialog(true));
-    };
-
-    return (
-        <Fab size="small" color="primary" aria-label={t('map_controls.map_settings')} onClick={handleClick}>
-            <SettingsIcon/>
-        </Fab>
-    );
-});
-
 const SatelliteMapContainer = ({handleSetTrackingOnBackend}) => {
     const {socket} = useSocket();
     const dispatch = useDispatch();
@@ -214,6 +199,10 @@ const SatelliteMapContainer = ({handleSetTrackingOnBackend}) => {
         },
         [dispatch]
     );
+
+    const handleOpenSettings = useCallback(() => {
+        dispatch(setOpenMapSettingsDialog(true));
+    }, [dispatch]);
 
     // Subscribe to map events
     function MapEventComponent({handleSetMapZoomLevel}) {
@@ -708,6 +697,19 @@ const SatelliteMapContainer = ({handleSetTrackingOnBackend}) => {
                             {t('title')}
                         </Typography>
                     </Box>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title={t('map_settings.title')}>
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    onClick={handleOpenSettings}
+                                    sx={{ padding: '2px' }}
+                                >
+                                    <SettingsIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    </Box>
                 </Box>
             </TitleBar>
             <Box sx={{position: 'relative', width: '100%', height: 'calc(100% - 60px)'}}>
@@ -745,7 +747,6 @@ const SatelliteMapContainer = ({handleSetTrackingOnBackend}) => {
                     sx={{'& > :not(style)': {m: 1}}}
                     style={{right: 5, top: 5, position: 'absolute'}}
                 >
-                    <MapSettingsButton/>
                     <CenterHomeButton/>
                     <CenterMapButton/>
                     <FullscreenMapButton/>

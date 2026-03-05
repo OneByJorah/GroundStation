@@ -30,21 +30,35 @@ import {
     Typography,
     Box,
     Divider,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSatellitesTableColumnVisibility } from './overview-slice.jsx';
+import {
+    setSatellitesTableColumnVisibility,
+    setSatellitesTablePageSize,
+} from './overview-slice.jsx';
 
 const SatellitesTableSettingsDialog = ({ open, onClose }) => {
     const { t } = useTranslation('overview');
     const dispatch = useDispatch();
     const columnVisibility = useSelector(state => state.overviewSatTrack.satellitesTableColumnVisibility);
+    const satellitesTablePageSize = useSelector(state => state.overviewSatTrack.satellitesTablePageSize);
+
+    const rowsPerPageOptions = [5, 10, 15, 20, 50];
 
     const handleColumnToggle = (columnName) => {
         dispatch(setSatellitesTableColumnVisibility({
             ...columnVisibility,
             [columnName]: !columnVisibility[columnName]
         }));
+    };
+
+    const handleRowsPerPageChange = (event) => {
+        dispatch(setSatellitesTablePageSize(event.target.value));
     };
 
     const columns = [
@@ -79,6 +93,27 @@ const SatellitesTableSettingsDialog = ({ open, onClose }) => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {t('satellites_table_settings.description')}
                 </Typography>
+
+                <Box sx={{ mb: 2 }}>
+                    <FormControl fullWidth size="small">
+                        <InputLabel id="satellites-table-rows-per-page-label">
+                            {t('satellites_table_settings.rows_per_page')}
+                        </InputLabel>
+                        <Select
+                            labelId="satellites-table-rows-per-page-label"
+                            value={satellitesTablePageSize}
+                            label={t('satellites_table_settings.rows_per_page')}
+                            onChange={handleRowsPerPageChange}
+                        >
+                            {rowsPerPageOptions.map((option) => (
+                                <MenuItem key={option} value={option}>
+                                    {option}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Divider sx={{ mt: 2 }} />
+                </Box>
 
                 {Object.entries(columnsByCategory).map(([category, cols]) => (
                     <Box key={category} sx={{ mb: 2 }}>

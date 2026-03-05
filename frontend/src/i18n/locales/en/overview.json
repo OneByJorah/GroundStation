@@ -25,6 +25,7 @@
   "satellites_table_settings": {
     "title": "Satellites Table Settings",
     "description": "Choose which columns to display in the satellites table",
+    "rows_per_page": "Rows per page",
     "category_basic": "Basic Information",
     "category_names": "Satellite Names",
     "category_metadata": "Metadata",
@@ -56,6 +57,7 @@
   "passes_table_settings": {
     "title": "Passes Table Settings",
     "description": "Choose which columns to display in the passes table",
+    "rows_per_page": "Rows per page",
     "category_basic": "Basic Information",
     "category_names": "Satellite Names",
     "category_time": "Time Information",

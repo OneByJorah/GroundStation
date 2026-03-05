@@ -340,6 +340,7 @@ const targetSatTrackSlice = createSlice({
             is_geostationary: false,
             is_geosynchronous: false,
         },
+        passesTablePageSize: 15,
         nextPassesHours: 24.0,
         cachedPasses: {},
         selectedTransmitter: "none",
@@ -579,6 +580,9 @@ const targetSatTrackSlice = createSlice({
         },
         setPassesTableColumnVisibility(state, action) {
             state.passesTableColumnVisibility = action.payload;
+        },
+        setPassesTablePageSize(state, action) {
+            state.passesTablePageSize = action.payload;
         },
         setNextPassesHours(state, action) {
             state.nextPassesHours = action.payload;
@@ -863,6 +867,7 @@ export const {
     setOpenMapSettingsDialog,
     setOpenPassesTableSettingsDialog,
     setPassesTableColumnVisibility,
+    setPassesTablePageSize,
     setNextPassesHours,
     setSelectedTransmitter,
     setAvailableTransmitters,
