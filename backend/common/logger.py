@@ -20,6 +20,7 @@ import logging.config
 import yaml
 
 from .arguments import arguments
+from .logconfig import resolve_log_config_path
 
 
 def get_logger_config(args):
@@ -39,11 +40,14 @@ def get_logger_config(args):
     :raises yaml.YAMLError: If the YAML configuration file cannot be parsed due to invalid syntax.
     """
 
+    resolved_path = resolve_log_config_path(args.log_config)
+    args.log_config = str(resolved_path)
+
     def yaml_to_json_config(filepath):
-        with open(filepath, "r") as file:
+        with open(filepath, "r", encoding="utf-8") as file:
             return yaml.safe_load(file)
 
-    logging_config = yaml_to_json_config(args.log_config)
+    logging_config = yaml_to_json_config(resolved_path)
 
     return logging_config
 

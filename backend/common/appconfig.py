@@ -28,7 +28,7 @@ DEFAULT_APP_CONFIG: Dict[str, Any] = {
     "db": "data/db/gs.db",
     "temp_db": False,
     "log_level": "INFO",
-    "log_config": "logconfig.yaml",
+    "log_config": "data/configs/log_config.yaml",
     "secret_key": "YOUR_RANDOM_SECRET_KEY",
     "track_interval_ms": 2000,
     "enable_soapy_discovery": False,

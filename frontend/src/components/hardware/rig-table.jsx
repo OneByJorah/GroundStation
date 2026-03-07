@@ -25,6 +25,7 @@ import {
     AlertTitle,
     Button,
     FormControl,
+    FormHelperText,
     InputLabel,
     MenuItem,
     Select,
@@ -66,9 +67,14 @@ export default function RigTable() {
         host: 'localhost',
         port: 4532,
         radiotype: 'rx',
-        vfotype: 'normal',
+        radio_mode: 'duplex',
+        tx_control_mode: 'auto',
     };
     const [pageSize, setPageSize] = React.useState(10);
+    const selectedRadioMode = formValues.radio_mode || 'duplex';
+    const radioModeHelpKey = `rig.radio_mode_help_${selectedRadioMode}`;
+    const selectedTxControlMode = formValues.tx_control_mode || 'auto';
+    const txControlModeHelpKey = `rig.tx_mode_help_${selectedTxControlMode}`;
 
     const columns = [
         {field: 'name', headerName: t('rig.name'), flex: 1, minWidth: 150},
@@ -85,8 +91,8 @@ export default function RigTable() {
                 return value;
             }
         },
-        {field: 'radiotype', headerName: t('rig.radio_type'), flex: 1, minWidth: 150},
-        {field: 'vfotype', headerName: t('rig.vfo_type'), flex: 1, minWidth: 50},
+        {field: 'radio_mode', headerName: t('rig.radio_mode'), flex: 1, minWidth: 150},
+        {field: 'tx_control_mode', headerName: t('rig.tx_control_mode'), flex: 1, minWidth: 150},
     ];
 
     // useEffect(() => {
@@ -284,28 +290,40 @@ export default function RigTable() {
                                     required
                                 />
                                 <FormControl fullWidth size="small">
-                                    <InputLabel>{t('rig.radio_type')}</InputLabel>
+                                    <InputLabel>{t('rig.radio_mode')}</InputLabel>
                                     <Select
-                                        name="radiotype"
-                                        label={t('rig.radio_type')}
+                                        name="radio_mode"
+                                        label={t('rig.radio_mode')}
                                         size="small"
-                                        value={formValues.radiotype}
+                                        value={formValues.radio_mode || 'duplex'}
                                         onChange={handleChange}
                                     >
-                                        <MenuItem value="rx">{t('rig.rx')}</MenuItem>
+                                        <MenuItem value="monitor">{t('rig.radio_mode_monitor')}</MenuItem>
+                                        <MenuItem value="uplink_only">{t('rig.radio_mode_uplink_only')}</MenuItem>
+                                        <MenuItem value="simplex">{t('rig.radio_mode_simplex')}</MenuItem>
+                                        <MenuItem value="duplex">{t('rig.radio_mode_duplex')}</MenuItem>
+                                        <MenuItem value="ptt_guarded">{t('rig.radio_mode_ptt_guarded')}</MenuItem>
                                     </Select>
+                                    <FormHelperText>{t(radioModeHelpKey)}</FormHelperText>
                                 </FormControl>
                                 <FormControl fullWidth size="small">
-                                    <InputLabel>{t('rig.vfo_type')}</InputLabel>
+                                    <InputLabel>{t('rig.tx_control_mode')}</InputLabel>
                                     <Select
-                                        name="vfotype"
-                                        label={t('rig.vfo_type')}
+                                        name="tx_control_mode"
+                                        label={t('rig.tx_control_mode')}
                                         size="small"
-                                        value={formValues.vfotype}
+                                        value={formValues.tx_control_mode || 'auto'}
                                         onChange={handleChange}
                                     >
-                                        <MenuItem value="normal">{t('rig.normal')}</MenuItem>
+                                        <MenuItem value="auto">{t('rig.tx_mode_auto')}</MenuItem>
+                                        <MenuItem value="vfo_switch">
+                                            {t('rig.tx_mode_vfo_switch')}
+                                        </MenuItem>
+                                        <MenuItem value="split_tx_cmd">
+                                            {t('rig.tx_mode_split_tx_cmd')}
+                                        </MenuItem>
                                     </Select>
+                                    <FormHelperText>{t(txControlModeHelpKey)}</FormHelperText>
                                 </FormControl>
                             </Stack>
                         </DialogContent>
@@ -416,17 +434,17 @@ export default function RigTable() {
                                                 </Typography>
 
                                                 <Typography variant="body2" sx={{ fontSize: '0.813rem', color: 'text.secondary', fontWeight: 500 }}>
-                                                    Radio Type:
+                                                    Radio Mode:
                                                 </Typography>
                                                 <Typography variant="body2" sx={{ fontSize: '0.813rem', color: 'text.primary' }}>
-                                                    {rig.radiotype}
+                                                    {rig.radio_mode || 'duplex'}
                                                 </Typography>
 
                                                 <Typography variant="body2" sx={{ fontSize: '0.813rem', color: 'text.secondary', fontWeight: 500 }}>
-                                                    VFO Type:
+                                                    TX Control:
                                                 </Typography>
                                                 <Typography variant="body2" sx={{ fontSize: '0.813rem', color: 'text.primary' }}>
-                                                    {rig.vfotype}
+                                                    {rig.tx_control_mode || 'auto'}
                                                 </Typography>
 
                                             </Box>

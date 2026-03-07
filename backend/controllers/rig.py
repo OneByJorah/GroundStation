@@ -19,8 +19,6 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional, Tuple
 
-from common.arguments import arguments as args
-
 
 class RigController:
     def __init__(
@@ -34,7 +32,6 @@ class RigController:
         # Set up logging
         device_path = f"{host}:{port}"
         self.logger = logging.getLogger("rig-control")
-        self.logger.setLevel(args.log_level)
         self.logger.info(f"Initializing RigController with device={device_path}")
 
         # Initialize attributes
@@ -46,6 +43,10 @@ class RigController:
         self.writer: Optional[asyncio.StreamWriter] = None
         self.connected = False
         self.timeout = timeout
+        self.command_lock = asyncio.Lock()
+        self.supports_split_tx_cmd = False
+        self.supports_vfo_opt = False
+        self.supports_ptt_query = False
 
     async def connect(self) -> bool:
         if self.connected:
@@ -66,6 +67,7 @@ class RigController:
             self.reader, self.writer = reader_writer
 
             self.connected = True
+            await self._probe_capabilities()
             self.logger.info(f"Successfully connected to rig at {self.device_path}")
             return True
 
@@ -95,6 +97,9 @@ class RigController:
             self.connected = False
             self.reader = None
             self.writer = None
+            self.supports_split_tx_cmd = False
+            self.supports_vfo_opt = False
+            self.supports_ptt_query = False
             self.logger.info("Disconnected from rig")
             return True
 
@@ -136,26 +141,41 @@ class RigController:
             raise RuntimeError("Writer or reader is None")
 
         try:
-            # Add newline to the command
-            full_command = f"{command}\n"
+            async with self.command_lock:
+                # Add newline to the command
+                full_command = f"{command}\n"
 
-            # Send the command
-            self.writer.write(full_command.encode("utf-8"))
-            await self.writer.drain()
+                # Send the command
+                self.writer.write(full_command.encode("utf-8"))
+                await self.writer.drain()
+                self.logger.debug(f"TX -> {command}")
 
-            if waitforreply:
-                # Read the response
-                response_bytes = await asyncio.wait_for(
-                    self.reader.read(1000), timeout=self.timeout
-                )
-                response = response_bytes.decode("utf-8", errors="replace").strip()
-            else:
-                response = "(no wait for reply)"
+                if waitforreply:
+                    # Read first response line
+                    first_line = await asyncio.wait_for(
+                        self.reader.readline(), timeout=self.timeout
+                    )
+                    response = first_line.decode("utf-8", errors="replace").strip()
+                    self.logger.debug(f"RX <- {response}")
 
-            if self.verbose:
-                self.logger.debug(f"Command: {command} -> Response: {response}")
+                    # Drain any additional lines to keep protocol in sync.
+                    while True:
+                        try:
+                            extra_line = await asyncio.wait_for(
+                                self.reader.readline(), timeout=0.03
+                            )
+                        except asyncio.TimeoutError:
+                            break
+                        if not extra_line:
+                            break
+                        extra = extra_line.decode("utf-8", errors="replace").strip()
+                        if extra:
+                            self.logger.debug(f"RX <- (extra) {extra}")
+                else:
+                    response = "(no wait for reply)"
+                    self.logger.debug("RX <- (skipped, waitforreply=False)")
 
-            return response
+                return response
 
         except Exception as e:
             self.logger.error(f"Error sending command '{command}': {e}")
@@ -168,11 +188,13 @@ class RigController:
                 # Send frequency query command
                 writer.write(b"f\n")
                 await writer.drain()
+                self.logger.debug("TX -> f")
 
                 # Receive response with timeout
                 response_bytes = await asyncio.wait_for(reader.read(1000), timeout=self.timeout)
 
                 response = response_bytes.decode("utf-8", errors="replace").strip()
+                self.logger.debug(f"RX <- {response}")
 
                 # Parse the response
                 if not response:
@@ -207,6 +229,61 @@ class RigController:
             # Catch all other exceptions
             self.logger.exception(e)
             return False
+
+    @staticmethod
+    def _parse_rprt_code(response: str) -> Optional[int]:
+        if not response.startswith("RPRT"):
+            return None
+        try:
+            parts = response.split()
+            return int(parts[1]) if len(parts) >= 2 else None
+        except (ValueError, IndexError):
+            return None
+
+    async def _probe_capabilities(self) -> None:
+        """Probe optional rigctld capabilities used by advanced tracking strategies."""
+        self.supports_split_tx_cmd = False
+        self.supports_vfo_opt = False
+        self.supports_ptt_query = False
+
+        try:
+            tx_response = await self._send_command("i")
+            tx_code = self._parse_rprt_code(tx_response)
+            self.supports_split_tx_cmd = tx_code is None or tx_code >= 0
+        except Exception:
+            self.supports_split_tx_cmd = False
+
+        try:
+            ptt_response = await self._send_command("t")
+            ptt_code = self._parse_rprt_code(ptt_response)
+            self.supports_ptt_query = ptt_code is None or ptt_code >= 0
+        except Exception:
+            self.supports_ptt_query = False
+
+        try:
+            # Query support without mutating rigctld parser mode long-term.
+            chk_response = await self._send_command("\\chk_vfo")
+            chk_code = self._parse_rprt_code(chk_response)
+            if chk_code is None:
+                self.supports_vfo_opt = chk_response.strip().startswith("1")
+            else:
+                self.supports_vfo_opt = False
+        except Exception:
+            self.supports_vfo_opt = False
+
+        # Keep rigctld in legacy/default parsing mode because the controller currently
+        # sends non-vfo_opt command forms (F/f/V without explicit leading VFO args).
+        try:
+            await self._send_command("\\set_vfo_opt 0")
+        except Exception:
+            pass
+
+        self.logger.debug(
+            "Rig capabilities: split_tx_cmd=%s, vfo_opt=%s, ptt_query=%s",
+            self.supports_split_tx_cmd,
+            self.supports_vfo_opt,
+            self.supports_ptt_query,
+        )
 
     async def get_frequency(self) -> float:
         """Get the current frequency."""
@@ -340,7 +417,7 @@ class RigController:
             self.logger.debug(f"Set VFO command: response={vfo_response}")
 
             # Format the set frequency command
-            command = f"F {target_freq}"
+            command = f"F {int(round(target_freq))}"
             response = await self._send_command(command)
 
             # Check the response
@@ -405,6 +482,51 @@ class RigController:
             self.logger.error(f"Error setting rig mode: {e}")
             self.logger.exception(e)
             raise RuntimeError(f"Error setting rig mode: {e}")
+
+    async def set_frequency_direct(self, target_freq: float) -> bool:
+        """Set frequency on the active RX path without switching VFO."""
+        try:
+            response = await self._send_command(f"F {int(round(target_freq))}")
+            error_code = self._parse_rprt_code(response)
+            if error_code is not None and error_code < 0:
+                self.logger.error(f"Set direct frequency command failed: {response}")
+                return False
+            return True
+        except Exception as e:
+            self.logger.error(f"Error setting direct frequency: {e}")
+            raise RuntimeError(f"Error setting direct frequency: {e}")
+
+    async def get_tx_frequency(self) -> float:
+        """Get TX/split frequency when supported by rigctld (`i`)."""
+        try:
+            response = await self._send_command("i")
+            error_code = self._parse_rprt_code(response)
+            if error_code is not None:
+                if error_code < 0:
+                    raise RuntimeError(f"Error getting TX frequency: {response}")
+                return 0.0
+
+            if response.startswith("get_split_freq:"):
+                parts = response.split(":")[1].strip()
+                return round(float(parts), 0)
+
+            return round(float(response.strip()), 0)
+        except Exception as e:
+            self.logger.error(f"Error getting TX frequency: {e}")
+            raise RuntimeError(f"Error getting TX frequency: {e}")
+
+    async def set_tx_frequency(self, target_freq: float) -> bool:
+        """Set TX/split frequency when supported by rigctld (`I`)."""
+        try:
+            response = await self._send_command(f"I {int(round(target_freq))}")
+            error_code = self._parse_rprt_code(response)
+            if error_code is not None and error_code < 0:
+                self.logger.error(f"Set TX frequency command failed: {response}")
+                return False
+            return True
+        except Exception as e:
+            self.logger.error(f"Error setting TX frequency: {e}")
+            raise RuntimeError(f"Error setting TX frequency: {e}")
 
     async def get_vfo(self) -> str:
         """Get the current VFO."""

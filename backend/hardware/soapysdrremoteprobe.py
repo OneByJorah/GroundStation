@@ -16,15 +16,16 @@
 
 import logging
 import logging.config
-import os
 from typing import Any, Dict, List, Optional, Set, TypedDict
 
 import SoapySDR
 import yaml
 from SoapySDR import SOAPY_SDR_RX, SOAPY_SDR_TX
 
+from common.logconfig import resolve_log_config_path
+
 # Load logger configuration
-with open(os.path.join(os.path.dirname(__file__), "../logconfig.yaml"), "r") as f:
+with open(resolve_log_config_path(None), "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
     logging.config.dictConfig(config)
 

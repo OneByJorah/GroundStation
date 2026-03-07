@@ -191,7 +191,9 @@ class Rigs(Base):
     host = Column(String, nullable=False)
     port = Column(Integer, nullable=False)
     radiotype = Column(String, nullable=False)
+    radio_mode = Column(String, nullable=False, default="duplex", server_default="duplex")
     vfotype = Column(Integer, nullable=False)
+    tx_control_mode = Column(String, nullable=False, default="auto", server_default="auto")
     added = Column(AwareDateTime, nullable=False, default=datetime.now(timezone.utc))
     updated = Column(
         AwareDateTime,

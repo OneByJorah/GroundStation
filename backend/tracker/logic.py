@@ -116,6 +116,9 @@ class SatelliteTracker:
             "device_type": "",
             "host": "",
             "port": 0,
+            "radio_mode": "duplex",
+            "tx_control_mode": "auto",
+            "active_tx_control_mode": "vfo_switch",
             "vfo1": {
                 "frequency": 0,
                 "mode": "UNKNOWN",

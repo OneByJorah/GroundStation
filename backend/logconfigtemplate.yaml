@@ -1,3 +1,5 @@
+# Template logging configuration.
+# On startup this is copied to data/configs/log_config.yaml if missing.
 version: 1
 disable_existing_loggers: False
 formatters:
@@ -294,6 +296,12 @@ loggers:
     propagate: no
 
   hardware-handler:
+    level: INFO
+    handlers:
+      - default
+    propagate: no
+
+  rig-control:
     level: INFO
     handlers:
       - default

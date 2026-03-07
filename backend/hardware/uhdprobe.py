@@ -9,6 +9,8 @@ import sys
 
 import yaml
 
+from common.logconfig import resolve_log_config_path
+
 # Try to import UHD with path handling
 uhd = None
 try:
@@ -30,7 +32,7 @@ except ImportError as e:
 
 # Load logger configuration
 try:
-    with open(os.path.join(os.path.dirname(__file__), "../logconfig.yaml"), "r") as f:
+    with open(resolve_log_config_path(None), "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
         logging.config.dictConfig(config)
 except Exception as e:

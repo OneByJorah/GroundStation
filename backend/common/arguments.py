@@ -45,7 +45,10 @@ parser.add_argument(
     help="Set the logging level",
 )
 parser.add_argument(
-    "--log-config", type=str, default=None, help="Path to the logger configuration file"
+    "--log-config",
+    type=str,
+    default=None,
+    help="Path to the logger configuration file (defaults to data/configs/log_config.yaml)",
 )
 parser.add_argument(
     "--secret-key",
@@ -81,7 +84,7 @@ if os.environ.get("ALEMBIC_CONTEXT"):
         db="data/db/gs.db",
         temp_db=False,
         log_level="INFO",
-        log_config="logconfig.yaml",
+        log_config="data/configs/log_config.yaml",
         secret_key="YOUR_RANDOM_SECRET_KEY",
         track_interval_ms=2000,
         enable_soapy_discovery=False,

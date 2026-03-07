@@ -52,7 +52,7 @@ def run_migrations():
         alembic_cfg = get_alembic_config()
 
         # Run migrations to the latest revision
-        # Alembic will use the logging configuration from logconfig.yaml
+        # Alembic will use the runtime logging configuration from data/configs/log_config.yaml
         # because we skip fileConfig() in alembic/env.py when ALEMBIC_CONTEXT=1
         command.upgrade(alembic_cfg, "head")
 

@@ -195,7 +195,21 @@ async def add_rig(session: AsyncSession, data: dict) -> dict:
         assert data.get("host", "") != "", "host is required"
         assert data.get("port", "") != "", "port is required"
         assert data.get("radiotype", "") != "", "radiotype is required"
-        assert data.get("vfotype", "") != "", "vfotype is required"
+        vfotype = data.get("vfotype", 0)
+        radio_mode = data.get("radio_mode", "duplex")
+        assert radio_mode in {
+            "monitor",
+            "uplink_only",
+            "simplex",
+            "duplex",
+            "ptt_guarded",
+        }, "radio_mode must be monitor, uplink_only, simplex, duplex, or ptt_guarded"
+        tx_control_mode = data.get("tx_control_mode", "auto")
+        assert tx_control_mode in {
+            "auto",
+            "vfo_switch",
+            "split_tx_cmd",
+        }, "tx_control_mode must be auto, vfo_switch, or split_tx_cmd"
 
         new_id = uuid.uuid4()
         now = datetime.now(timezone.utc)
@@ -207,7 +221,9 @@ async def add_rig(session: AsyncSession, data: dict) -> dict:
                 host=data["host"],
                 port=data["port"],
                 radiotype=data["radiotype"],
-                vfotype=data["vfotype"],
+                radio_mode=radio_mode,
+                vfotype=vfotype,
+                tx_control_mode=tx_control_mode,
                 added=now,
                 updated=now,
             )
@@ -234,6 +250,22 @@ async def edit_rig(session: AsyncSession, data: dict) -> dict:
         rig_id = data.get("id", None)
         if isinstance(rig_id, str):
             rig_id = uuid.UUID(rig_id)
+
+        if "tx_control_mode" in data and data["tx_control_mode"] not in {
+            "auto",
+            "vfo_switch",
+            "split_tx_cmd",
+        }:
+            return {"success": False, "error": "Invalid tx_control_mode value."}
+        if "radio_mode" in data:
+            if data["radio_mode"] not in {
+                "monitor",
+                "uplink_only",
+                "simplex",
+                "duplex",
+                "ptt_guarded",
+            }:
+                return {"success": False, "error": "Invalid radio_mode value."}
 
         del data["added"]
         del data["updated"]
