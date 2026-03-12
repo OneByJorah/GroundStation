@@ -567,3 +567,161 @@ class TestTransmittersCRUD:
         assert result["data"]["baud"] == 9600
         assert result["data"]["service"] == "Amateur"
         assert result["data"]["source"] == "satnogs"
+
+    async def test_add_transmitter_preserves_false_and_zero_values(self, db_session):
+        """Test normalization keeps valid false/zero values."""
+        await add_satellite(
+            db_session,
+            {
+                "name": "Test Satellite",
+                "sat_id": "TEST-001",
+                "norad_id": 25544,
+                "status": "alive",
+                "is_frequency_violator": False,
+                "tle1": TLE1_TEMPLATE.format(norad=25544),
+                "tle2": TLE2_TEMPLATE.format(norad=25544),
+            },
+        )
+
+        transmitter_data = {
+            "description": "Falsy values transmitter",
+            "satelliteId": 25544,
+            "alive": False,
+            "type": "transmitter",
+            "uplinkLow": 145800000,
+            "uplinkHigh": 145900000,
+            "downlinkLow": 437800000,
+            "downlinkHigh": 437900000,
+            "uplinkDrift": 0,
+            "downlinkDrift": 0,
+            "mode": "FM",
+            "uplinkMode": "FM",
+            "invert": False,
+            "baud": 0,
+            "status": "active",
+        }
+
+        result = await add_transmitter(db_session, transmitter_data)
+
+        assert result["success"] is True
+        assert result["data"]["alive"] is False
+        assert result["data"]["invert"] is False
+        assert result["data"]["uplink_drift"] == 0
+        assert result["data"]["downlink_drift"] == 0
+        assert result["data"]["baud"] == 0
+
+    async def test_add_transmitter_coerces_numeric_strings(self, db_session):
+        """Test normalization coerces numeric string inputs to ints."""
+        await add_satellite(
+            db_session,
+            {
+                "name": "Test Satellite",
+                "sat_id": "TEST-001",
+                "norad_id": 25544,
+                "status": "alive",
+                "is_frequency_violator": False,
+                "tle1": TLE1_TEMPLATE.format(norad=25544),
+                "tle2": TLE2_TEMPLATE.format(norad=25544),
+            },
+        )
+
+        transmitter_data = {
+            "description": "String values transmitter",
+            "satelliteId": "25544",
+            "alive": "false",
+            "type": "transmitter",
+            "uplinkLow": "145800000",
+            "uplinkHigh": "145900000",
+            "downlinkLow": "437800000",
+            "downlinkHigh": "437900000",
+            "uplinkDrift": "0",
+            "downlinkDrift": "0",
+            "mode": "FM",
+            "uplinkMode": "FM",
+            "invert": "true",
+            "baud": "9600",
+            "status": "active",
+        }
+
+        result = await add_transmitter(db_session, transmitter_data)
+
+        assert result["success"] is True
+        assert result["data"]["norad_cat_id"] == 25544
+        assert result["data"]["uplink_low"] == 145800000
+        assert result["data"]["downlink_low"] == 437800000
+        assert result["data"]["baud"] == 9600
+        assert result["data"]["alive"] is False
+        assert result["data"]["invert"] is True
+
+    async def test_add_transmitter_rejects_invalid_numeric_field(self, db_session):
+        """Test normalization rejects invalid numeric values with a clear error."""
+        await add_satellite(
+            db_session,
+            {
+                "name": "Test Satellite",
+                "sat_id": "TEST-001",
+                "norad_id": 25544,
+                "status": "alive",
+                "is_frequency_violator": False,
+                "tle1": TLE1_TEMPLATE.format(norad=25544),
+                "tle2": TLE2_TEMPLATE.format(norad=25544),
+            },
+        )
+
+        transmitter_data = {
+            "description": "Invalid numeric transmitter",
+            "satelliteId": 25544,
+            "alive": True,
+            "type": "transmitter",
+            "uplinkLow": "not-a-number",
+            "uplinkHigh": "-",
+            "downlinkLow": 437800000,
+            "downlinkHigh": "-",
+            "uplinkDrift": "-",
+            "downlinkDrift": "-",
+            "mode": "FM",
+            "uplinkMode": "-",
+            "status": "active",
+        }
+
+        result = await add_transmitter(db_session, transmitter_data)
+
+        assert result["success"] is False
+        assert "uplinkLow must be an integer" in result["error"]
+
+    async def test_add_transmitter_normalizes_itu_notification_json_string(self, db_session):
+        """Test malformed quoted/escaped JSON gets normalized for itu_notification."""
+        await add_satellite(
+            db_session,
+            {
+                "name": "Test Satellite",
+                "sat_id": "TEST-001",
+                "norad_id": 25544,
+                "status": "alive",
+                "is_frequency_violator": False,
+                "tle1": TLE1_TEMPLATE.format(norad=25544),
+                "tle2": TLE2_TEMPLATE.format(norad=25544),
+            },
+        )
+
+        transmitter_data = {
+            "description": "ITU JSON normalize",
+            "satelliteId": 25544,
+            "alive": True,
+            "type": "transmitter",
+            "uplinkLow": "-",
+            "uplinkHigh": "-",
+            "downlinkLow": 437800000,
+            "downlinkHigh": "-",
+            "uplinkDrift": "-",
+            "downlinkDrift": "-",
+            "mode": "FM",
+            "uplinkMode": "-",
+            "status": "active",
+            "itu_notification": '"{\\\\"urls\\\\": []}"',
+        }
+
+        result = await add_transmitter(db_session, transmitter_data)
+
+        assert result["success"] is True
+        assert result["data"]["itu_notification"] == {"urls": []}

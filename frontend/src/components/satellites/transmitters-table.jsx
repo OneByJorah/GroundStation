@@ -75,6 +75,8 @@ const formatFrequency = (frequency) => {
     }
 };
 
+const displayValue = (value) => (value === null || value === undefined || value === "" ? "-" : value);
+
 const paginationModel = {page: 0, pageSize: 10};
 
 const TransmittersTable = ({ satelliteData, inDialog = false, actionsPortalTarget = null }) => {
@@ -93,21 +95,21 @@ const TransmittersTable = ({ satelliteData, inDialog = false, actionsPortalTarge
         if (satelliteData && satelliteData.transmitters) {
                 const mappedRows = satelliteData.transmitters.map((transmitter, index) => ({
                     id: transmitter.id || `existing-${index}`,
-                    description: transmitter.description || "-",
-                    source: transmitter.source || "-",
-                    type: transmitter.type || "-",
-                    status: transmitter.status || "-",
-                    alive: transmitter.alive || "-",
-                    uplinkLow: transmitter.uplink_low || "-",
-                uplinkHigh: transmitter.uplink_high || "-",
-                uplinkDrift: transmitter.uplink_drift || "-",
-                downlinkLow: transmitter.downlink_low || "-",
-                downlinkHigh: transmitter.downlink_high || "-",
-                downlinkDrift: transmitter.downlink_drift || "-",
-                mode: transmitter.mode || "-",
-                uplinkMode: transmitter.uplink_mode || "-",
-                invert: transmitter.invert || "-",
-                baud: transmitter.baud || "-",
+                    description: displayValue(transmitter.description),
+                    source: displayValue(transmitter.source),
+                    type: displayValue(transmitter.type),
+                    status: displayValue(transmitter.status),
+                    alive: displayValue(transmitter.alive),
+                    uplinkLow: displayValue(transmitter.uplink_low),
+                uplinkHigh: displayValue(transmitter.uplink_high),
+                uplinkDrift: displayValue(transmitter.uplink_drift),
+                downlinkLow: displayValue(transmitter.downlink_low),
+                downlinkHigh: displayValue(transmitter.downlink_high),
+                downlinkDrift: displayValue(transmitter.downlink_drift),
+                mode: displayValue(transmitter.mode),
+                uplinkMode: displayValue(transmitter.uplink_mode),
+                invert: displayValue(transmitter.invert),
+                baud: displayValue(transmitter.baud),
                 _original: transmitter,
             }));
             setRows(mappedRows);
@@ -163,21 +165,21 @@ const TransmittersTable = ({ satelliteData, inDialog = false, actionsPortalTarge
                 setRows(
                     latestTransmitters.map((transmitter, index) => ({
                         id: transmitter.id || `existing-${index}`,
-                        description: transmitter.description || "-",
-                        source: transmitter.source || "-",
-                        type: transmitter.type || "-",
-                        status: transmitter.status || "-",
-                        alive: transmitter.alive || "-",
-                        uplinkLow: transmitter.uplink_low || "-",
-                        uplinkHigh: transmitter.uplink_high || "-",
-                        uplinkDrift: transmitter.uplink_drift || "-",
-                        downlinkLow: transmitter.downlink_low || "-",
-                        downlinkHigh: transmitter.downlink_high || "-",
-                        downlinkDrift: transmitter.downlink_drift || "-",
-                        mode: transmitter.mode || "-",
-                        uplinkMode: transmitter.uplink_mode || "-",
-                        invert: transmitter.invert || "-",
-                        baud: transmitter.baud || "-",
+                        description: displayValue(transmitter.description),
+                        source: displayValue(transmitter.source),
+                        type: displayValue(transmitter.type),
+                        status: displayValue(transmitter.status),
+                        alive: displayValue(transmitter.alive),
+                        uplinkLow: displayValue(transmitter.uplink_low),
+                        uplinkHigh: displayValue(transmitter.uplink_high),
+                        uplinkDrift: displayValue(transmitter.uplink_drift),
+                        downlinkLow: displayValue(transmitter.downlink_low),
+                        downlinkHigh: displayValue(transmitter.downlink_high),
+                        downlinkDrift: displayValue(transmitter.downlink_drift),
+                        mode: displayValue(transmitter.mode),
+                        uplinkMode: displayValue(transmitter.uplink_mode),
+                        invert: displayValue(transmitter.invert),
+                        baud: displayValue(transmitter.baud),
                         _original: transmitter,
                     }))
                 );

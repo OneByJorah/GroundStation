@@ -13,16 +13,134 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import Union
+from typing import Any, Union
 
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from db.models import Transmitters
+
+NULL_MARKERS = {"", "-", None}
+
+
+def _is_null_marker(value: Any) -> bool:
+    return value in NULL_MARKERS or (isinstance(value, str) and value.strip() in NULL_MARKERS)
+
+
+def _coerce_required_int(value: Any, field_name: str) -> int:
+    if _is_null_marker(value):
+        raise ValueError(f"{field_name} is required")
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be an integer") from exc
+
+
+def _coerce_optional_int(value: Any, field_name: str) -> int | None:
+    if _is_null_marker(value):
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be an integer") from exc
+
+
+def _coerce_optional_bool(value: Any, field_name: str) -> bool | None:
+    if _is_null_marker(value):
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+            return False
+    if isinstance(value, int) and value in {0, 1}:
+        return bool(value)
+    raise ValueError(f"{field_name} must be a boolean")
+
+
+def _coerce_optional_str(value: Any) -> str | None:
+    if _is_null_marker(value):
+        return None
+    return str(value)
+
+
+def _coerce_optional_json(value: Any, field_name: str) -> Any | None:
+    if _is_null_marker(value):
+        return None
+    parsed = value
+    for _ in range(4):
+        if isinstance(parsed, (dict, list, bool, int, float)) or parsed is None:
+            return parsed
+        if not isinstance(parsed, str):
+            raise ValueError(f"{field_name} must be valid JSON")
+        parsed_str = parsed.strip()
+        if _is_null_marker(parsed_str):
+            return None
+        try:
+            parsed = json.loads(parsed_str)
+            continue
+        except json.JSONDecodeError:
+            # Handle legacy double-escaped JSON string payloads.
+            if parsed_str.startswith('"') and parsed_str.endswith('"'):
+                inner = parsed_str[1:-1]
+                parsed = inner.replace('\\\\"', '"')
+                continue
+            raise ValueError(f"{field_name} must be valid JSON")
+    raise ValueError(f"{field_name} must be valid JSON")
+
+
+def _normalize_transmitter_payload(data: dict, for_edit: bool = False) -> dict:
+    payload = dict(data)
+
+    payload["norad_cat_id"] = _coerce_required_int(payload.pop("satelliteId", None), "satelliteId")
+
+    optional_int_fields = {
+        "uplinkLow": "uplink_low",
+        "uplinkHigh": "uplink_high",
+        "downlinkLow": "downlink_low",
+        "downlinkHigh": "downlink_high",
+        "uplinkDrift": "uplink_drift",
+        "downlinkDrift": "downlink_drift",
+        "baud": "baud",
+    }
+    for source_key, target_key in optional_int_fields.items():
+        if source_key in payload:
+            payload[target_key] = _coerce_optional_int(payload.pop(source_key), source_key)
+        elif not for_edit:
+            payload[target_key] = None
+
+    optional_bool_fields = {"alive": "alive", "invert": "invert"}
+    for source_key, target_key in optional_bool_fields.items():
+        if source_key in payload:
+            payload[target_key] = _coerce_optional_bool(payload[source_key], source_key)
+        elif not for_edit:
+            payload[target_key] = None
+
+    if "uplinkMode" in payload:
+        payload["uplink_mode"] = _coerce_optional_str(payload.pop("uplinkMode"))
+    elif not for_edit:
+        payload["uplink_mode"] = None
+
+    if "itu_notification" in payload:
+        payload["itu_notification"] = _coerce_optional_json(
+            payload.get("itu_notification"), "itu_notification"
+        )
+    elif not for_edit:
+        payload["itu_notification"] = None
+
+    return payload
 
 
 async def fetch_transmitters_for_satellite(session: AsyncSession, norad_id: int) -> dict:
@@ -71,36 +189,14 @@ async def add_transmitter(session: AsyncSession, data: dict) -> dict:
     Create and add a new transmitter record.
     """
     try:
+        data = _normalize_transmitter_payload(data)
         new_id = uuid.uuid4()
         now = datetime.now(timezone.utc)
         data["id"] = str(new_id)
         data["added"] = now
         data["updated"] = now
 
-        # rename some fields
-        data["norad_cat_id"] = data.pop("satelliteId")
-
-        uplink_low_val = data.pop("uplinkLow")
-        data["uplink_low"] = None if uplink_low_val == "-" else uplink_low_val
-
-        uplink_high_val = data.pop("uplinkHigh")
-        data["uplink_high"] = None if uplink_high_val == "-" else uplink_high_val
-
-        downlink_low_val = data.pop("downlinkLow")
-        data["downlink_low"] = None if downlink_low_val == "-" else downlink_low_val
-
-        downlink_high_val = data.pop("downlinkHigh")
-        data["downlink_high"] = None if downlink_high_val == "-" else downlink_high_val
-
-        uplink_drift_val = data.pop("uplinkDrift")
-        data["uplink_drift"] = None if uplink_drift_val == "-" else uplink_drift_val
-
-        downlink_drift_val = data.pop("downlinkDrift")
-        data["downlink_drift"] = None if downlink_drift_val == "-" else downlink_drift_val
-
-        data["uplink_mode"] = data.pop("uplinkMode")
-
-        if not data.get("source"):
+        if _is_null_marker(data.get("source")):
             data["source"] = "manual"
 
         stmt = insert(Transmitters).values(**data).returning(Transmitters)
@@ -123,33 +219,16 @@ async def edit_transmitter(session: AsyncSession, data: dict) -> dict:
     Edit an existing transmitter record by updating provided fields.
     """
     try:
-        transmitter_id = data.pop("id")
+        transmitter_id = data.get("id")
+        if not transmitter_id:
+            return {"success": False, "error": "Transmitter id is required."}
 
+        data = dict(data)
+        data.pop("id", None)
         data.pop("added", None)
         data.pop("updated", None)
 
-        # rename some fields
-        data["norad_cat_id"] = data.pop("satelliteId")
-
-        uplink_low_val = data.pop("uplinkLow")
-        data["uplink_low"] = None if uplink_low_val == "-" else uplink_low_val
-
-        uplink_high_val = data.pop("uplinkHigh")
-        data["uplink_high"] = None if uplink_high_val == "-" else uplink_high_val
-
-        downlink_low_val = data.pop("downlinkLow")
-        data["downlink_low"] = None if downlink_low_val == "-" else downlink_low_val
-
-        downlink_high_val = data.pop("downlinkHigh")
-        data["downlink_high"] = None if downlink_high_val == "-" else downlink_high_val
-
-        uplink_drift_val = data.pop("uplinkDrift")
-        data["uplink_drift"] = None if uplink_drift_val == "-" else uplink_drift_val
-
-        downlink_drift_val = data.pop("downlinkDrift")
-        data["downlink_drift"] = None if downlink_drift_val == "-" else downlink_drift_val
-
-        data["uplink_mode"] = data.pop("uplinkMode")
+        data = _normalize_transmitter_payload(data, for_edit=True)
 
         # Ensure the record exists first
         stmt = select(Transmitters).filter(Transmitters.id == transmitter_id)

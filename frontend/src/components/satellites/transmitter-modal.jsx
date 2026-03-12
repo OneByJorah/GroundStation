@@ -120,23 +120,44 @@ const TransmitterModal = ({ open, onClose, transmitter, satelliteId, isNew = fal
 
     const [validationErrors, setValidationErrors] = useState({});
 
+    const fromNullableField = useCallback((value) => {
+        if (value === "-" || value === null || value === undefined) {
+            return "";
+        }
+        return value;
+    }, []);
+
+    const hasValue = useCallback((value) => {
+        return !(value === "" || value === null || value === undefined);
+    }, []);
+
+    const toNullableField = useCallback((value) => {
+        if (value === null || value === undefined) {
+            return null;
+        }
+        if (typeof value === "string" && value.trim() === "") {
+            return null;
+        }
+        return value;
+    }, []);
+
     useEffect(() => {
         if (transmitter) {
             setFormData({
-                description: transmitter.description === "-" ? "" : transmitter.description || "",
-                type: transmitter.type === "-" ? "" : transmitter.type || "",
-                status: transmitter.status === "-" ? "" : transmitter.status || "",
-                alive: transmitter.alive === "-" ? "" : transmitter.alive || "",
-                uplinkLow: transmitter.uplinkLow === "-" ? "" : transmitter.uplinkLow || "",
-                uplinkHigh: transmitter.uplinkHigh === "-" ? "" : transmitter.uplinkHigh || "",
-                uplinkDrift: transmitter.uplinkDrift === "-" ? "" : transmitter.uplinkDrift || "",
-                downlinkLow: transmitter.downlinkLow === "-" ? "" : transmitter.downlinkLow || "",
-                downlinkHigh: transmitter.downlinkHigh === "-" ? "" : transmitter.downlinkHigh || "",
-                downlinkDrift: transmitter.downlinkDrift === "-" ? "" : transmitter.downlinkDrift || "",
-                mode: transmitter.mode === "-" ? "" : transmitter.mode || "",
-                uplinkMode: transmitter.uplinkMode === "-" ? "" : transmitter.uplinkMode || "",
-                invert: transmitter.invert === "-" ? "" : transmitter.invert || "",
-                baud: transmitter.baud === "-" ? "" : transmitter.baud || "",
+                description: fromNullableField(transmitter.description),
+                type: fromNullableField(transmitter.type),
+                status: fromNullableField(transmitter.status),
+                alive: fromNullableField(transmitter.alive),
+                uplinkLow: fromNullableField(transmitter.uplinkLow),
+                uplinkHigh: fromNullableField(transmitter.uplinkHigh),
+                uplinkDrift: fromNullableField(transmitter.uplinkDrift),
+                downlinkLow: fromNullableField(transmitter.downlinkLow),
+                downlinkHigh: fromNullableField(transmitter.downlinkHigh),
+                downlinkDrift: fromNullableField(transmitter.downlinkDrift),
+                mode: fromNullableField(transmitter.mode),
+                uplinkMode: fromNullableField(transmitter.uplinkMode),
+                invert: fromNullableField(transmitter.invert),
+                baud: fromNullableField(transmitter.baud),
             });
         } else {
             // Reset form for new transmitter
@@ -159,7 +180,7 @@ const TransmitterModal = ({ open, onClose, transmitter, satelliteId, isNew = fal
         }
         // Clear validation errors when modal opens/closes
         setValidationErrors({});
-    }, [transmitter, open]);
+    }, [transmitter, open, fromNullableField]);
 
     const handleChange = (field) => (event) => {
         setFormData(prev => ({
@@ -194,8 +215,8 @@ const TransmitterModal = ({ open, onClose, transmitter, satelliteId, isNew = fal
         }
 
         // At least one uplink or downlink value must be provided
-        const hasUplink = formData.uplinkLow || formData.uplinkHigh;
-        const hasDownlink = formData.downlinkLow || formData.downlinkHigh;
+        const hasUplink = hasValue(formData.uplinkLow) || hasValue(formData.uplinkHigh);
+        const hasDownlink = hasValue(formData.downlinkLow) || hasValue(formData.downlinkHigh);
 
         if (!hasUplink && !hasDownlink) {
             errors.uplinkLow = true;
@@ -215,21 +236,21 @@ const TransmitterModal = ({ open, onClose, transmitter, satelliteId, isNew = fal
 
         const processedData = {
             ...formData,
-            // Convert empty strings back to "-" for display
-            description: formData.description || "-",
-            type: formData.type || "-",
-            status: formData.status || "-",
-            alive: formData.alive || "-",
-            uplinkLow: formData.uplinkLow || "-",
-            uplinkHigh: formData.uplinkHigh || "-",
-            uplinkDrift: formData.uplinkDrift || "-",
-            downlinkLow: formData.downlinkLow || "-",
-            downlinkHigh: formData.downlinkHigh || "-",
-            downlinkDrift: formData.downlinkDrift || "-",
-            mode: formData.mode || "-",
-            uplinkMode: formData.uplinkMode || "-",
-            invert: formData.invert || false,
-            baud: formData.baud || "-",
+            // Convert empty UI values to null for backend normalization.
+            description: toNullableField(formData.description),
+            type: toNullableField(formData.type),
+            status: toNullableField(formData.status),
+            alive: toNullableField(formData.alive),
+            uplinkLow: toNullableField(formData.uplinkLow),
+            uplinkHigh: toNullableField(formData.uplinkHigh),
+            uplinkDrift: toNullableField(formData.uplinkDrift),
+            downlinkLow: toNullableField(formData.downlinkLow),
+            downlinkHigh: toNullableField(formData.downlinkHigh),
+            downlinkDrift: toNullableField(formData.downlinkDrift),
+            mode: toNullableField(formData.mode),
+            uplinkMode: toNullableField(formData.uplinkMode),
+            invert: formData.invert === "" ? null : formData.invert,
+            baud: toNullableField(formData.baud),
         };
 
         const transmitterData = {
@@ -282,7 +303,7 @@ const TransmitterModal = ({ open, onClose, transmitter, satelliteId, isNew = fal
 
     const hasFrequencyErrors = validationErrors.uplinkLow || validationErrors.uplinkHigh ||
         validationErrors.downlinkLow || validationErrors.downlinkHigh;
-    const sourceValue = transmitter?._original?.source || transmitter?.source || "-";
+    const sourceValue = transmitter?._original?.source ?? transmitter?.source ?? "-";
 
     return (
         <Dialog

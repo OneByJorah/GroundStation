@@ -40,7 +40,15 @@ async def submit_transmitter(
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Adding transmitter, data: {data}")
         add_reply = await crud.transmitters.add_transmitter(dbsession, data)
-        norad_cat_id = data.get("norad_cat_id") if data else None
+        norad_cat_id = None
+        if add_reply.get("success"):
+            norad_cat_id = (add_reply.get("data") or {}).get("norad_cat_id")
+        if not norad_cat_id and data:
+            norad_cat_id = data.get("norad_cat_id") or data.get("satelliteId")
+
+        if not norad_cat_id:
+            return {"success": add_reply.get("success", False), "data": []}
+
         transmitters = await crud.transmitters.fetch_transmitters_for_satellite(
             dbsession, norad_cat_id
         )

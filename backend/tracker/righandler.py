@@ -80,6 +80,13 @@ class RigHandler:
         self.tracker.rig_data["follow_downlink_tuning"] = enabled
         return enabled
 
+    @staticmethod
+    def _normalize_frequency(value) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
     def _maybe_reset_offset_context(self) -> None:
         norad_id = self.tracker.current_norad_id
         transmitter_id = self.tracker.current_transmitter_id
@@ -392,8 +399,10 @@ class RigHandler:
             )
 
             if current_transmitter:
-                downlink_freq = current_transmitter.get("downlink_low", 0)
-                uplink_freq = current_transmitter.get("uplink_low", 0)
+                downlink_freq = self._normalize_frequency(
+                    current_transmitter.get("downlink_low", 0)
+                )
+                uplink_freq = self._normalize_frequency(current_transmitter.get("uplink_low", 0))
 
                 self.tracker.rig_data["original_freq"] = downlink_freq
                 self.tracker.rig_data["uplink_freq"] = uplink_freq
@@ -472,8 +481,8 @@ class RigHandler:
         try:
             transmitters_with_doppler = []
             for transmitter in self.tracker.input_transmitters:
-                downlink_freq = transmitter.get("downlink_low", 0)
-                uplink_freq = transmitter.get("uplink_low", 0)
+                downlink_freq = self._normalize_frequency(transmitter.get("downlink_low", 0))
+                uplink_freq = self._normalize_frequency(transmitter.get("uplink_low", 0))
 
                 transmitter_data = {
                     "id": transmitter.get("id"),
