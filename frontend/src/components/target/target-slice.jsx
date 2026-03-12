@@ -50,6 +50,26 @@ const normalizeGroupOfSats = (sats = []) =>
         };
     });
 
+const transmitterIdentity = (tx = {}) =>
+    String(
+        tx.id
+        ?? `${tx.description ?? ''}:${tx.downlink_low ?? ''}:${tx.uplink_low ?? ''}:${tx.mode ?? ''}`
+    );
+
+const sameTransmitterSet = (left = [], right = []) => {
+    if (left.length !== right.length) {
+        return false;
+    }
+    const leftIds = left.map(transmitterIdentity).sort();
+    const rightIds = right.map(transmitterIdentity).sort();
+    for (let i = 0; i < leftIds.length; i += 1) {
+        if (leftIds[i] !== rightIds[i]) {
+            return false;
+        }
+    }
+    return true;
+};
+
 
 export const sendNudgeCommand = createAsyncThunk(
     'targetSatTrack/sendNudgeCommand',
@@ -345,6 +365,10 @@ const targetSatTrackSlice = createSlice({
         cachedPasses: {},
         selectedTransmitter: "none",
         availableTransmitters: [],
+        transmitterSyncLock: {
+            noradId: null,
+            expiresAtMs: 0,
+        },
         rotatorData: {
             'az': 0,
             'el': 0,
@@ -403,7 +427,29 @@ const targetSatTrackSlice = createSlice({
                 state.satelliteData.position = action.payload['satellite_data']['position'];
                 state.satelliteData.paths = action.payload['satellite_data']['paths'];
                 state.satelliteData.coverage = action.payload['satellite_data']['coverage'];
-                state.satelliteData.transmitters = normalizeTransmitters(action.payload['satellite_data']['transmitters']);
+                const incomingTransmitters = normalizeTransmitters(
+                    action.payload['satellite_data']['transmitters']
+                );
+                const incomingNoradId = action.payload['satellite_data']?.details?.norad_id;
+                const lockMatchesSatellite = (
+                    state.transmitterSyncLock?.noradId != null
+                    && String(state.transmitterSyncLock.noradId) === String(incomingNoradId)
+                );
+                const lockActive = lockMatchesSatellite
+                    && Number(state.transmitterSyncLock.expiresAtMs || 0) > Date.now();
+
+                if (!lockActive) {
+                    state.satelliteData.transmitters = incomingTransmitters;
+                    if (lockMatchesSatellite) {
+                        state.transmitterSyncLock = { noradId: null, expiresAtMs: 0 };
+                    }
+                } else if (
+                    sameTransmitterSet(incomingTransmitters, state.satelliteData.transmitters || [])
+                ) {
+                    // Backend caught up with the latest manual edits; unlock and accept updates.
+                    state.satelliteData.transmitters = incomingTransmitters;
+                    state.transmitterSyncLock = { noradId: null, expiresAtMs: 0 };
+                }
                 state.satelliteData.nextPass = action.payload['satellite_data']['nextPass'];
             }
 
@@ -596,6 +642,8 @@ const targetSatTrackSlice = createSlice({
         setTargetTransmitters(state, action) {
             const noradId = action.payload?.noradId;
             const transmitters = normalizeTransmitters(action.payload?.transmitters || []);
+            const lockDurationMs = Number(action.payload?.lockDurationMs ?? 5000);
+            const updatedAtMs = Number(action.payload?.updatedAtMs ?? Date.now());
             if (
                 state.satelliteData?.details?.norad_id != null
                 && String(state.satelliteData.details.norad_id) === String(noradId)
@@ -605,6 +653,10 @@ const targetSatTrackSlice = createSlice({
             if (state.satelliteId != null && String(state.satelliteId) === String(noradId)) {
                 state.availableTransmitters = transmitters;
             }
+            state.transmitterSyncLock = {
+                noradId: noradId ?? null,
+                expiresAtMs: updatedAtMs + Math.max(lockDurationMs, 0),
+            };
         },
         setShowGrid(state, action) {
             state.showGrid = action.payload;

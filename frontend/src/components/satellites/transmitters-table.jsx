@@ -160,6 +160,8 @@ const TransmittersTable = ({ satelliteData, inDialog = false, actionsPortalTarge
                     setTargetTransmitters({
                         noradId: satelliteData.norad_id,
                         transmitters: latestTransmitters,
+                        updatedAtMs: Date.now(),
+                        lockDurationMs: 5000,
                     })
                 );
                 setRows(

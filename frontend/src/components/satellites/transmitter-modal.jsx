@@ -268,7 +268,14 @@ const TransmitterModal = ({ open, onClose, transmitter, satelliteId, isNew = fal
 
                 // Update the transmitters with the response
                 dispatch(setClickedSatelliteTransmitters(result));
-                dispatch(setTargetTransmitters({ noradId: satelliteId, transmitters: result }));
+                dispatch(
+                    setTargetTransmitters({
+                        noradId: satelliteId,
+                        transmitters: result,
+                        updatedAtMs: Date.now(),
+                        lockDurationMs: 5000,
+                    })
+                );
             } else {
                 const result = await dispatch(editTransmitter({
                     socket,
@@ -277,7 +284,14 @@ const TransmitterModal = ({ open, onClose, transmitter, satelliteId, isNew = fal
 
                 // Update the transmitters with the response
                 dispatch(setClickedSatelliteTransmitters(result));
-                dispatch(setTargetTransmitters({ noradId: satelliteId, transmitters: result }));
+                dispatch(
+                    setTargetTransmitters({
+                        noradId: satelliteId,
+                        transmitters: result,
+                        updatedAtMs: Date.now(),
+                        lockDurationMs: 5000,
+                    })
+                );
             }
 
             // Close modal on successful submission
