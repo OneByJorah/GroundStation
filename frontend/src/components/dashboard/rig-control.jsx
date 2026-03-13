@@ -42,6 +42,7 @@ import { toast } from "../../utils/toast-with-timestamp.jsx";
 import { useTranslation } from 'react-i18next';
 import {
     getClassNamesBasedOnGridEditing,
+    getFrequencyBand,
     humanizeFrequency,
     preciseHumanizeFrequency,
     TitleBar
@@ -106,6 +107,31 @@ const RigControl = React.memo(function RigControl() {
     const {
         rigs
     } = useSelector((state) => state.rigs);
+
+    const groupedTransmitters = React.useMemo(() => {
+        const groups = {};
+
+        availableTransmitters.forEach((tx) => {
+            const referenceFrequency = tx.downlink_observed_freq || tx.downlink_low;
+            const band = getFrequencyBand(referenceFrequency);
+            if (!groups[band]) {
+                groups[band] = [];
+            }
+            groups[band].push(tx);
+        });
+
+        const bandOrder = ['VHF', 'UHF', 'L-band', 'S-band', 'C-band', 'X-band', 'Ku-band', 'K-band', 'Ka-band'];
+        const sortedBands = Object.keys(groups).sort((a, b) => {
+            const aIndex = bandOrder.indexOf(a);
+            const bIndex = bandOrder.indexOf(b);
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            return a.localeCompare(b);
+        });
+
+        return sortedBands.map((band) => ({ band, transmitters: groups[band] }));
+    }, [availableTransmitters]);
 
     const handleTrackingStop = () => {
         const newTrackingState = {
@@ -417,40 +443,44 @@ const RigControl = React.memo(function RigControl() {
                             <MenuItem value="none">
                                 {t('rig_control_labels.no_frequency_control')}
                             </MenuItem>
-                            {availableTransmitters.length === 0 ? (
+                            {availableTransmitters.length === 0 && (
                                 <MenuItem value="" disabled>
                                     <em>{t('rig_control_labels.no_transmitters')}</em>
                                 </MenuItem>
-                            ) : (
-                                <MenuItem value="" disabled>
-                                    <em>{t('rig_control_labels.select_transmitter')}</em>
-                                </MenuItem>
                             )}
-                            {availableTransmitters.map((transmitter, index) => {
-                                return <MenuItem value={transmitter.id} key={transmitter.id}>
-                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                        <Box
-                                            sx={{
-                                                width: 8,
-                                                height: 8,
-                                                borderRadius: '50%',
-                                                backgroundColor: transmitter.alive ? 'success.main' : 'error.main',
-                                                boxShadow: (theme) => transmitter.alive
-                                                    ? `0 0 6px ${theme.palette.success.main}99`
-                                                    : `0 0 6px ${theme.palette.error.main}99`,
-                                            }}
-                                        />
-                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                            <Typography variant="body2">
-                                                {transmitter['description']} ({humanizeFrequency(transmitter['downlink_low'])})
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                Source: {transmitter.source || 'Unknown'}
-                                            </Typography>
+                            {groupedTransmitters.map(({ band, transmitters }) => [
+                                <ListSubheader
+                                    key={`header-${band}`}
+                                    sx={{ fontSize: '0.75rem', fontWeight: 'bold', lineHeight: '32px' }}
+                                >
+                                    {band}
+                                </ListSubheader>,
+                                ...transmitters.map((transmitter) => (
+                                    <MenuItem value={transmitter.id} key={transmitter.id} sx={{ pl: 3 }}>
+                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                            <Box
+                                                sx={{
+                                                    width: 8,
+                                                    height: 8,
+                                                    borderRadius: '50%',
+                                                    backgroundColor: transmitter.alive ? 'success.main' : 'error.main',
+                                                    boxShadow: (theme) => transmitter.alive
+                                                        ? `0 0 6px ${theme.palette.success.main}99`
+                                                        : `0 0 6px ${theme.palette.error.main}99`,
+                                                }}
+                                            />
+                                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                <Typography variant="body2">
+                                                    {transmitter['description']} ({humanizeFrequency(transmitter['downlink_low'])})
+                                                </Typography>
+                                                <Typography variant="caption" color="text.secondary">
+                                                    Source: {transmitter.source || 'Unknown'}
+                                                </Typography>
+                                            </Box>
                                         </Box>
-                                    </Box>
-                                </MenuItem>;
-                            })}
+                                    </MenuItem>
+                                ))
+                            ])}
                         </Select>
                     </FormControl>
                 </Grid>

@@ -120,8 +120,6 @@ class SatelliteTracker:
             "tx_control_mode": "auto",
             "active_tx_control_mode": "vfo_switch",
             "retune_interval_ms": 2000,
-            "follow_downlink_tuning": False,
-            "operator_downlink_offset_hz": 0,
             "vfo1": {
                 "frequency": 0,
                 "mode": "UNKNOWN",

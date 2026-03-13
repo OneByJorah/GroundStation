@@ -88,7 +88,6 @@ const defaultRig = {
     radio_mode: 'duplex',
     tx_control_mode: 'auto',
     retune_interval_ms: 2000,
-    follow_downlink_tuning: false,
 };
 
 const rigsSlice = createSlice({

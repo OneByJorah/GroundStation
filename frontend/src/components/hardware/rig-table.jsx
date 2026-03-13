@@ -70,7 +70,6 @@ export default function RigTable() {
         radio_mode: 'duplex',
         tx_control_mode: 'auto',
         retune_interval_ms: 2000,
-        follow_downlink_tuning: false,
     };
     const [pageSize, setPageSize] = React.useState(10);
     const selectedRadioMode = formValues.radio_mode || 'duplex';
@@ -100,13 +99,6 @@ export default function RigTable() {
             headerName: t('rig.retune_interval_ms'),
             flex: 1,
             minWidth: 140,
-        },
-        {
-            field: 'follow_downlink_tuning',
-            headerName: t('rig.follow_downlink_tuning'),
-            flex: 1,
-            minWidth: 170,
-            valueFormatter: (params) => params?.value ? t('rig.enabled') : t('rig.disabled'),
         },
     ];
 
@@ -363,20 +355,6 @@ export default function RigTable() {
                                     required
                                 />
                                 <FormHelperText>{t('rig.retune_interval_help')}</FormHelperText>
-                                <FormControl fullWidth size="small">
-                                    <InputLabel>{t('rig.follow_downlink_tuning')}</InputLabel>
-                                    <Select
-                                        name="follow_downlink_tuning"
-                                        label={t('rig.follow_downlink_tuning')}
-                                        size="small"
-                                        value={Boolean(formValues.follow_downlink_tuning)}
-                                        onChange={handleChange}
-                                    >
-                                        <MenuItem value={true}>{t('rig.enabled')}</MenuItem>
-                                        <MenuItem value={false}>{t('rig.disabled')}</MenuItem>
-                                    </Select>
-                                    <FormHelperText>{t('rig.follow_downlink_tuning_help')}</FormHelperText>
-                                </FormControl>
                             </Stack>
                         </DialogContent>
                         <DialogActions
