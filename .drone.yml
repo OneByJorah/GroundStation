@@ -58,32 +58,32 @@ steps:
       - echo "FULL_VERSION=$FULL_VERSION"
 
       # Build the new image for amd64 with build args
-      - docker build --platform linux/amd64 --build-arg GS_ENVIRONMENT=$ENV_TYPE --build-arg GIT_COMMIT=$GIT_SHA --build-arg BUILD_DATE=$BUILD_DATE --build-arg BUILD_VERSION=$FULL_VERSION -t ground-station:$FULL_VERSION .
+      - docker build --platform linux/amd64 --build-arg GS_ENVIRONMENT=$ENV_TYPE --build-arg GIT_COMMIT=$GIT_SHA --build-arg BUILD_DATE=$BUILD_DATE --build-arg BUILD_VERSION=$FULL_VERSION -t GroundStation:$FULL_VERSION .
 
       # Tag the image for Docker Hub
-      - docker tag ground-station:$FULL_VERSION sgoudelis/ground-station:$FULL_VERSION
-      - docker tag ground-station:$FULL_VERSION sgoudelis/ground-station:latest
-      - docker tag ground-station:$FULL_VERSION sgoudelis/ground-station:$ENV_TYPE-latest
+      - docker tag GroundStation:$FULL_VERSION sgoudelis/GroundStation:$FULL_VERSION
+      - docker tag GroundStation:$FULL_VERSION sgoudelis/GroundStation:latest
+      - docker tag GroundStation:$FULL_VERSION sgoudelis/GroundStation:$ENV_TYPE-latest
 
       # Stop and remove the existing container if it exists
-      - docker rm -f ground-station-prod || true
+      - docker rm -f GroundStation-prod || true
 
       # Run the new container with the versioned image (using host networking for mDNS discovery)
-      - docker run -d --network host --device=/dev/bus/usb --restart=unless-stopped --privileged --name ground-station-prod -v /media/pool1/volumes/ground-station-data:/app/backend/data -e GS_ENVIRONMENT=$ENV_TYPE -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile sgoudelis/ground-station:$FULL_VERSION
+      - docker run -d --network host --device=/dev/bus/usb --restart=unless-stopped --privileged --name GroundStation-prod -v /media/pool1/volumes/GroundStation-data:/app/backend/data -e GS_ENVIRONMENT=$ENV_TYPE -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile sgoudelis/GroundStation:$FULL_VERSION
 
       # Check that it's running
       - sleep 5
       - |
-        CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' ground-station-prod)
+        CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' GroundStation-prod)
         if [ "$CONTAINER_STATUS" != "running" ]; then
           echo "Container is not running: $CONTAINER_STATUS"
-          docker logs ground-station-prod
+          docker logs GroundStation-prod
           exit 1
         fi
 
       # Display container info and version
       - echo "✅ New container version $FULL_VERSION ($ENV_TYPE) is running on AMD64 host port 7000"
-      - docker ps | grep ground-station-prod
+      - docker ps | grep GroundStation-prod
 
   - name: build-and-deploy-rpi5
     image: docker:cli
@@ -117,32 +117,32 @@ steps:
       - echo "FULL_VERSION=$FULL_VERSION"
 
       # Build the new image for arm64 (RPi5) with build args
-      - docker build --platform linux/arm64 --build-arg GS_ENVIRONMENT=$ENV_TYPE --build-arg GIT_COMMIT=$GIT_SHA --build-arg BUILD_DATE=$BUILD_DATE --build-arg BUILD_VERSION=$FULL_VERSION -t ground-station:$FULL_VERSION .
+      - docker build --platform linux/arm64 --build-arg GS_ENVIRONMENT=$ENV_TYPE --build-arg GIT_COMMIT=$GIT_SHA --build-arg BUILD_DATE=$BUILD_DATE --build-arg BUILD_VERSION=$FULL_VERSION -t GroundStation:$FULL_VERSION .
 
       # Tag the image
-      - docker tag ground-station:$FULL_VERSION sgoudelis/ground-station:$FULL_VERSION-arm64
-      - docker tag ground-station:$FULL_VERSION sgoudelis/ground-station:latest-arm64
-      - docker tag ground-station:$FULL_VERSION sgoudelis/ground-station:$ENV_TYPE-latest-arm64
+      - docker tag GroundStation:$FULL_VERSION sgoudelis/GroundStation:$FULL_VERSION-arm64
+      - docker tag GroundStation:$FULL_VERSION sgoudelis/GroundStation:latest-arm64
+      - docker tag GroundStation:$FULL_VERSION sgoudelis/GroundStation:$ENV_TYPE-latest-arm64
 
       # Stop and remove the existing container if it exists
-      - docker rm -f ground-station-prod || true
+      - docker rm -f GroundStation-prod || true
 
       # Run the new container with the versioned image (use local image, not registry, with host networking for mDNS discovery)
-      - docker run -d --network host --device=/dev/bus/usb --restart=unless-stopped --privileged --name ground-station-prod -v /home/sgoudelis/ground-station-data:/app/backend/data -e GS_ENVIRONMENT=$ENV_TYPE -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile ground-station:$FULL_VERSION
+      - docker run -d --network host --device=/dev/bus/usb --restart=unless-stopped --privileged --name GroundStation-prod -v /home/sgoudelis/GroundStation-data:/app/backend/data -e GS_ENVIRONMENT=$ENV_TYPE -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile GroundStation:$FULL_VERSION
 
       # Check that it's running
       - sleep 5
       - |
-        CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' ground-station-prod)
+        CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' GroundStation-prod)
         if [ "$CONTAINER_STATUS" != "running" ]; then
           echo "Container is not running: $CONTAINER_STATUS"
-          docker logs ground-station-prod
+          docker logs GroundStation-prod
           exit 1
         fi
 
       # Display container info and version
       - echo "✅ New container version $FULL_VERSION ($ENV_TYPE) is running on RPi5 host port 7000"
-      - docker ps | grep ground-station-prod
+      - docker ps | grep GroundStation-prod
 
   - name: verify-docker-connection
     image: docker:cli
@@ -197,7 +197,7 @@ steps:
       password:
         from_secret: ghcr_token
       registry: ghcr.io
-      repo: ghcr.io/sgoudelis/ground-station
+      repo: ghcr.io/sgoudelis/GroundStation
       tags:
         - "${DRONE_TAG##v}-amd64"
         - latest-amd64
@@ -211,8 +211,8 @@ steps:
         - "BUILD_VERSION=${DRONE_TAG##v}"
       buildkit: true
       cache_from:
-        - ghcr.io/sgoudelis/ground-station:latest-amd64
-        - ghcr.io/sgoudelis/ground-station:latest
+        - ghcr.io/sgoudelis/GroundStation:latest-amd64
+        - ghcr.io/sgoudelis/GroundStation:latest
       pull: true
       daemon_off: true
       custom_dns: 8.8.8.8
@@ -233,7 +233,7 @@ steps:
       password:
         from_secret: ghcr_token
       registry: ghcr.io
-      repo: ghcr.io/sgoudelis/ground-station
+      repo: ghcr.io/sgoudelis/GroundStation
       tags:
         - "${DRONE_TAG##v}-arm64"
         - latest-arm64
@@ -247,8 +247,8 @@ steps:
         - "BUILD_VERSION=${DRONE_TAG##v}"
       buildkit: true
       cache_from:
-        - ghcr.io/sgoudelis/ground-station:latest-arm64
-        - ghcr.io/sgoudelis/ground-station:latest
+        - ghcr.io/sgoudelis/GroundStation:latest-arm64
+        - ghcr.io/sgoudelis/GroundStation:latest
       pull: true
       daemon_off: true
       custom_dns: 8.8.8.8
@@ -268,8 +268,8 @@ steps:
         from_secret: ghcr_username
       password:
         from_secret: ghcr_token
-      target: "ghcr.io/sgoudelis/ground-station:${DRONE_TAG##v}"
-      template: "ghcr.io/sgoudelis/ground-station:${DRONE_TAG##v}-ARCH"
+      target: "ghcr.io/sgoudelis/GroundStation:${DRONE_TAG##v}"
+      template: "ghcr.io/sgoudelis/GroundStation:${DRONE_TAG##v}-ARCH"
       platforms:
         - linux/amd64
         - linux/arm64
@@ -288,8 +288,8 @@ steps:
         from_secret: ghcr_username
       password:
         from_secret: ghcr_token
-      target: ghcr.io/sgoudelis/ground-station:latest
-      template: ghcr.io/sgoudelis/ground-station:latest-ARCH
+      target: ghcr.io/sgoudelis/GroundStation:latest
+      template: ghcr.io/sgoudelis/GroundStation:latest-ARCH
       platforms:
         - linux/amd64
         - linux/arm64

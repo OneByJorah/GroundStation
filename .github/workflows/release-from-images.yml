@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: sgoudelis/ground-station
+  IMAGE_NAME: sgoudelis/GroundStation
 
 jobs:
   create-release:
@@ -70,7 +70,7 @@ jobs:
             **Git Commit:** ${{ steps.version.outputs.git_sha }}
             **Build Date:** ${{ steps.version.outputs.build_date }}
 
-            📖 **[View Project Documentation](https://github.com/sgoudelis/ground-station)**
+            📖 **[View Project Documentation](https://github.com/sgoudelis/GroundStation)**
 
             ### Commits in this release:
             ${{ steps.commits.outputs.commit_list }}
@@ -107,7 +107,7 @@ jobs:
             docker run -d \
               --platform linux/amd64 \
               --network host \
-              --name ground-station \
+              --name GroundStation \
               --restart unless-stopped \
               --device=/dev/bus/usb \
               --privileged \
@@ -122,7 +122,7 @@ jobs:
             docker run -d \
               --platform linux/arm64 \
               --network host \
-              --name ground-station \
+              --name GroundStation \
               --restart unless-stopped \
               -v /dev:/dev \
               --privileged \
@@ -141,7 +141,7 @@ jobs:
             docker run -d \
               --platform linux/amd64 \
               -p 7000:7000 \
-              --name ground-station \
+              --name GroundStation \
               --restart unless-stopped \
               --device=/dev/bus/usb \
               --privileged \
@@ -156,7 +156,7 @@ jobs:
             docker run -d \
               --platform linux/arm64 \
               -p 7000:7000 \
-              --name ground-station \
+              --name GroundStation \
               --restart unless-stopped \
               -v /dev:/dev \
               --privileged \
@@ -173,8 +173,8 @@ jobs:
             ### Upgrading an existing container:
             ```bash
             # Stop and remove the existing container
-            docker stop ground-station
-            docker rm ground-station
+            docker stop GroundStation
+            docker rm GroundStation
 
             # Pull the new version
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag_version }}

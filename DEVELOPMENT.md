@@ -74,7 +74,7 @@ sudo apt-get install cmake libboost-all-dev libgmp-dev libmpfr-dev \
 
 **Build GNU Radio 3.10 (with NumPy 2.x support):**
 ```bash
-cd ~/projects/ground-station/backend
+cd ~/projects/GroundStation/backend
 source venv/bin/activate
 
 # Install Python packages
@@ -116,7 +116,7 @@ make install
 
 **Configure library paths:**
 ```bash
-cd ~/projects/ground-station/backend
+cd ~/projects/GroundStation/backend
 echo 'export LD_LIBRARY_PATH=$VIRTUAL_ENV/lib:$LD_LIBRARY_PATH' >> venv/bin/activate
 source venv/bin/activate
 ```
@@ -190,14 +190,14 @@ pre-commit run --all-files
 ## Package Information
 
 The project is configured as a Python package with the following metadata:
-- **Name:** ground-station
+- **Name:** GroundStation
 - **Version:** 0.1.0
 - **Python Support:** 3.8, 3.9, 3.10, 3.11, 3.12
 - **License:** GPL-3.0-only
-- **Entry Point:** `ground-station` command (after installation)
+- **Entry Point:** `GroundStation` command (after installation)
 
 You can install the package and use it as a command-line tool:
 ```bash
 pip install -e .
-ground-station  # Starts the application
+GroundStation  # Starts the application
 ```
