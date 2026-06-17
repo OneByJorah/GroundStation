@@ -1,4 +1,4 @@
-[![Tests](https://github.com/sgoudelis/ground-station/actions/workflows/tests.yml/badge.svg)](https://github.com/sgoudelis/ground-station/actions/workflows/tests.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Release](https://github.com/sgoudelis/ground-station/actions/workflows/release-from-images.yml/badge.svg?event=push)](https://github.com/sgoudelis/ground-station/actions/workflows/release-from-images.yml)
+[![Tests](https://github.com/sgoudelis/GroundStation/actions/workflows/tests.yml/badge.svg)](https://github.com/sgoudelis/GroundStation/actions/workflows/tests.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![Release](https://github.com/sgoudelis/GroundStation/actions/workflows/release-from-images.yml/badge.svg?event=push)](https://github.com/sgoudelis/GroundStation/actions/workflows/release-from-images.yml)
 
 # Ground Station
 
@@ -444,28 +444,28 @@ For development setup, build steps, and testing, see `DEVELOPMENT.md`.
 The repository includes a multi-stage `Dockerfile` that builds the React frontend and a Python environment with SDR libraries.
 
 ```bash
-docker build -t ground-station .
+docker build -t GroundStation .
 
 # Option 1: Standard bridge mode (works for local SDRs)
-docker run --rm -p 7000:7000 --device /dev/bus/usb ground-station
+docker run --rm -p 7000:7000 --device /dev/bus/usb GroundStation
 
 # Option 2: Host networking (required for SoapySDR remote server discovery via mDNS)
-docker run --rm --network host --device /dev/bus/usb ground-station
+docker run --rm --network host --device /dev/bus/usb GroundStation
 ```
 
 ### Using Pre-built Docker Images
 
-Pre-built multi-architecture Docker images are available for each release. For detailed instructions on using a specific release, see the [Releases page](https://github.com/sgoudelis/ground-station/releases).
+Pre-built multi-architecture Docker images are available for each release. For detailed instructions on using a specific release, see the [Releases page](https://github.com/sgoudelis/GroundStation/releases).
 
 ### Pull the image
 
 ```bash
 # Latest release tag (recommended)
-docker pull ghcr.io/sgoudelis/ground-station:<version>
+docker pull ghcr.io/sgoudelis/GroundStation:<version>
 
 # Or pull architecture-specific tags directly
-docker pull ghcr.io/sgoudelis/ground-station:<version>-amd64
-docker pull ghcr.io/sgoudelis/ground-station:<version>-arm64
+docker pull ghcr.io/sgoudelis/GroundStation:<version>-amd64
+docker pull ghcr.io/sgoudelis/GroundStation:<version>-arm64
 ```
 
 ### Run the container
@@ -479,27 +479,27 @@ Uses host networking to enable automatic mDNS discovery of SoapySDR remote serve
 docker run -d \
   --platform linux/amd64 \
   --network host \
-  --name ground-station \
+  --name GroundStation \
   --restart unless-stopped \
   --device=/dev/bus/usb \
   --privileged \
   -v /path/to/data:/app/backend/data \
   -e GS_ENVIRONMENT=production \
   -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile \
-  ghcr.io/sgoudelis/ground-station:<version>
+  ghcr.io/sgoudelis/GroundStation:<version>
 
 # ARM64 (Raspberry Pi, etc)
 docker run -d \
   --platform linux/arm64 \
   --network host \
-  --name ground-station \
+  --name GroundStation \
   --restart unless-stopped \
   -v /dev:/dev \
   --privileged \
   -v /path/to/data:/app/backend/data \
   -e GS_ENVIRONMENT=production \
   -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile \
-  ghcr.io/sgoudelis/ground-station:<version>
+  ghcr.io/sgoudelis/GroundStation:<version>
 ```
 
 **Option 2: Standard Bridge Mode (No SoapySDR Remote Discovery)**
@@ -511,27 +511,27 @@ Uses standard bridge networking with port mapping:
 docker run -d \
   --platform linux/amd64 \
   -p 7000:7000 \
-  --name ground-station \
+  --name GroundStation \
   --restart unless-stopped \
   --device=/dev/bus/usb \
   --privileged \
   -v /path/to/data:/app/backend/data \
   -e GS_ENVIRONMENT=production \
   -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile \
-  ghcr.io/sgoudelis/ground-station:<version>
+  ghcr.io/sgoudelis/GroundStation:<version>
 
 # ARM64 (Raspberry Pi, etc)
 docker run -d \
   --platform linux/arm64 \
   -p 7000:7000 \
-  --name ground-station \
+  --name GroundStation \
   --restart unless-stopped \
   -v /dev:/dev \
   --privileged \
   -v /path/to/data:/app/backend/data \
   -e GS_ENVIRONMENT=production \
   -e GR_BUFFER_TYPE=vmcirc_mmap_tmpfile \
-  ghcr.io/sgoudelis/ground-station:<version>
+  ghcr.io/sgoudelis/GroundStation:<version>
 ```
 
 **Important Notes:**
@@ -555,4 +555,4 @@ This project uses the SatNOGS API for transmitter information.
 This project is licensed under the GNU GPL v3. See the [LICENSE](LICENSE) file for details.
 
 ![](https://hit.yhype.me/github/profile?account_id=4840328)
-![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fsgoudelis%2Fground-station&countColor=%23263759)
+![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fsgoudelis%2FGroundStation&countColor=%23263759)
