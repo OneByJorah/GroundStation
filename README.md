@@ -1,6 +1,6 @@
-# GroundStation (GroundStation)
+# GroundStation — Satellite Telemetry & SDR Ground Station
 
-**Version:** v0.1  
+**Version:** v1.0  
 **Status:** Active Development  
 **Repository:** https://github.com/OneByJorah/GroundStation
 
@@ -24,34 +24,44 @@
 
 ## Overview
 
-Satellite telemetry and ground station monitoring dashboard and utilities.
+GroundStation is an end-to-end satellite ground station suite for Software Defined Radio (SDR), radio/rotator control, audio streaming, and satellite image handling. It combines a FastAPI/SocketIO backend with a Vite + React frontend, plus database-backed telemetry and WebRTC video paths.
+
+Designed for ham radio, satellite tracking, and experimental space communications.
 
 ---
 
 ## Architecture
 
-Client → Local service (`GroundStation`) → data/processing modules → output/api layer.
-Secrets and environment configuration are managed via environment files with restrictive permissions.
+Client browser → Vite frontend ↔ SocketIO/WebRTC → FastAPI backend (`server/`) → hardware controllers (`controllers/sdr`, `rig`, `rotator`) + audio pipeline (`audio/`) + database (`alembic` migrations).
+
+Configuration and runtime constants are centralized under `backend/common/` and `backend/constants/`.
 
 ---
 
 ## Technology Stack
 
-|| Layer | Stack |
+| Layer | Stack |
 |---|---|
 | Runtime | Linux (Ubuntu 22.04+) |
-| Primary Stack | HTML5 / JavaScript |
+| Backend | Python / FastAPI / Uvicorn / SocketIO |
+| Frontend | Vite + React |
+| Hardware | SDR (via `controllers/sdr.py`), ham radio (`rig`), rotator (`rotatorhamlib`) |
+| Audio | Deepgram / Gemini transcription workers, streaming |
+| Database | SQLAlchemy + Alembic |
+| CI/CD | Drone (`.drone.yml`) |
 | VCS | Git + GitHub (`github.com/OneByJorah/GroundStation`) |
-| Dev Port | Localhost / systemd service |
 
 ---
 
 ## Features
 
-- Operational dashboard and monitoring (per repo).
-- Exportable data / reports where supported.
-- Extensible service-based design.
-- Dark-themed UI where applicable.
+- **SDR control**: live spectrum and sample capture via `controllers/sdr.py`.
+- **Radio + rotator**: hamlib integration for rig and rotator control.
+- **Audio streaming + transcription**: Deepgram/Gemini workers for voice.
+- **Telemetry + WebRTC**: SocketIO event bus and WebRTC video routes.
+- **Satellite images**: captured imagery stored under `backend/satimages/`.
+- **Database migrations**: `alembic`-managed schema.
+- **Docker build**: `Dockerfile` + `.drone.yml` for containerized CI.
 
 ---
 
@@ -62,24 +72,34 @@ Secrets and environment configuration are managed via environment files with res
 git clone https://github.com/OneByJorah/GroundStation.git
 cd GroundStation
 
-# 2. Install dependencies
-# (see specific subproject docs)
+# 2. Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -e .
+pip install -e ".[dev]"
+python app.py --host 0.0.0.0 --port 5000
 
-# 3. Start the service
-# (see Service Management below)
+# 3. Frontend (in a second terminal)
+cd frontend
+npm install
+npm run dev
 ```
+
+> Hardware (SDR, rig, rotator) requires platform-specific drivers and USB access.
 
 ---
 
 ## Service Management
 
 ```bash
-# Start the service (example)
-sudo systemctl start GroundStation.service
-sudo systemctl enable GroundStation.service
-```
+# Docker (when available)
+docker build -t groundstation .
+docker run --rm -it --device /dev/bus/usb groundstation
 
-Access the service via your configured localhost port or reverse proxy.
+# Local dev
+python backend/app.py --host 0.0.0.0 --port 5000
+```
 
 ---
 
@@ -87,31 +107,44 @@ Access the service via your configured localhost port or reverse proxy.
 
 ```
 GroundStation/
-├── README.md
-├── (additional project files)
+├── backend/
+│   ├── app.py
+│   ├── alembic/                 # DB migrations
+│   ├── audio/                   # Streaming + transcription
+│   ├── common/                  # Config, logging, auth
+│   ├── constants/               # Framing, modulations
+│   ├── controllers/             # SDR, rotator, rig
+│   ├── handlers/
+│   ├── satimages/               # Captured satellite images
+│   └── server/                  # FastAPI + SocketIO + WebRTC
+├── frontend/
+│   ├── src/
+│   ├── package.json
+│   └── Dockerfile / build files
+├── Dockerfile
+├── .drone.yml
+└── README.md
 ```
 
 ---
 
 ## Screenshots
 
-All screenshots are live captures from the local dev instance.
-
-_(Screenshots will be added after build/run capture.)_
+_(Screenshots will be added after hardware-backed build/run capture.)_
 
 ---
 
 ## Contributing
 
 1. Create a feature branch off `main`.
-2. Follow the existing code style.
-3. Submit a PR with description and screenshots for UI changes.
+2. Follow the existing code style and pre-commit hooks (`.pre-commit-config.yaml`).
+3. Test hardware code paths on real SDR/rig/rotator hardware before submitting.
 
 ---
 
 ## License
 
-MIT
+GPL-3.0-only (frontend), MIT (unless otherwise noted in LICENSE)
 
 ---
 
