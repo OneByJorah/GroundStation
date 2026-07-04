@@ -15,18 +15,16 @@
 
 import traceback
 import uuid
-from typing import List, Optional, Union
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from common.utils import convert_strings_to_uuids
 from db.models import Groups
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def fetch_system_satellite_group_by_identifier(
-    session: AsyncSession, group_identifier: str
+    session: AsyncSession, group_identifier: str,
 ) -> dict:
     """
     Fetch a satellite group with type='system' by its 'group_identifier'.
@@ -55,8 +53,8 @@ async def fetch_system_satellite_group_by_identifier(
 
 async def fetch_satellite_group(
     session: AsyncSession,
-    group_id: Optional[Union[str, uuid.UUID]] = None,
-    group_type: Optional[str] = None,
+    group_id: str | uuid.UUID | None = None,
+    group_type: str | None = None,
 ) -> dict:
     """
     Fetch satellite group records.
@@ -149,7 +147,7 @@ async def edit_satellite_group(session: AsyncSession, satellite_group_id: str, d
 
 
 async def delete_satellite_group(
-    session: AsyncSession, satellite_group_ids: Union[List[str], dict]
+    session: AsyncSession, satellite_group_ids: list[str] | dict,
 ) -> dict:
     """
     Delete satellite group record(s).

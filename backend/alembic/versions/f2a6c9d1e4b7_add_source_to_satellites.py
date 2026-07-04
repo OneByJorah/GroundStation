@@ -9,17 +9,16 @@ Create Date: 2026-03-12 19:10:00.000000
 from __future__ import annotations
 
 import json
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "f2a6c9d1e4b7"
-down_revision: Union[str, None] = "b6d4e2f1a9c3"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "b6d4e2f1a9c3"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _normalize_satellite_ids(raw_value):
@@ -57,7 +56,7 @@ def upgrade() -> None:
 
     # Baseline: treat all legacy satellites as manual first.
     bind.execute(
-        sa.text("UPDATE satellites SET source = 'manual' WHERE source IS NULL OR TRIM(source) = ''")
+        sa.text("UPDATE satellites SET source = 'manual' WHERE source IS NULL OR TRIM(source) = ''"),
     )
 
     # Promote satellites linked to system/TLE groups to tlesync.
@@ -69,8 +68,8 @@ def upgrade() -> None:
             WHERE identifier IS NOT NULL
               AND TRIM(identifier) <> ''
               AND satellite_ids IS NOT NULL
-            """
-        )
+            """,
+        ),
     )
 
     for row in groups_result:
@@ -80,14 +79,14 @@ def upgrade() -> None:
 
         bind.execute(
             sa.text("UPDATE satellites SET source = 'tlesync' WHERE norad_id IN :ids").bindparams(
-                sa.bindparam("ids", expanding=True)
+                sa.bindparam("ids", expanding=True),
             ),
             {"ids": satellite_ids},
         )
 
     with op.batch_alter_table("satellites", schema=None) as batch_op:
         batch_op.alter_column(
-            "source", existing_type=sa.String(), nullable=False, server_default="manual"
+            "source", existing_type=sa.String(), nullable=False, server_default="manual",
         )
 
 

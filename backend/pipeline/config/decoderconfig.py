@@ -15,7 +15,7 @@
 
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
@@ -41,39 +41,39 @@ class DecoderConfig:
     config_source: str  # 'satellite_config', 'smart_default', 'transmitter_metadata', 'manual'
 
     # FSK-specific parameters (GMSK, GFSK, AFSK)
-    deviation: Optional[int] = None  # Frequency deviation in Hz
+    deviation: int | None = None  # Frequency deviation in Hz
 
     # AFSK-specific parameters
-    af_carrier: Optional[int] = None  # Audio frequency carrier in Hz (1700 for APRS)
+    af_carrier: int | None = None  # Audio frequency carrier in Hz (1700 for APRS)
 
     # BPSK-specific parameters
-    differential: Optional[bool] = None  # DBPSK mode
+    differential: bool | None = None  # DBPSK mode
 
     # LoRa-specific parameters
-    sf: Optional[int] = None  # Spreading factor (7-12)
-    bw: Optional[int] = None  # Bandwidth (125000, 250000, 500000)
-    cr: Optional[int] = None  # Coding rate (1-4, corresponding to 4/5 through 4/8)
-    sync_word: Optional[list] = None  # Sync word ([0, 0] for auto-detect)
-    preamble_len: Optional[int] = None  # Preamble length (default: 8)
-    fldro: Optional[bool] = None  # Low Data Rate Optimization (default: False)
+    sf: int | None = None  # Spreading factor (7-12)
+    bw: int | None = None  # Bandwidth (125000, 250000, 500000)
+    cr: int | None = None  # Coding rate (1-4, corresponding to 4/5 through 4/8)
+    sync_word: list | None = None  # Sync word ([0, 0] for auto-detect)
+    preamble_len: int | None = None  # Preamble length (default: 8)
+    fldro: bool | None = None  # Low Data Rate Optimization (default: False)
 
     # Weather satellite specific parameters (SatDump)
-    pipeline: Optional[str] = None  # SatDump pipeline name (e.g., 'noaa_apt', 'meteor_m2-x_lrpt')
-    target_sample_rate: Optional[int] = (
+    pipeline: str | None = None  # SatDump pipeline name (e.g., 'noaa_apt', 'meteor_m2-x_lrpt')
+    target_sample_rate: int | None = (
         None  # Target sample rate for pipeline (e.g., 48000 for APT)
     )
 
     # Optional metadata
-    packet_size: Optional[int] = None  # Expected packet size in bytes
+    packet_size: int | None = None  # Expected packet size in bytes
 
     # Framing-specific parameters (protocol options passed to deframers)
-    framing_params: Optional[Dict[str, Any]] = None
+    framing_params: dict[str, Any] | None = None
 
     # Satellite metadata (for logging, file naming, telemetry parsing)
-    satellite: Optional[Dict] = None
+    satellite: dict | None = None
 
     # Transmitter metadata (for logging, file naming, reference)
-    transmitter: Optional[Dict] = None
+    transmitter: dict | None = None
 
     def __eq__(self, other):
         """
@@ -130,7 +130,7 @@ class DecoderConfig:
                 self.pipeline,
                 self.target_sample_rate,
                 framing_params_tuple,
-            )
+            ),
         )
 
     def to_dict(self):

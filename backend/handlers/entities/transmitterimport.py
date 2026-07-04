@@ -19,18 +19,18 @@ import importlib.util
 import re
 import unicodedata
 import uuid
+from collections.abc import Iterable
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Iterable, Optional, Protocol, TypedDict, cast
+from typing import Protocol, TypedDict, cast
 
 import requests
 import yaml
+from db import AsyncSessionLocal
+from db.models import Satellites, Transmitters
 from sqlalchemy import select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from db import AsyncSessionLocal
-from db.models import Satellites, Transmitters
 
 DEFAULT_SATDUMP_URL = "https://www.satdump.org/Satellite-List/"
 DEFAULT_SATDUMP_SOURCE = "satdump"
@@ -60,7 +60,7 @@ class SatDumpHTMLParser(HTMLParser):
         self.satellites: list[SatEntry] = []
         self._in_h1 = False
         self._h1_text: list[str] = []
-        self._current_sat: Optional[SatInfo] = None
+        self._current_sat: SatInfo | None = None
         self._in_table = False
         self._in_tr = False
         self._in_td = False
@@ -120,7 +120,7 @@ class SatYamlProtocol(Protocol):
     def yaml_files(self) -> Iterable[str]: ...
 
 
-def parse_frequency_hz(value: str) -> Optional[int]:
+def parse_frequency_hz(value: str) -> int | None:
     if not value:
         return None
     match = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*(ghz|mhz|khz|hz)", value, re.I)
@@ -207,7 +207,7 @@ def build_satdump_rows(
             if not tx_name:
                 tx_name = clean_text(sat_name)
             tx_id = uuid.uuid5(
-                uuid.NAMESPACE_URL, f"satdump-website:{norad}:{tx_name}:{frequency_hz}"
+                uuid.NAMESPACE_URL, f"satdump-website:{norad}:{tx_name}:{frequency_hz}",
             )
 
             now = dt.datetime.now(dt.timezone.utc)
@@ -242,7 +242,7 @@ def build_satdump_rows(
                     "unconfirmed": False,
                     "added": now,
                     "updated": now,
-                }
+                },
             )
 
     return rows, skipped_missing_sat, skipped_no_frequency
@@ -268,9 +268,9 @@ def build_gr_rows(
     service: str,
     source: str,
     citation: str,
-) -> tuple[list[dict], list[tuple[Optional[int], str]], list[tuple[int, str, str]], int]:
+) -> tuple[list[dict], list[tuple[int | None, str]], list[tuple[int, str, str]], int]:
     rows: list[dict] = []
-    skipped_missing_sat: list[tuple[Optional[int], str]] = []
+    skipped_missing_sat: list[tuple[int | None, str]] = []
     skipped_no_frequency: list[tuple[int, str, str]] = []
     skipped_invalid_yaml = 0
 
@@ -342,13 +342,13 @@ def build_gr_rows(
                     "unconfirmed": False,
                     "added": now,
                     "updated": now,
-                }
+                },
             )
 
     return rows, skipped_missing_sat, skipped_no_frequency, skipped_invalid_yaml
 
 
-def resolve_yaml_dir(yaml_dir: Optional[Path]) -> Optional[Path]:
+def resolve_yaml_dir(yaml_dir: Path | None) -> Path | None:
     candidates = []
     if yaml_dir:
         candidates.append(yaml_dir)
@@ -388,7 +388,7 @@ def resolve_yaml_dir(yaml_dir: Optional[Path]) -> Optional[Path]:
     return None
 
 
-def collect_yaml_files(yaml_dir: Optional[Path], satyaml: Optional[SatYamlProtocol]) -> list[Path]:
+def collect_yaml_files(yaml_dir: Path | None, satyaml: SatYamlProtocol | None) -> list[Path]:
     if satyaml is not None:
         try:
             return [Path(path) for path in satyaml.yaml_files()]
@@ -401,7 +401,7 @@ def collect_yaml_files(yaml_dir: Optional[Path], satyaml: Optional[SatYamlProtoc
     return list(yaml_dir.glob("*.yml"))
 
 
-def load_satyaml() -> Optional[SatYamlProtocol]:
+def load_satyaml() -> SatYamlProtocol | None:
     try:
         from satellites.satyaml.satyaml import SatYAML
 
@@ -413,7 +413,7 @@ def load_satyaml() -> Optional[SatYamlProtocol]:
 
 async def upsert_transmitters(
     rows: list[dict],
-    session: Optional[AsyncSession] = None,
+    session: AsyncSession | None = None,
 ) -> int:
     if not rows:
         return 0
@@ -438,7 +438,7 @@ async def import_satdump_transmitters(
     url: str = DEFAULT_SATDUMP_URL,
     source: str = DEFAULT_SATDUMP_SOURCE,
     citation: str = DEFAULT_SATDUMP_CITATION,
-    session: Optional[AsyncSession] = None,
+    session: AsyncSession | None = None,
 ) -> dict:
     try:
         response = await asyncio.to_thread(requests.get, url, timeout=30)
@@ -455,14 +455,14 @@ async def import_satdump_transmitters(
             result = await session.execute(select(Satellites.norad_id))
             satellites_in_db = set(result.scalars().all())
             rows, skipped_missing_sat, skipped_no_frequency = build_satdump_rows(
-                satellites, satellites_in_db, source, citation
+                satellites, satellites_in_db, source, citation,
             )
             upserted = await upsert_transmitters(rows, session=session)
     else:
         result = await session.execute(select(Satellites.norad_id))
         satellites_in_db = set(result.scalars().all())
         rows, skipped_missing_sat, skipped_no_frequency = build_satdump_rows(
-            satellites, satellites_in_db, source, citation
+            satellites, satellites_in_db, source, citation,
         )
         upserted = await upsert_transmitters(rows, session=session)
 
@@ -476,11 +476,11 @@ async def import_satdump_transmitters(
 
 
 async def import_gr_satellites_transmitters(
-    yaml_dir: Optional[Path] = None,
+    yaml_dir: Path | None = None,
     service: str = DEFAULT_GR_SERVICE,
     source: str = DEFAULT_GR_SOURCE,
     citation: str = DEFAULT_GR_CITATION,
-    session: Optional[AsyncSession] = None,
+    session: AsyncSession | None = None,
 ) -> dict:
     resolved_dir = resolve_yaml_dir(yaml_dir)
     satyaml = load_satyaml()

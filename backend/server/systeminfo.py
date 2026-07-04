@@ -8,14 +8,14 @@ registers an asyncio.Task into the provided `background_tasks` set.
 
 import asyncio
 import os
-from typing import Set
 
 from common.constants import SocketEvents
 from common.logger import logger
+
 from server.version import get_system_info
 
 
-def start_system_info_emitter(sio, background_tasks: Set[asyncio.Task]) -> asyncio.Task:
+def start_system_info_emitter(sio, background_tasks: set[asyncio.Task]) -> asyncio.Task:
     """Start the live system-info emitter loop and register it in background_tasks.
 
     Emits `SocketEvents.SYSTEM_INFO` every N seconds (default 2) when at least

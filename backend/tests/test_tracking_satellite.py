@@ -20,7 +20,6 @@ Tests for tracking/satellite.py satellite position and path calculation function
 from datetime import datetime, timezone
 
 import pytest
-
 from tracking.satellite import (
     get_satellite_az_el,
     get_satellite_path,

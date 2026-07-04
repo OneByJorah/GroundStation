@@ -17,7 +17,7 @@ import asyncio
 import logging
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class TranscriptionManager:
@@ -94,8 +94,8 @@ class TranscriptionManager:
         language: str = "auto",
         translate_to: str = "none",
         provider: str = "gemini",
-        satellite: Optional[Dict[str, Any]] = None,
-        transmitter: Optional[Dict[str, Any]] = None,
+        satellite: dict[str, Any] | None = None,
+        transmitter: dict[str, Any] | None = None,
     ):
         """
         Start a transcription worker for a specific VFO.
@@ -146,7 +146,7 @@ class TranscriptionManager:
         if not audio_broadcaster:
             self.logger.warning(
                 f"No audio broadcaster found for session {session_id} VFO {vfo_number}. "
-                f"Transcription requires an active demodulator."
+                f"Transcription requires an active demodulator.",
             )
             return False
 
@@ -176,14 +176,14 @@ class TranscriptionManager:
             # If a start is in progress, reject
             if in_progress:
                 self.logger.info(
-                    f"Transcription start already in progress for {session_id} VFO {vfo_number}, skipping duplicate request"
+                    f"Transcription start already in progress for {session_id} VFO {vfo_number}, skipping duplicate request",
                 )
                 return False
 
             # If a start happened within last 1000ms, debounce
             if now_ms - last_ts < 1000:
                 self.logger.info(
-                    f"Transcription start requested too soon after last start for {session_id} VFO {vfo_number}, debouncing"
+                    f"Transcription start requested too soon after last start for {session_id} VFO {vfo_number}, debouncing",
                 )
                 return False
 
@@ -206,7 +206,7 @@ class TranscriptionManager:
                                 f"Transcription settings changed for session {session_id} VFO {vfo_number}, "
                                 f"restarting worker (old: provider={existing.get('provider')}, "
                                 f"language={existing.get('language')}, translate_to={existing.get('translate_to')} -> "
-                                f"new: provider={provider}, language={language}, translate_to={translate_to})"
+                                f"new: provider={provider}, language={language}, translate_to={translate_to})",
                             )
                             # Stop the existing worker
                             self._stop_consumer_entry(existing, session_id, vfo_number)
@@ -215,13 +215,13 @@ class TranscriptionManager:
                         else:
                             self.logger.debug(
                                 f"Transcription worker already running for session {session_id} VFO {vfo_number} "
-                                f"with same settings"
+                                f"with same settings",
                             )
                             return True
                     else:
                         # Clean up dead worker
                         self.logger.info(
-                            f"Cleaning up dead transcription worker for session {session_id} VFO {vfo_number}"
+                            f"Cleaning up dead transcription worker for session {session_id} VFO {vfo_number}",
                         )
                         self._cleanup_consumer(existing)
                         del consumer_storage[vfo_number]
@@ -233,7 +233,9 @@ class TranscriptionManager:
                 # Create the appropriate worker based on provider
                 try:
                     if provider == "gemini":
-                        from audio.geminitranscriptionworker import GeminiTranscriptionWorker
+                        from audio.geminitranscriptionworker import (
+                            GeminiTranscriptionWorker,
+                        )
 
                         transcription_worker = GeminiTranscriptionWorker(
                             transcription_queue=transcription_queue,
@@ -248,7 +250,9 @@ class TranscriptionManager:
                             transmitter=transmitter,
                         )
                     elif provider == "deepgram":
-                        from audio.deepgramtranscriptionworker import DeepgramTranscriptionWorker
+                        from audio.deepgramtranscriptionworker import (
+                            DeepgramTranscriptionWorker,
+                        )
 
                         transcription_worker = DeepgramTranscriptionWorker(
                             transcription_queue=transcription_queue,
@@ -282,7 +286,7 @@ class TranscriptionManager:
 
                     self.logger.info(
                         f"Started {provider} transcription worker for session {session_id} VFO {vfo_number} "
-                        f"(language={language}, translate_to={translate_to})"
+                        f"(language={language}, translate_to={translate_to})",
                     )
 
                     # Emit file browser state update to notify UI that transcription started
@@ -306,7 +310,7 @@ class TranscriptionManager:
                 # Clear in-progress flag
                 self._start_in_progress[key] = False
 
-    def stop_transcription(self, sdr_id: str, session_id: str, vfo_number: Optional[int] = None):
+    def stop_transcription(self, sdr_id: str, session_id: str, vfo_number: int | None = None):
         """
         Stop transcription worker(s) for a session.
 
@@ -334,7 +338,7 @@ class TranscriptionManager:
                 # Stop specific VFO
                 if vfo_number not in consumer_storage:
                     self.logger.warning(
-                        f"No transcription worker found for session {session_id} VFO {vfo_number}"
+                        f"No transcription worker found for session {session_id} VFO {vfo_number}",
                     )
                     return False
 
@@ -357,7 +361,7 @@ class TranscriptionManager:
 
                 del transcription_consumers[session_id]
                 self.logger.info(
-                    f"Stopped {stopped_count} transcription worker(s) for session {session_id}"
+                    f"Stopped {stopped_count} transcription worker(s) for session {session_id}",
                 )
                 return True
 
@@ -394,7 +398,7 @@ class TranscriptionManager:
                 self.logger.warning(f"Failed to unsubscribe from audio broadcaster: {e}")
 
         self.logger.info(
-            f"Stopped {provider} transcription worker for session {session_id} VFO {vfo_number}"
+            f"Stopped {provider} transcription worker for session {session_id} VFO {vfo_number}",
         )
 
         # Emit file browser state update to notify UI of new transcription file

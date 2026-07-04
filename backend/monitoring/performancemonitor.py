@@ -138,7 +138,7 @@ class PerformanceMonitor(threading.Thread):
                 "audio_recorders": self._poll_audio_recorders(sdr_id, process_info, time_delta),
                 "decoders": self._poll_decoders(sdr_id, process_info, time_delta),
                 "transcription_consumers": self._poll_transcription_consumers(
-                    sdr_id, process_info, time_delta
+                    sdr_id, process_info, time_delta,
                 ),
             }
             all_metrics["sdrs"][sdr_id] = sdr_metrics
@@ -252,7 +252,7 @@ class PerformanceMonitor(threading.Thread):
             for session_id, session_demods in demodulators.items():
                 for vfo_num in session_demods.keys():
                     connections.append(
-                        {"target_type": "demodulator", "target_id": f"{session_id}_vfo{vfo_num}"}
+                        {"target_type": "demodulator", "target_id": f"{session_id}_vfo{vfo_num}"},
                     )
 
             iq_broadcaster_metrics["connections"] = connections
@@ -267,7 +267,7 @@ class PerformanceMonitor(threading.Thread):
                 audio_broadcaster = decoder_entry.get("audio_broadcaster")
                 if audio_broadcaster:
                     audio_broadcaster_metrics = self._poll_audio_broadcaster(
-                        sdr_id, session_id, decoder_name, audio_broadcaster, time_delta
+                        sdr_id, session_id, decoder_name, audio_broadcaster, time_delta,
                     )
                     if audio_broadcaster_metrics:
                         # Add connection info: Audio broadcaster feeds from demodulator to decoder and UI
@@ -275,17 +275,17 @@ class PerformanceMonitor(threading.Thread):
                             {
                                 "source_type": "demodulator",
                                 "source_id": f"{session_id}_vfo{decoder_entry.get('vfo_number', 0)}",
-                            }
+                            },
                         ]
                         connections.append(
-                            {"target_type": "decoder", "target_id": f"{session_id}_{decoder_name}"}
+                            {"target_type": "decoder", "target_id": f"{session_id}_{decoder_name}"},
                         )
                         # Add connection to WebAudioStreamer (for browser audio playback)
                         connections.append(
                             {
                                 "target_type": "audio_streamer",
                                 "target_id": f"web_audio_{session_id}",
-                            }
+                            },
                         )
 
                         audio_broadcaster_metrics["connections"] = connections
@@ -315,7 +315,7 @@ class PerformanceMonitor(threading.Thread):
                         # Track this demodulator's audio broadcaster
                         broadcaster_key = f"audio_{session_id}_vfo{vfo_num}"
                         audio_broadcaster_metrics = self._poll_demodulator_audio_broadcaster(
-                            sdr_id, session_id, vfo_num, audio_broadcaster, process_info, time_delta
+                            sdr_id, session_id, vfo_num, audio_broadcaster, process_info, time_delta,
                         )
                         if audio_broadcaster_metrics:
                             audio_broadcaster_metrics["broadcaster_id"] = broadcaster_key
@@ -470,7 +470,7 @@ class PerformanceMonitor(threading.Thread):
         }
 
     def _poll_audio_broadcaster(
-        self, sdr_id, session_id, decoder_name, audio_broadcaster, time_delta
+        self, sdr_id, session_id, decoder_name, audio_broadcaster, time_delta,
     ):
         """
         Extract Audio broadcaster metrics.
@@ -526,7 +526,7 @@ class PerformanceMonitor(threading.Thread):
         }
 
     def _poll_demodulator_audio_broadcaster(
-        self, sdr_id, session_id, vfo_number, audio_broadcaster, process_info, time_delta
+        self, sdr_id, session_id, vfo_number, audio_broadcaster, process_info, time_delta,
     ):
         """
         Extract audio broadcaster metrics from a demodulator (VFOs without decoders).
@@ -574,7 +574,7 @@ class PerformanceMonitor(threading.Thread):
 
         # Source: Demodulator
         connections.append(
-            {"source_type": "demodulator", "source_id": f"{session_id}_vfo{vfo_number}"}
+            {"source_type": "demodulator", "source_id": f"{session_id}_vfo{vfo_number}"},
         )
 
         # Targets: Check for transcription consumers and audio streamers
@@ -587,12 +587,12 @@ class PerformanceMonitor(threading.Thread):
                 {
                     "target_type": "transcription_consumer",
                     "target_id": f"{session_id}_vfo{vfo_number}",
-                }
+                },
             )
 
         # Audio streamers connection (WebAudioStreamer for this session)
         connections.append(
-            {"target_type": "audio_streamer", "target_id": f"web_audio_{session_id}"}
+            {"target_type": "audio_streamer", "target_id": f"web_audio_{session_id}"},
         )
 
         return {
@@ -688,7 +688,7 @@ class PerformanceMonitor(threading.Thread):
                         {
                             "target_type": "audio_broadcaster",
                             "target_id": broadcaster_key,
-                        }
+                        },
                     )
                     has_audio_broadcaster = True
                 else:
@@ -705,7 +705,7 @@ class PerformanceMonitor(threading.Thread):
                                         {
                                             "target_type": "audio_broadcaster",
                                             "target_id": f"audio_{session_id}_{decoder_name}",
-                                        }
+                                        },
                                     )
                                     has_audio_broadcaster = True
 
@@ -729,7 +729,7 @@ class PerformanceMonitor(threading.Thread):
                                 {
                                     "target_type": "audio_streamer",
                                     "target_id": f"web_audio_{session_id}",
-                                }
+                                },
                             )
                     except Exception as e:
                         logger.debug(f"Could not check audio queue connection: {e}")
@@ -917,7 +917,7 @@ class PerformanceMonitor(threading.Thread):
                     {
                         "source_type": "audio_broadcaster",
                         "source_id": f"audio_{session_id}_vfo{vfo_number}",
-                    }
+                    },
                 ]
 
                 audio_recorder_metrics[key] = {
@@ -1071,7 +1071,7 @@ class PerformanceMonitor(threading.Thread):
                         {
                             "source_type": "iq_broadcaster",
                             "source_id": f"iq_{sdr_id}",
-                        }
+                        },
                     ]
                 else:
                     # Audio-based decoder receives from audio broadcaster
@@ -1079,7 +1079,7 @@ class PerformanceMonitor(threading.Thread):
                         {
                             "source_type": "audio_broadcaster",
                             "source_id": f"audio_{session_id}_{decoder_name}",
-                        }
+                        },
                     ]
 
                 # Build rates dict with appropriate fields based on decoder type
@@ -1406,7 +1406,7 @@ class PerformanceMonitor(threading.Thread):
                 # Get queue size
                 input_queue_size = consumer_instance.transcription_queue.qsize()
                 input_queue_maxsize = getattr(
-                    consumer_instance.transcription_queue, "_maxsize", None
+                    consumer_instance.transcription_queue, "_maxsize", None,
                 )
 
                 # Calculate rates from previous snapshot
@@ -1446,7 +1446,7 @@ class PerformanceMonitor(threading.Thread):
                     {
                         "target_type": "browser",
                         "target_id": session_id,
-                    }
+                    },
                 ]
 
                 transcription_metrics[key] = {

@@ -98,7 +98,7 @@ class ConsumerManager:
             # Check max demodulators limit
             if len(consumer_storage) >= self.MAX_CONCURRENT_DEMODULATORS_PER_SESSION:
                 self.logger.warning(
-                    f"Maximum demodulators ({self.MAX_CONCURRENT_DEMODULATORS_PER_SESSION}) reached for session {session_id}"
+                    f"Maximum demodulators ({self.MAX_CONCURRENT_DEMODULATORS_PER_SESSION}) reached for session {session_id}",
                 )
                 return False
         else:
@@ -172,7 +172,7 @@ class ConsumerManager:
             # Subscribe to the broadcaster to get a dedicated queue
             # Increased maxsize from 3 to 10 for better burst handling on slower CPUs (RPi5)
             subscriber_queue = iq_broadcaster.subscribe(
-                subscription_key, maxsize=10, session_id_hint=session_id
+                subscription_key, maxsize=10, session_id_hint=session_id,
             )
 
             # Add vfo_number to kwargs for multi-VFO support
@@ -188,7 +188,7 @@ class ConsumerManager:
 
                 # Create and start the audio broadcaster
                 audio_broadcaster_instance = AudioBroadcaster(
-                    broadcaster_input_queue, session_id=session_id, vfo_number=vfo_number
+                    broadcaster_input_queue, session_id=session_id, vfo_number=vfo_number,
                 )
                 audio_broadcaster_instance.start()
 
@@ -202,14 +202,14 @@ class ConsumerManager:
                         # Subscribe the existing global audio_queue to this broadcaster
                         web_audio_key = f"web_audio:{session_id}:vfo{vfo_number}"
                         audio_broadcaster_instance.subscribe_existing_queue(
-                            web_audio_key, global_audio_queue
+                            web_audio_key, global_audio_queue,
                         )
                         self.logger.info(
-                            f"Subscribed global audio_queue to audio broadcaster for session {session_id} VFO {vfo_number}"
+                            f"Subscribed global audio_queue to audio broadcaster for session {session_id} VFO {vfo_number}",
                         )
                 except Exception as e:
                     self.logger.warning(
-                        f"Could not subscribe global audio_queue to audio broadcaster: {e}"
+                        f"Could not subscribe global audio_queue to audio broadcaster: {e}",
                     )
 
                 # Use broadcaster's input queue as the demodulator's output queue
@@ -257,7 +257,7 @@ class ConsumerManager:
             return True
 
         except Exception as e:
-            self.logger.error(f"Error starting {consumer_class.__name__}: {str(e)}")
+            self.logger.error(f"Error starting {consumer_class.__name__}: {e!s}")
             self.logger.exception(e)
             return False
 
@@ -287,5 +287,5 @@ class ConsumerManager:
         if broadcaster:
             broadcaster.flush_all_queues()
             self.logger.info(
-                f"Flushed all demodulator queues for SDR {sdr_id} due to sample rate change"
+                f"Flushed all demodulator queues for SDR {sdr_id} due to sample rate change",
             )

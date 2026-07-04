@@ -8,7 +8,7 @@ import unicodedata
 import uuid
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 import requests
 
@@ -26,22 +26,22 @@ class SatInfo(TypedDict):
 
 class SatEntry(TypedDict):
     sat: SatInfo
-    rows: List[List[str]]
+    rows: list[list[str]]
 
 
 class SatDumpHTMLParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
-        self.satellites: List[SatEntry] = []
+        self.satellites: list[SatEntry] = []
         self._in_h1 = False
-        self._h1_text: List[str] = []
-        self._current_sat: Optional[SatInfo] = None
+        self._h1_text: list[str] = []
+        self._current_sat: SatInfo | None = None
         self._in_table = False
         self._in_tr = False
         self._in_td = False
-        self._cell_text: List[str] = []
-        self._current_row: List[str] = []
-        self._rows: List[List[str]] = []
+        self._cell_text: list[str] = []
+        self._current_row: list[str] = []
+        self._rows: list[list[str]] = []
 
     def handle_starttag(self, tag, attrs):
         if tag == "h1":
@@ -149,7 +149,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_frequency_hz(value: str) -> Optional[int]:
+def parse_frequency_hz(value: str) -> int | None:
     if not value:
         return None
     match = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*(ghz|mhz|khz|hz)", value, re.I)
@@ -184,14 +184,14 @@ def compact_dict(payload: dict) -> dict:
     return {k: v for k, v in payload.items() if v is not None}
 
 
-def parse_satellite_tables(html_text: str) -> List[SatEntry]:
+def parse_satellite_tables(html_text: str) -> list[SatEntry]:
     parser = SatDumpHTMLParser()
     parser.feed(html_text)
     return parser.satellites
 
 
 def build_rows(
-    satellites: List[SatEntry],
+    satellites: list[SatEntry],
     satellites_in_db: set[int],
     args: argparse.Namespace,
 ) -> tuple[list[dict], list[tuple[int, str]], list[tuple[int, str, str]]]:
@@ -227,7 +227,7 @@ def build_rows(
             if not tx_name:
                 tx_name = clean_text(sat_name)
             tx_id = uuid.uuid5(
-                uuid.NAMESPACE_URL, f"satdump-website:{norad}:{tx_name}:{frequency_hz}"
+                uuid.NAMESPACE_URL, f"satdump-website:{norad}:{tx_name}:{frequency_hz}",
             )
 
             now = dt.datetime.now(dt.timezone.utc).isoformat()
@@ -262,7 +262,7 @@ def build_rows(
                     "unconfirmed": 0,
                     "added": now,
                     "updated": now,
-                }
+                },
             )
 
     return rows, skipped_missing_sat, skipped_no_frequency
@@ -332,7 +332,7 @@ def main() -> int:
     try:
         satellites_in_db = {row[0] for row in conn.execute("SELECT norad_id FROM satellites")}
         rows, skipped_missing_sat, skipped_no_frequency = build_rows(
-            satellites, satellites_in_db, args
+            satellites, satellites_in_db, args,
         )
 
         purged_source = 0

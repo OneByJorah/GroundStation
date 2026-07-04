@@ -19,7 +19,6 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Optional
 
 from demodulators.iqrecorder import IQRecorder
 from pipeline.orchestration.processmanager import process_manager
@@ -95,7 +94,7 @@ def start_recording(
 def stop_recording(
     sdr_id: str,
     client_id: str,
-    waterfall_image: Optional[str] = None,
+    waterfall_image: str | None = None,
     skip_auto_waterfall: bool = False,
 ) -> dict:
     """
@@ -148,7 +147,7 @@ def stop_recording(
             else:
                 logger.warning("Invalid waterfall image data URL format")
         except Exception as e:
-            logger.error(f"Failed to save waterfall image: {str(e)}")
+            logger.error(f"Failed to save waterfall image: {e!s}")
             # Don't raise - recording stop should succeed even if image save fails
 
     return {"success": True}

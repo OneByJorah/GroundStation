@@ -19,6 +19,7 @@ import logging
 from pathlib import Path
 
 from fft.waterfallgenerator import WaterfallConfig, WaterfallGenerator
+
 from pipeline.managers.consumerbase import ConsumerManager
 
 
@@ -117,7 +118,7 @@ class RecorderManager(ConsumerManager):
             if recorder_name == "IQRecorder":
                 self.logger.info(
                     f"IQ recorder stopped - sio={self.sio is not None}, "
-                    f"recording_path={recording_path}, skip_auto_waterfall={skip_auto_waterfall}"
+                    f"recording_path={recording_path}, skip_auto_waterfall={skip_auto_waterfall}",
                 )
 
                 if self.sio and recording_path:
@@ -128,21 +129,21 @@ class RecorderManager(ConsumerManager):
                         asyncio.create_task(self._generate_waterfall_async(recording_path))
                     else:
                         self.logger.info(
-                            f"Skipping auto-waterfall generation for {recording_path} (UI provided)"
+                            f"Skipping auto-waterfall generation for {recording_path} (UI provided)",
                         )
                 elif not self.sio:
                     self.logger.warning(
-                        "Socket.IO instance not available, skipping waterfall generation"
+                        "Socket.IO instance not available, skipping waterfall generation",
                     )
                 elif not recording_path:
                     self.logger.warning(
-                        "Recording path not available, skipping waterfall generation"
+                        "Recording path not available, skipping waterfall generation",
                     )
 
             return True
 
         except Exception as e:
-            self.logger.error(f"Error stopping recorder: {str(e)}")
+            self.logger.error(f"Error stopping recorder: {e!s}")
             return False
 
     def stop_all_recorders_for_session(self, sdr_id, session_id, skip_auto_waterfall=False):
@@ -216,12 +217,12 @@ class RecorderManager(ConsumerManager):
 
             if not background_task_manager:
                 self.logger.error(
-                    "Background task manager not available, falling back to legacy method"
+                    "Background task manager not available, falling back to legacy method",
                 )
                 # Fallback to old method if task manager not available
                 loop = asyncio.get_event_loop()
                 success = await loop.run_in_executor(
-                    None, self.waterfall_generator.generate_from_sigmf, Path(recording_path)
+                    None, self.waterfall_generator.generate_from_sigmf, Path(recording_path),
                 )
                 if success and self.sio:
                     from handlers.entities.filebrowser import emit_file_browser_state

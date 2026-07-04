@@ -19,9 +19,10 @@ Handles state change detection, validation, and command processing.
 """
 
 import logging
-from typing import Any, List, Tuple
+from typing import Any
 
 from common.constants import DictKeys, SocketEvents, TrackerCommands, TrackingEvents
+
 from tracker.ipc import TRACKER_MSG_COMMAND
 
 logger = logging.getLogger("tracker-worker")
@@ -38,9 +39,9 @@ class StateManager:
         """
         self.tracker = tracker
 
-    def check_state_changes(self) -> List[Tuple[str, Any, Any]]:
+    def check_state_changes(self) -> list[tuple[str, Any, Any]]:
         """Check for state changes and return list of changes."""
-        changes: List[Tuple[str, Any, Any]] = []
+        changes: list[tuple[str, Any, Any]] = []
 
         if self.tracker.current_norad_id != self.tracker.prev_norad_id:
             changes.append(("satellite", self.tracker.prev_norad_id, self.tracker.current_norad_id))
@@ -52,19 +53,19 @@ class StateManager:
                     "rotator_state",
                     self.tracker.prev_rotator_state,
                     self.tracker.current_rotator_state,
-                )
+                ),
             )
             self.tracker.prev_rotator_state = self.tracker.current_rotator_state
 
         if self.tracker.current_rotator_id != self.tracker.prev_rotator_id:
             changes.append(
-                ("rotator_id", self.tracker.prev_rotator_id, self.tracker.current_rotator_id)
+                ("rotator_id", self.tracker.prev_rotator_id, self.tracker.current_rotator_id),
             )
             self.tracker.prev_rotator_id = self.tracker.current_rotator_id
 
         if self.tracker.current_rig_state != self.tracker.prev_rig_state:
             changes.append(
-                ("rig_state", self.tracker.prev_rig_state, self.tracker.current_rig_state)
+                ("rig_state", self.tracker.prev_rig_state, self.tracker.current_rig_state),
             )
             self.tracker.prev_rig_state = self.tracker.current_rig_state
 
@@ -74,7 +75,7 @@ class StateManager:
                     "transmitter_id",
                     self.tracker.prev_transmitter_id,
                     self.tracker.current_transmitter_id,
-                )
+                ),
             )
             self.tracker.prev_transmitter_id = self.tracker.current_transmitter_id
 
@@ -84,7 +85,7 @@ class StateManager:
 
         return changes
 
-    async def process_state_changes(self, changes: List[Tuple[str, Any, Any]]):
+    async def process_state_changes(self, changes: list[tuple[str, Any, Any]]):
         """Process all detected state changes."""
         for change_type, old, new in changes:
             if change_type == "satellite":
@@ -118,11 +119,11 @@ class StateManager:
                 DictKeys.EVENT: SocketEvents.SATELLITE_TRACKING,
                 DictKeys.DATA: {
                     DictKeys.EVENTS: [
-                        {DictKeys.NAME: TrackingEvents.NORAD_ID_CHANGE, "old": old, "new": new}
+                        {DictKeys.NAME: TrackingEvents.NORAD_ID_CHANGE, "old": old, "new": new},
                     ],
                     DictKeys.DATA: self.tracker.satellite_data,
                 },
-            }
+            },
         )
 
         # Update rig state in database
@@ -147,7 +148,7 @@ class StateManager:
                     DictKeys.RIG_DATA: self.tracker.rig_data.copy(),
                     DictKeys.TRACKING_STATE: updated_tracking_state,
                 },
-            }
+            },
         )
 
     async def handle_rotator_id_change(self, old, new):
@@ -223,7 +224,7 @@ class StateManager:
                         DictKeys.ROTATOR_DATA: self.tracker.rotator_data.copy(),
                         DictKeys.TRACKING_STATE: updated_tracking_state,
                     },
-                }
+                },
             )
 
         # Check if rig should be connected but isn't
@@ -244,7 +245,7 @@ class StateManager:
                         DictKeys.RIG_DATA: self.tracker.rig_data.copy(),
                         DictKeys.TRACKING_STATE: updated_tracking_state,
                     },
-                }
+                },
             )
 
     def cleanup_data_states(self):

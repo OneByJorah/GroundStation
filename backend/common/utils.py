@@ -15,10 +15,9 @@
 
 
 import uuid
-from typing import List
 
 
-def convert_strings_to_uuids(string_uuids: List[str]) -> List[uuid.UUID]:
+def convert_strings_to_uuids(string_uuids: list[str]) -> list[uuid.UUID]:
     """
     Converts a list of string UUIDs to a list of UUID objects.
 

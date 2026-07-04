@@ -6,23 +6,22 @@ Create Date: 2026-03-06 19:55:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "d41fa9b82c5e"
-down_revision: Union[str, None] = "b7e2d4c913aa"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "b7e2d4c913aa"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
     connection = op.get_bind()
     connection.execute(
-        sa.text("UPDATE rigs SET radio_mode='simplex' WHERE radio_mode='single_path'")
+        sa.text("UPDATE rigs SET radio_mode='simplex' WHERE radio_mode='single_path'"),
     )
     connection.execute(sa.text("UPDATE rigs SET radio_mode='duplex' WHERE radio_mode='dual_path'"))
 
@@ -33,7 +32,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     connection = op.get_bind()
     connection.execute(
-        sa.text("UPDATE rigs SET radio_mode='single_path' WHERE radio_mode='simplex'")
+        sa.text("UPDATE rigs SET radio_mode='single_path' WHERE radio_mode='simplex'"),
     )
     connection.execute(sa.text("UPDATE rigs SET radio_mode='dual_path' WHERE radio_mode='duplex'"))
 

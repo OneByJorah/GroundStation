@@ -81,7 +81,7 @@ def probe_sigmf_recording(sdr_details):
         # Validate datatype
         if datatype != "cf32_le":
             reply["log"].append(
-                f"WARNING: Datatype {datatype} may not be fully supported. Expected cf32_le."
+                f"WARNING: Datatype {datatype} may not be fully supported. Expected cf32_le.",
             )
 
         # Check if data file exists
@@ -120,7 +120,7 @@ def probe_sigmf_recording(sdr_details):
             min_freq = min(frequencies)
             max_freq = max(frequencies)
             reply["log"].append(
-                f"INFO: Frequency range: {min_freq / 1e6:.3f} - {max_freq / 1e6:.3f} MHz"
+                f"INFO: Frequency range: {min_freq / 1e6:.3f} - {max_freq / 1e6:.3f} MHz",
             )
         else:
             min_freq = 0
@@ -136,7 +136,7 @@ def probe_sigmf_recording(sdr_details):
                     "min": min_freq / 1e6,  # Convert to MHz
                     "max": max_freq / 1e6,
                     "step": 0.1,
-                }
+                },
             },
             "metadata": metadata,
             "data_file_path": str(data_path),
@@ -156,13 +156,13 @@ def probe_sigmf_recording(sdr_details):
         reply["error"] = error_msg
 
     except json.JSONDecodeError as e:
-        error_msg = f"Failed to parse SigMF metadata: {str(e)}"
+        error_msg = f"Failed to parse SigMF metadata: {e!s}"
         reply["log"].append(f"ERROR: {error_msg}")
         reply["success"] = False
         reply["error"] = error_msg
 
     except Exception as e:
-        error_msg = f"Error probing SigMF recording: {str(e)}"
+        error_msg = f"Error probing SigMF recording: {e!s}"
         reply["log"].append(f"ERROR: {error_msg}")
         reply["success"] = False
         reply["error"] = error_msg

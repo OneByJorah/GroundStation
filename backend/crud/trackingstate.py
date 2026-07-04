@@ -15,13 +15,11 @@
 
 import traceback
 from datetime import datetime, timezone
-from typing import Dict
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from db.models import TrackingState
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def set_tracking_state(session: AsyncSession, data: dict) -> dict:
@@ -56,7 +54,7 @@ async def set_tracking_state(session: AsyncSession, data: dict) -> dict:
         data["updated"] = now
 
         existing_record = await session.execute(
-            select(TrackingState).where(TrackingState.name == data["name"])
+            select(TrackingState).where(TrackingState.name == data["name"]),
         )
         existing_record = existing_record.scalar_one_or_none()
 
@@ -80,10 +78,10 @@ async def set_tracking_state(session: AsyncSession, data: dict) -> dict:
         else:
             # Full validation only for new records
             assert value.get(
-                "norad_id", None
+                "norad_id", None,
             ), "norad_id is required when creating new tracking state"
             assert value.get(
-                "group_id", None
+                "group_id", None,
             ), "group_id is required when creating new tracking state"
             assert (
                 value.get("rotator_state", None) is not None
@@ -118,7 +116,7 @@ async def get_tracking_state(session: AsyncSession, name: str) -> dict:
     Returns a dictionary with the data or an error message if not found.
     """
 
-    reply: Dict[str, object] = {"success": None, "data": None, "error": None}
+    reply: dict[str, object] = {"success": None, "data": None, "error": None}
 
     try:
         assert name is not None, "name is required when fetching tracking state"

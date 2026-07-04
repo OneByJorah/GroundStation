@@ -1,6 +1,5 @@
 import logging
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Optional
 
 # Configure logging for the worker process
 logger = logging.getLogger("vfo-state")
@@ -33,7 +32,7 @@ class VFOState:
 
 class VFOManager:
     _instance = None
-    _session_vfo_states: Dict[str, Dict[int, VFOState]] = {}
+    _session_vfo_states: dict[str, dict[int, VFOState]] = {}
 
     # Internal observation namespace prefix
     INTERNAL_PREFIX = "internal:"
@@ -53,11 +52,11 @@ class VFOManager:
             for i in range(vfo_limit):
                 self._session_vfo_states[session_id][i + 1] = VFOState(vfo_number=i + 1)
 
-    def get_all_session_ids(self) -> List[str]:
+    def get_all_session_ids(self) -> list[str]:
         """Returns a list of all session IDs currently in the VFOManager."""
         return list(self._session_vfo_states.keys())
 
-    def get_vfo_state(self, session_id: str, vfo_id: int) -> Optional[VFOState]:
+    def get_vfo_state(self, session_id: str, vfo_id: int) -> VFOState | None:
         self._ensure_session_vfos(session_id)
         return self._session_vfo_states[session_id].get(vfo_id)
 
@@ -65,20 +64,20 @@ class VFOManager:
         self,
         session_id: str,
         vfo_id: int,
-        center_freq: Optional[int] = None,
-        bandwidth: Optional[int] = None,
-        modulation: Optional[str] = None,
-        active: Optional[bool] = None,
-        selected: Optional[bool] = None,
-        volume: Optional[int] = None,
-        squelch: Optional[int] = None,
-        transcription_enabled: Optional[bool] = None,
-        transcription_provider: Optional[str] = None,
-        transcription_language: Optional[str] = None,
-        transcription_translate_to: Optional[str] = None,
-        decoder: Optional[str] = None,
-        locked_transmitter_id: Optional[str] = None,
-        parameters_enabled: Optional[bool] = None,
+        center_freq: int | None = None,
+        bandwidth: int | None = None,
+        modulation: str | None = None,
+        active: bool | None = None,
+        selected: bool | None = None,
+        volume: int | None = None,
+        squelch: int | None = None,
+        transcription_enabled: bool | None = None,
+        transcription_provider: str | None = None,
+        transcription_language: str | None = None,
+        transcription_translate_to: str | None = None,
+        decoder: str | None = None,
+        locked_transmitter_id: str | None = None,
+        parameters_enabled: bool | None = None,
     ) -> None:
 
         assert session_id is not None, "session_id is required"
@@ -159,18 +158,18 @@ class VFOManager:
 
         # logger.info(f"vfo states for session {session_id}: {session_vfos}")
 
-    def get_all_vfo_states(self, session_id: str) -> Dict[int, VFOState]:
+    def get_all_vfo_states(self, session_id: str) -> dict[int, VFOState]:
         self._ensure_session_vfos(session_id)
         return self._session_vfo_states[session_id].copy()
 
-    def get_active_vfos(self, session_id: str) -> List[VFOState]:
+    def get_active_vfos(self, session_id: str) -> list[VFOState]:
         """Returns list of all active VFO states for a session."""
         self._ensure_session_vfos(session_id)
         session_vfos = self._session_vfo_states[session_id]
 
         return [vfo_state for vfo_state in session_vfos.values() if vfo_state.active]
 
-    def get_selected_vfo(self, session_id: str) -> Optional[VFOState]:
+    def get_selected_vfo(self, session_id: str) -> VFOState | None:
         """
         DEPRECATED: Returns the currently selected VFO state or None if no VFO is selected.
 
@@ -178,7 +177,7 @@ class VFOManager:
         Use get_vfo_state(session_id, vfo_number) with explicit VFO number instead.
         """
         logger.warning(
-            "get_selected_vfo() is deprecated. Use get_vfo_state() with explicit vfo_number instead."
+            "get_selected_vfo() is deprecated. Use get_vfo_state() with explicit vfo_number instead.",
         )
         self._ensure_session_vfos(session_id)
         session_vfos = self._session_vfo_states[session_id]
@@ -224,7 +223,7 @@ class VFOManager:
     # ============================================================
 
     @staticmethod
-    def make_internal_session_id(observation_id: str, session_key: Optional[str] = None) -> str:
+    def make_internal_session_id(observation_id: str, session_key: str | None = None) -> str:
         """
         Generate internal session ID for an automated observation.
 
@@ -273,7 +272,7 @@ class VFOManager:
             return INTERNAL_VFO_NUMBER
         return USER_VFO_NUMBER
 
-    def create_internal_vfos(self, observation_id: str, session_key: Optional[str] = None) -> str:
+    def create_internal_vfos(self, observation_id: str, session_key: str | None = None) -> str:
         """
         Initialize a new set of VFOs for an automated observation.
 
@@ -294,11 +293,11 @@ class VFOManager:
         session_id = self.make_internal_session_id(observation_id, session_key)
         self._ensure_session_vfos(session_id)
         logger.info(
-            f"Created internal VFOs for observation {observation_id} (session: {session_id})"
+            f"Created internal VFOs for observation {observation_id} (session: {session_id})",
         )
         return session_id
 
-    def cleanup_internal_vfos(self, observation_id: str, session_key: Optional[str] = None) -> bool:
+    def cleanup_internal_vfos(self, observation_id: str, session_key: str | None = None) -> bool:
         """
         Remove VFOs when automated observation completes.
 
@@ -333,8 +332,8 @@ class VFOManager:
         locked_transmitter_id: str = "none",
         squelch: int = -150,
         volume: int = 50,
-        session_key: Optional[str] = None,
-        session_id: Optional[str] = None,
+        session_key: str | None = None,
+        session_id: str | None = None,
     ) -> None:
         """
         Configure a VFO for automated observation with sensible defaults.
@@ -367,7 +366,7 @@ class VFOManager:
             ... )
         """
         internal_session_id = session_id or self.make_internal_session_id(
-            observation_id, session_key
+            observation_id, session_key,
         )
 
         # Ensure VFOs exist for this observation
@@ -393,10 +392,10 @@ class VFOManager:
         logger.info(
             f"Configured internal VFO {vfo_number} for observation {observation_id}: "
             f"freq={center_freq/1e6:.3f}MHz, bw={bandwidth/1e3:.1f}kHz, "
-            f"mod={modulation}, decoder={decoder}, locked_tx={locked_transmitter_id}"
+            f"mod={modulation}, decoder={decoder}, locked_tx={locked_transmitter_id}",
         )
 
-    def get_all_internal_sessions(self) -> List[str]:
+    def get_all_internal_sessions(self) -> list[str]:
         """
         Get all internal/automated observation session IDs.
 
@@ -413,7 +412,7 @@ class VFOManager:
             if self.is_internal_session(session_id)
         ]
 
-    def get_all_user_sessions(self) -> List[str]:
+    def get_all_user_sessions(self) -> list[str]:
         """
         Get all user/UI session IDs (excludes internal observations).
 

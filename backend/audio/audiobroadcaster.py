@@ -33,7 +33,7 @@ import threading
 import time
 import traceback
 from copy import deepcopy
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 # Configure logging
 logger = logging.getLogger("audio-broadcaster")
@@ -50,8 +50,8 @@ class AudioBroadcaster(threading.Thread):
     def __init__(
         self,
         input_queue: queue.Queue,
-        session_id: Optional[str] = None,
-        vfo_number: Optional[int] = None,
+        session_id: str | None = None,
+        vfo_number: int | None = None,
     ):
         """
         Initialize the audio broadcaster.
@@ -63,14 +63,14 @@ class AudioBroadcaster(threading.Thread):
         """
         super().__init__(daemon=True, name="Ground Station - AudioBroadcaster")
         self.input_queue = input_queue
-        self.subscribers: Dict[str, dict] = {}
+        self.subscribers: dict[str, dict] = {}
         self.subscribers_lock = threading.Lock()
         self.running = True
         self.session_id = session_id
         self.vfo_number = vfo_number
 
         # Statistics
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "messages_received": 0,
             "messages_broadcast": 0,
             "errors": 0,
@@ -79,8 +79,8 @@ class AudioBroadcaster(threading.Thread):
         }
 
     def subscribe(
-        self, name: str, maxsize: int = 10, for_process: bool = False
-    ) -> Union[queue.Queue[Any], multiprocessing.Queue[Any]]:
+        self, name: str, maxsize: int = 10, for_process: bool = False,
+    ) -> queue.Queue[Any] | multiprocessing.Queue[Any]:
         """
         Subscribe to audio stream.
 
@@ -95,7 +95,7 @@ class AudioBroadcaster(threading.Thread):
             Queue that will receive audio messages (threading or multiprocessing)
         """
         # Create appropriate queue type based on subscriber needs
-        subscriber_queue: Union[queue.Queue[Any], multiprocessing.Queue[Any]]
+        subscriber_queue: queue.Queue[Any] | multiprocessing.Queue[Any]
         if for_process:
             subscriber_queue = multiprocessing.Queue(maxsize=maxsize)
             queue_type = "multiprocessing"
@@ -115,7 +115,7 @@ class AudioBroadcaster(threading.Thread):
 
         logger.info(
             f"New subscriber: '{name}' (queue: {queue_type}, size: {maxsize}, "
-            f"total subscribers: {len(self.subscribers)})"
+            f"total subscribers: {len(self.subscribers)})",
         )
         return subscriber_queue
 
@@ -141,7 +141,7 @@ class AudioBroadcaster(threading.Thread):
 
         logger.info(
             f"New subscriber with existing queue: '{name}' "
-            f"(total subscribers: {len(self.subscribers)})"
+            f"(total subscribers: {len(self.subscribers)})",
         )
 
     def unsubscribe(self, name: str):
@@ -204,7 +204,7 @@ class AudioBroadcaster(threading.Thread):
                                 if subscriber["dropped"] % 100 == 0:
                                     logger.warning(
                                         f"Subscriber '{name}' queue full - "
-                                        f"dropped {subscriber['dropped']} messages total"
+                                        f"dropped {subscriber['dropped']} messages total",
                                     )
                             else:
                                 # Other error
@@ -230,7 +230,7 @@ class AudioBroadcaster(threading.Thread):
         if self.vfo_number:
             context += f", VFO {self.vfo_number}"
         logger.info(
-            f"Audio broadcaster stopped for {context} (id={id(self)}, received={self.stats['messages_received']}, broadcast={self.stats['messages_broadcast']})"
+            f"Audio broadcaster stopped for {context} (id={id(self)}, received={self.stats['messages_received']}, broadcast={self.stats['messages_broadcast']})",
         )
 
     def stop(self):
@@ -244,7 +244,7 @@ class AudioBroadcaster(threading.Thread):
         caller = f"{caller_info.filename.split('/')[-1]}:{caller_info.lineno} in {caller_info.name}"
 
         logger.info(
-            f"Stopping audio broadcaster for {context} (id={id(self)}, called from: {caller})"
+            f"Stopping audio broadcaster for {context} (id={id(self)}, called from: {caller})",
         )
         self.running = False
 
@@ -280,11 +280,11 @@ class AudioBroadcaster(threading.Thread):
             f"received={stats['overall']['messages_received']}, "
             f"broadcast={stats['overall']['messages_broadcast']}, "
             f"errors={stats['overall']['errors']}, "
-            f"subscribers={stats['active_subscribers']}"
+            f"subscribers={stats['active_subscribers']}",
         )
 
         for name, sub_stats in stats["subscribers"].items():
             logger.info(
                 f"  {name}: delivered={sub_stats['delivered']}, "
-                f"dropped={sub_stats['dropped']}, errors={sub_stats['errors']}"
+                f"dropped={sub_stats['dropped']}, errors={sub_stats['errors']}",
             )

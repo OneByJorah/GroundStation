@@ -20,7 +20,6 @@ Tests for tracking/footprint.py satellite coverage circle calculations.
 import math
 
 import pytest
-
 from tracking.footprint import get_satellite_coverage_circle
 
 

@@ -16,14 +16,13 @@
 """Decoder task handler - manages decoder VFO configuration and lifecycle."""
 
 import traceback
-from typing import Any, Dict
-
-from sqlalchemy import select
+from typing import Any
 
 from common.logger import logger
 from db import AsyncSessionLocal
 from db.models import Satellites, Transmitters
 from pipeline.registries.decoderregistry import decoder_registry
+from sqlalchemy import select
 from vfos.state import VFOManager
 
 
@@ -44,8 +43,8 @@ class DecoderHandler:
         observation_id: str,
         session_id: str,
         sdr_id: str,
-        sdr_config: Dict[str, Any],
-        task_config: Dict[str, Any],
+        sdr_config: dict[str, Any],
+        task_config: dict[str, Any],
         vfo_number: int,
     ) -> bool:
         """
@@ -76,7 +75,7 @@ class DecoderHandler:
 
             if transmitter_id and transmitter_id != "none":
                 transmitter_info, satellite_info = await self._fetch_transmitter_info(
-                    transmitter_id, center_freq, bandwidth, task_config
+                    transmitter_id, center_freq, bandwidth, task_config,
                 )
                 if transmitter_info:
                     center_freq = transmitter_info["center_frequency"]
@@ -91,7 +90,7 @@ class DecoderHandler:
                     "bandwidth": bandwidth,
                 }
                 logger.warning(
-                    f"No transmitter info for observation {observation_id} - using defaults"
+                    f"No transmitter info for observation {observation_id} - using defaults",
                 )
 
             # Configure VFO
@@ -108,7 +107,7 @@ class DecoderHandler:
             )
 
             logger.info(
-                f"Configured VFO {vfo_number} for {decoder_type} decoder on {transmitter_id}"
+                f"Configured VFO {vfo_number} for {decoder_type} decoder on {transmitter_id}",
             )
 
             # Start decoder process
@@ -148,7 +147,7 @@ class DecoderHandler:
                 return True
             else:
                 logger.error(
-                    f"Failed to start {decoder_type} decoder for observation {observation_id}"
+                    f"Failed to start {decoder_type} decoder for observation {observation_id}",
                 )
                 return False
 
@@ -178,7 +177,7 @@ class DecoderHandler:
             return False
 
     async def _fetch_transmitter_info(
-        self, transmitter_id: str, center_freq: float, bandwidth: float, task_config: Dict[str, Any]
+        self, transmitter_id: str, center_freq: float, bandwidth: float, task_config: dict[str, Any],
     ) -> tuple:
         """
         Fetch transmitter and satellite information from database.
@@ -196,7 +195,7 @@ class DecoderHandler:
             async with AsyncSessionLocal() as db_session:
                 # Fetch transmitter
                 result = await db_session.execute(
-                    select(Transmitters).where(Transmitters.id == transmitter_id)
+                    select(Transmitters).where(Transmitters.id == transmitter_id),
                 )
                 transmitter_record = result.scalar_one_or_none()
 
@@ -219,7 +218,7 @@ class DecoderHandler:
 
                 # Fetch satellite info
                 sat_result = await db_session.execute(
-                    select(Satellites).where(Satellites.norad_id == transmitter_record.norad_cat_id)
+                    select(Satellites).where(Satellites.norad_id == transmitter_record.norad_cat_id),
                 )
                 satellite_record = sat_result.scalar_one_or_none()
                 satellite_info = None

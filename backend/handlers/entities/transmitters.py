@@ -15,7 +15,7 @@
 
 """Transmitter handlers."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
@@ -23,8 +23,8 @@ from tracker.runner import get_tracker_manager
 
 
 async def submit_transmitter(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Add a new transmitter.
 
@@ -50,7 +50,7 @@ async def submit_transmitter(
             return {"success": add_reply.get("success", False), "data": []}
 
         transmitters = await crud.transmitters.fetch_transmitters_for_satellite(
-            dbsession, norad_cat_id
+            dbsession, norad_cat_id,
         )
         if norad_cat_id:
             manager = get_tracker_manager()
@@ -62,8 +62,8 @@ async def submit_transmitter(
 
 
 async def edit_transmitter(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Edit an existing transmitter.
 
@@ -90,7 +90,7 @@ async def edit_transmitter(
             fetch_reply = await crud.transmitters.fetch_transmitter(dbsession, transmitter_id)
             norad_cat_id = (fetch_reply.get("data") or {}).get("norad_cat_id")
         transmitters = await crud.transmitters.fetch_transmitters_for_satellite(
-            dbsession, norad_cat_id
+            dbsession, norad_cat_id,
         )
         if norad_cat_id:
             manager = get_tracker_manager()
@@ -102,8 +102,8 @@ async def edit_transmitter(
 
 
 async def delete_transmitter(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Delete a transmitter.
 
@@ -122,7 +122,7 @@ async def delete_transmitter(
         norad_cat_id = data.get("norad_cat_id") if data else None
         delete_reply = await crud.transmitters.delete_transmitter(dbsession, transmitter_id)
         transmitters = await crud.transmitters.fetch_transmitters_for_satellite(
-            dbsession, norad_cat_id
+            dbsession, norad_cat_id,
         )
         if norad_cat_id:
             manager = get_tracker_manager()
@@ -140,5 +140,5 @@ def register_handlers(registry):
             "submit-transmitter": (submit_transmitter, "data_submission"),
             "edit-transmitter": (edit_transmitter, "data_submission"),
             "delete-transmitter": (delete_transmitter, "data_submission"),
-        }
+        },
     )

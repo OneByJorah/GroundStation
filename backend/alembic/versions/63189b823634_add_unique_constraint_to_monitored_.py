@@ -6,17 +6,15 @@ Create Date: 2026-01-09 10:04:45.425420
 
 """
 
-from typing import Sequence, Union
-
-import sqlalchemy as sa
+from collections.abc import Sequence
 
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "63189b823634"
-down_revision: Union[str, None] = "7b3c47de8a21"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "7b3c47de8a21"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -30,7 +28,7 @@ def upgrade() -> None:
             FROM monitored_satellites
             GROUP BY norad_id
         )
-    """
+    """,
     )
 
     # Now add the unique constraint

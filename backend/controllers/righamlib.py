@@ -16,13 +16,13 @@
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Tuple
-
-from Hamlib import Hamlib
+from typing import TYPE_CHECKING, Any
 
 from common.arguments import arguments as args
+from Hamlib import Hamlib
 
 if TYPE_CHECKING:
     from Hamlib import Rig  # noqa: F401
@@ -125,7 +125,7 @@ class RigController:
         try:
             # Use asyncio's open_connection with timeout
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port), timeout=self.timeout
+                asyncio.open_connection(self.host, self.port), timeout=self.timeout,
             )
             yield reader, writer
 
@@ -204,7 +204,7 @@ class RigController:
 
         return float(round(freq, 0))
 
-    async def get_mode(self) -> Tuple[str, int]:
+    async def get_mode(self) -> tuple[str, int]:
 
         self.check_connection()
 
@@ -250,7 +250,7 @@ class RigController:
             # Direct synchronous disconnection if possible
             try:
                 self.logger.warning(
-                    "Object RigController being destroyed while still connected to rig"
+                    "Object RigController being destroyed while still connected to rig",
                 )
                 if hasattr(self.rig, "close"):
                     self.rig.close()
@@ -292,7 +292,7 @@ class RigController:
         update_interval: float = 0.5,
         freq_tolerance: float = 10.0,
         vfo: str = "1",
-    ) -> AsyncGenerator[Tuple[float, bool], None]:
+    ) -> AsyncGenerator[tuple[float, bool], None]:
 
         # Map VFO string to Hamlib VFO constant
         vfo_map = {

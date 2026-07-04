@@ -142,7 +142,7 @@ def trim_sigmf(args):
             capture["core:datetime"] = dt_to_iso_z(shifted)
         else:
             capture["core:datetime"] = dt_to_iso_z(
-                start_utc + timedelta(seconds=new_sample_start / sample_rate)
+                start_utc + timedelta(seconds=new_sample_start / sample_rate),
             )
         updated_captures.append(capture)
 
@@ -152,7 +152,7 @@ def trim_sigmf(args):
                 "core:sample_start": 0,
                 "core:frequency": captures[0].get("core:frequency") if captures else None,
                 "core:datetime": dt_to_iso_z(start_utc),
-            }
+            },
         )
 
     new_meta["captures"] = updated_captures
@@ -166,7 +166,7 @@ def trim_sigmf(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Trim a SigMF IQ recording by local/ISO time window."
+        description="Trim a SigMF IQ recording by local/ISO time window.",
     )
     parser.add_argument(
         "--input",

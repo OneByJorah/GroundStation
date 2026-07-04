@@ -18,7 +18,7 @@ import json
 import logging
 import time
 import warnings
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import psutil
@@ -35,14 +35,16 @@ warnings.filterwarnings(
 )
 import rtlsdr  # noqa: E402 - import after warning filter by design
 
-from workers.rtlsdrtcpclient import RtlSdrTcpClient  # noqa: E402 - follows filtered import
+from workers.rtlsdrtcpclient import (
+    RtlSdrTcpClient,  # noqa: E402 - follows filtered import
+)
 
 # Configure logging for the worker process
 logger = logging.getLogger("rtlsdr-worker")
 
 
 def rtlsdr_worker_process(
-    config_queue, data_queue, stop_event, iq_queue_fft=None, iq_queue_demod=None
+    config_queue, data_queue, stop_event, iq_queue_fft=None, iq_queue_demod=None,
 ):
     """
     Worker process for RTL-SDR operations.
@@ -109,7 +111,7 @@ def rtlsdr_worker_process(
         sdr.gain = config.get("gain", 25.4)
 
         logger.info(
-            f"RTL-SDR configured: sample_rate={sdr.sample_rate}, center_freq={sdr.center_freq}, gain={sdr.gain}"
+            f"RTL-SDR configured: sample_rate={sdr.sample_rate}, center_freq={sdr.center_freq}, gain={sdr.gain}",
         )
 
         # Calculate the number of samples based on sample rate
@@ -122,11 +124,11 @@ def rtlsdr_worker_process(
                 "client_id": client_id,
                 "message": None,
                 "timestamp": time.time(),
-            }
+            },
         )
 
         # Performance monitoring stats
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             "samples_read": 0,
             "iq_chunks_out": 0,
             "read_errors": 0,
@@ -171,7 +173,7 @@ def rtlsdr_worker_process(
                         "sdr_id": sdr_id,
                         "stats": stats.copy(),
                         "timestamp": current_time,
-                    }
+                    },
                 )
                 last_stats_send = current_time
             # Check for new configuration without blocking
@@ -237,7 +239,7 @@ def rtlsdr_worker_process(
                     old_config = new_config
 
             except Exception as e:
-                error_msg = f"Error processing configuration: {str(e)}"
+                error_msg = f"Error processing configuration: {e!s}"
                 logger.error(error_msg)
                 logger.exception(e)
 
@@ -249,7 +251,7 @@ def rtlsdr_worker_process(
                             "client_id": client_id,
                             "message": error_msg,
                             "timestamp": time.time(),
-                        }
+                        },
                     )
 
             try:
@@ -308,7 +310,7 @@ def rtlsdr_worker_process(
                             stats["queue_drops"] += 1
 
             except Exception as e:
-                logger.error(f"Error processing SDR data: {str(e)}")
+                logger.error(f"Error processing SDR data: {e!s}")
 
                 logger.exception(e)
 
@@ -321,14 +323,14 @@ def rtlsdr_worker_process(
                         "client_id": client_id,
                         "message": str(e),
                         "timestamp": time.time(),
-                    }
+                    },
                 )
 
                 # Pause before retrying
                 time.sleep(1)
 
     except ConnectionRefusedError as e:
-        error_msg = f"Connection refused to RTL-SDR TCP server at {hostname}:{port}: {str(e)}"
+        error_msg = f"Connection refused to RTL-SDR TCP server at {hostname}:{port}: {e!s}"
         logger.error(error_msg)
         logger.exception(e)
 
@@ -339,11 +341,11 @@ def rtlsdr_worker_process(
                 "client_id": client_id,
                 "message": error_msg,
                 "timestamp": time.time(),
-            }
+            },
         )
 
     except json.decoder.JSONDecodeError as e:
-        error_msg = f"Invalid response from RTL-SDR TCP server at {hostname}:{port}: {str(e)}"
+        error_msg = f"Invalid response from RTL-SDR TCP server at {hostname}:{port}: {e!s}"
         logger.error(error_msg)
         logger.exception(e)
 
@@ -354,11 +356,11 @@ def rtlsdr_worker_process(
                 "client_id": client_id,
                 "message": error_msg,
                 "timestamp": time.time(),
-            }
+            },
         )
 
     except Exception as e:
-        error_msg = f"Error in RTL-SDR worker process: {str(e)}"
+        error_msg = f"Error in RTL-SDR worker process: {e!s}"
         logger.error(error_msg)
         logger.exception(e)
 
@@ -369,7 +371,7 @@ def rtlsdr_worker_process(
                 "client_id": client_id,
                 "message": error_msg,
                 "timestamp": time.time(),
-            }
+            },
         )
 
     finally:
@@ -383,7 +385,7 @@ def rtlsdr_worker_process(
                 sdr.close()
                 logger.info(f"RTL-SDR device with id {sdr_id} closed")
             except Exception as e:
-                logger.error(f"Error closing RTL-SDR device with id {sdr_id}: {str(e)}")
+                logger.error(f"Error closing RTL-SDR device with id {sdr_id}: {e!s}")
 
         # Send termination signal
         data_queue.put(
@@ -392,7 +394,7 @@ def rtlsdr_worker_process(
                 "client_id": client_id,
                 "sdr_id": sdr_id,
                 "timestamp": time.time(),
-            }
+            },
         )
 
         logger.info("RTL-SDR worker process terminated")

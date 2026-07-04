@@ -29,7 +29,7 @@ class DemodulatorManager(ConsumerManager):
         self.logger = logging.getLogger("demodulator-manager")
 
     def start_demodulator(
-        self, sdr_id, session_id, demodulator_class, audio_queue, vfo_number=None, **kwargs
+        self, sdr_id, session_id, demodulator_class, audio_queue, vfo_number=None, **kwargs,
     ):
         """
         Start a demodulator thread for a specific session and VFO.
@@ -84,7 +84,7 @@ class DemodulatorManager(ConsumerManager):
                 # Stop specific VFO
                 if vfo_number not in demod_entry:
                     self.logger.warning(
-                        f"No demodulator found for session {session_id} VFO {vfo_number}"
+                        f"No demodulator found for session {session_id} VFO {vfo_number}",
                     )
                     return False
 
@@ -104,7 +104,7 @@ class DemodulatorManager(ConsumerManager):
                     try:
                         audio_broadcaster.unsubscribe(web_audio_key)
                         self.logger.info(
-                            f"Unsubscribed global audio_queue from audio broadcaster for session {session_id} VFO {vfo_number}"
+                            f"Unsubscribed global audio_queue from audio broadcaster for session {session_id} VFO {vfo_number}",
                         )
                     except Exception as e:
                         self.logger.debug(f"Could not unsubscribe global audio_queue: {e}")
@@ -119,7 +119,7 @@ class DemodulatorManager(ConsumerManager):
                     ):
                         del process_info["broadcasters"][broadcaster_key]
                     self.logger.info(
-                        f"Stopped audio broadcaster for session {session_id} VFO {vfo_number}"
+                        f"Stopped audio broadcaster for session {session_id} VFO {vfo_number}",
                     )
 
                 # Unsubscribe from the IQ broadcaster
@@ -181,7 +181,7 @@ class DemodulatorManager(ConsumerManager):
                 return True
 
         except Exception as e:
-            self.logger.error(f"Error stopping demodulator: {str(e)}")
+            self.logger.error(f"Error stopping demodulator: {e!s}")
             return False
 
     def _stop_consumer(self, sdr_id, session_id, storage_key, vfo_number=None):

@@ -16,7 +16,6 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
 
 import numpy as np
 from skyfield.api import EarthSatellite, Loader, Topos
@@ -30,7 +29,7 @@ def calculate_elevation_crossing_time(
     aos_time: datetime,
     los_time: datetime,
     target_elevation: float,
-) -> tuple[Optional[datetime], Optional[datetime]]:
+) -> tuple[datetime | None, datetime | None]:
     """
     Calculate the times when a satellite crosses a specific elevation during a pass.
 
@@ -110,7 +109,7 @@ def calculate_elevation_crossing_time(
                 logger.info(
                     f"Satellite reaches {target_elevation}° elevation (ascending) at "
                     f"{ascending_time.strftime('%Y-%m-%d %H:%M:%S UTC')} "
-                    f"({(ascending_time - aos_time).total_seconds():.0f}s after AOS)"
+                    f"({(ascending_time - aos_time).total_seconds():.0f}s after AOS)",
                 )
                 break
 
@@ -123,7 +122,7 @@ def calculate_elevation_crossing_time(
                 logger.info(
                     f"Satellite crosses {target_elevation}° elevation (descending) at "
                     f"{descending_time.strftime('%Y-%m-%d %H:%M:%S UTC')} "
-                    f"({(los_time - descending_time).total_seconds():.0f}s before LOS)"
+                    f"({(los_time - descending_time).total_seconds():.0f}s before LOS)",
                 )
                 break
 
@@ -132,7 +131,7 @@ def calculate_elevation_crossing_time(
             peak_el = elevations[peak_idx]
             logger.warning(
                 f"Satellite never reaches {target_elevation}° elevation "
-                f"(peak elevation: {peak_el:.1f}°)"
+                f"(peak elevation: {peak_el:.1f}°)",
             )
 
         return (ascending_time, descending_time)

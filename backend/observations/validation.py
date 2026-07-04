@@ -15,10 +15,10 @@
 
 """Validation functions for observations and monitored satellites."""
 
-from typing import Any, Dict
+from typing import Any
 
 
-def validate_transmitter_frequencies(data: Dict[str, Any]) -> Dict[str, Any]:
+def validate_transmitter_frequencies(data: dict[str, Any]) -> dict[str, Any]:
     """
     Validate that all transmitter frequencies in session tasks are within the SDR's
     sample rate and center frequency range.
@@ -78,7 +78,7 @@ def validate_transmitter_frequencies(data: Dict[str, Any]) -> Dict[str, Any]:
                         "frequency": frequency,
                         "min_allowed": min_freq,
                         "max_allowed": max_freq,
-                    }
+                    },
                 )
 
     # If there are invalid frequencies, return error
@@ -89,7 +89,7 @@ def validate_transmitter_frequencies(data: Dict[str, Any]) -> Dict[str, Any]:
             min_mhz = inv["min_allowed"] / 1_000_000
             max_mhz = inv["max_allowed"] / 1_000_000
             freq_details.append(
-                f"{freq_mhz:.3f} MHz (must be between {min_mhz:.3f} - {max_mhz:.3f} MHz)"
+                f"{freq_mhz:.3f} MHz (must be between {min_mhz:.3f} - {max_mhz:.3f} MHz)",
             )
 
         error_msg = (

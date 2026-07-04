@@ -12,7 +12,6 @@ import signal
 import subprocess
 from multiprocessing import Queue
 from pathlib import Path
-from typing import Optional
 
 
 class GracefulKiller:
@@ -27,7 +26,7 @@ class GracefulKiller:
         self.kill_now = True
 
 
-def _cleanup_empty_directory(directory: Path, progress_queue: Optional[Queue] = None):
+def _cleanup_empty_directory(directory: Path, progress_queue: Queue | None = None):
     """
     Remove directory if it's empty or contains only empty subdirectories.
 
@@ -49,7 +48,7 @@ def _cleanup_empty_directory(directory: Path, progress_queue: Optional[Queue] = 
                         "type": "output",
                         "output": f"Cleaning up empty output directory: {directory}",
                         "stream": "stdout",
-                    }
+                    },
                 )
             shutil.rmtree(directory)
     except Exception as e:
@@ -59,7 +58,7 @@ def _cleanup_empty_directory(directory: Path, progress_queue: Optional[Queue] = 
                     "type": "output",
                     "output": f"Warning: Failed to clean up directory: {e}",
                     "stream": "stderr",
-                }
+                },
             )
 
 
@@ -93,7 +92,7 @@ def satdump_process_recording(
     baseband_format: str = "i16",
     finish_processing: bool = True,
     delete_input_after: bool = False,
-    _progress_queue: Optional[Queue] = None,
+    _progress_queue: Queue | None = None,
 ):
     """
     Process an IQ recording with SatDump.
@@ -168,31 +167,31 @@ def satdump_process_recording(
                 "type": "output",
                 "output": "Starting SatDump processing",
                 "stream": "stdout",
-            }
+            },
         )
         _progress_queue.put(
             {
                 "type": "output",
                 "output": f"Satellite/Pipeline: {satellite}",
                 "stream": "stdout",
-            }
+            },
         )
         _progress_queue.put(
             {
                 "type": "output",
                 "output": f"Input: {recording_file}",
                 "stream": "stdout",
-            }
+            },
         )
         _progress_queue.put(
             {
                 "type": "output",
                 "output": f"Output: {output_path}",
                 "stream": "stdout",
-            }
+            },
         )
         _progress_queue.put(
-            {"type": "output", "output": f"Command: {' '.join(cmd)}", "stream": "stdout"}
+            {"type": "output", "output": f"Command: {' '.join(cmd)}", "stream": "stdout"},
         )
         _progress_queue.put({"type": "output", "output": "-" * 60, "stream": "stdout"})
 
@@ -214,7 +213,7 @@ def satdump_process_recording(
         )
 
         # Stream output
-        last_progress: Optional[float] = None
+        last_progress: float | None = None
         while True:
             # Check for graceful shutdown
             if killer.kill_now:
@@ -224,7 +223,7 @@ def satdump_process_recording(
                             "type": "output",
                             "output": "Terminating SatDump process...",
                             "stream": "stdout",
-                        }
+                        },
                     )
                 process.terminate()
                 try:
@@ -275,7 +274,7 @@ def satdump_process_recording(
                         "output": line,
                         "stream": "stdout",
                         "progress": progress_to_emit if progress_to_emit is not None else None,
-                    }
+                    },
                 )
 
         # Wait for process to complete
@@ -315,7 +314,7 @@ def satdump_process_recording(
                             "type": "output",
                             "output": f"Deleted IQ recording: {data_path} (+.sigmf-meta)",
                             "stream": "stdout",
-                        }
+                        },
                     )
             except Exception as e:
                 if _progress_queue:
@@ -324,7 +323,7 @@ def satdump_process_recording(
                             "type": "output",
                             "output": f"Warning: Failed to delete IQ recording: {e}",
                             "stream": "stderr",
-                        }
+                        },
                     )
 
         if not has_images:
@@ -337,7 +336,7 @@ def satdump_process_recording(
                                 "No decoded images found; removing SatDump output directory"
                             ),
                             "stream": "stdout",
-                        }
+                        },
                     )
                 shutil.rmtree(output_path)
 
@@ -355,7 +354,7 @@ def satdump_process_recording(
                         "output": "-" * 60,
                         "stream": "stdout",
                         "progress": 100,
-                    }
+                    },
                 )
                 if return_code == 1:
                     _progress_queue.put(
@@ -363,7 +362,7 @@ def satdump_process_recording(
                             "type": "output",
                             "output": "SatDump completed with exit code 1 but products were generated successfully",
                             "stream": "stdout",
-                        }
+                        },
                     )
                 else:
                     _progress_queue.put(
@@ -371,14 +370,14 @@ def satdump_process_recording(
                             "type": "output",
                             "output": "SatDump processing completed successfully!",
                             "stream": "stdout",
-                        }
+                        },
                     )
                 _progress_queue.put(
                     {
                         "type": "output",
                         "output": f"Output files saved to: {output_path}",
                         "stream": "stdout",
-                    }
+                    },
                 )
 
             return {
@@ -400,7 +399,7 @@ def satdump_process_recording(
         # Clean up empty output directory on exception
         _cleanup_empty_directory(output_path, _progress_queue)
 
-        error_msg = f"Error during SatDump processing: {str(e)}"
+        error_msg = f"Error during SatDump processing: {e!s}"
         if _progress_queue:
             _progress_queue.put({"type": "error", "error": error_msg, "stream": "stderr"})
         raise

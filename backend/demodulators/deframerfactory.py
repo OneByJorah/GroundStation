@@ -9,23 +9,24 @@ framing protocols can be added in one place.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
+from constants import FramingType
 from satellites.components.deframers.ax25_deframer import ax25_deframer
 from satellites.components.deframers.ax100_deframer import ax100_deframer
-from satellites.components.deframers.ccsds_concatenated_deframer import ccsds_concatenated_deframer
+from satellites.components.deframers.ccsds_concatenated_deframer import (
+    ccsds_concatenated_deframer,
+)
 from satellites.components.deframers.ccsds_rs_deframer import ccsds_rs_deframer
 from satellites.components.deframers.geoscan_deframer import geoscan_deframer
 from satellites.components.deframers.usp_deframer import usp_deframer
-
-from constants import FramingType
 
 
 def create_fsk_deframer(
     framing: str,
     options: Any,
-    framing_params: Optional[Dict[str, Any]] = None,
-) -> Tuple[Any, str]:
+    framing_params: dict[str, Any] | None = None,
+) -> tuple[Any, str]:
     """Create FSK-family deframer block and human-readable frame info."""
     params = framing_params or {}
 
@@ -62,7 +63,7 @@ def create_fsk_deframer(
     return deframer, "AX25(G3RUH)"
 
 
-def create_bpsk_deframer(framing: str, options: Any) -> Tuple[Any, str]:
+def create_bpsk_deframer(framing: str, options: Any) -> tuple[Any, str]:
     """Create BPSK deframer block and human-readable frame info."""
     if framing == FramingType.DOKA:
         deframer = ccsds_rs_deframer(

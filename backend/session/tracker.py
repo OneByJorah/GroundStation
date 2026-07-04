@@ -21,7 +21,7 @@ Tracks which sessions are streaming from which SDRs and which VFOs they have sel
 
 import logging
 import time
-from typing import Any, Dict, List, Optional, Set, TypedDict, cast
+from typing import Any, Optional, TypedDict, cast
 
 from vfos.state import VFOManager
 
@@ -31,11 +31,11 @@ logger = logging.getLogger("session-tracker")
 class ClientMetadata(TypedDict, total=False):
     """Client metadata collected from socket connection."""
 
-    ip: Optional[str]
-    user_agent: Optional[str]
-    origin: Optional[str]
-    referer: Optional[str]
-    connected_at: Optional[float]
+    ip: str | None
+    user_agent: str | None
+    origin: str | None
+    referer: str | None
+    connected_at: float | None
 
 
 class SessionTracker:
@@ -64,28 +64,28 @@ class SessionTracker:
         self._initialized = True
 
         # Map session_id -> sdr_id (which SDR this session is streaming from)
-        self._session_sdr_map: Dict[str, str] = {}
+        self._session_sdr_map: dict[str, str] = {}
 
         # Map session_id -> vfo_number (normalized: 1-4 as int, or None if not selected)
-        self._session_vfo_map: Dict[str, Optional[int]] = {}
+        self._session_vfo_map: dict[str, int | None] = {}
 
         # Map session_id -> rig_id (which rig this session is tracking)
-        self._session_rig_map: Dict[str, str] = {}
+        self._session_rig_map: dict[str, str] = {}
 
         # Track which session+VFO combos have been initialized for the current tracking session
         # Format: "session_id:vfo_number" -> True
         # Cleared when tracking stops to allow re-initialization on next tracking start
-        self._vfo_initialized: Dict[str, bool] = {}
+        self._vfo_initialized: dict[str, bool] = {}
 
         # Map session_id -> ip address (set on Socket.IO connect)
         # DEPRECATED: Use _session_metadata instead
-        self._session_ip_map: Dict[str, str] = {}
+        self._session_ip_map: dict[str, str] = {}
 
         # Map session_id -> client metadata (IP, user agent, etc.)
-        self._session_metadata: Dict[str, ClientMetadata] = {}
+        self._session_metadata: dict[str, ClientMetadata] = {}
 
         # NEW: Track internal (automated observation) vs user sessions
-        self._internal_sessions: Set[str] = set()
+        self._internal_sessions: set[str] = set()
 
         logger.info("SessionTracker initialized")
 
@@ -114,11 +114,11 @@ class SessionTracker:
     def set_session_metadata(
         self,
         session_id: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        origin: Optional[str] = None,
-        referer: Optional[str] = None,
-        connected_at: Optional[float] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        origin: str | None = None,
+        referer: str | None = None,
+        connected_at: float | None = None,
     ) -> None:
         """
         Set client metadata for a session.
@@ -150,7 +150,7 @@ class SessionTracker:
 
         logger.debug(f"Updated metadata for session {session_id}: {metadata}")
 
-    def get_session_metadata(self, session_id: str) -> Optional[ClientMetadata]:
+    def get_session_metadata(self, session_id: str) -> ClientMetadata | None:
         """
         Get all client metadata for a session.
 
@@ -162,7 +162,7 @@ class SessionTracker:
         """
         return self._session_metadata.get(session_id)
 
-    def set_session_ip(self, session_id: str, ip_address: Optional[str]) -> None:
+    def set_session_ip(self, session_id: str, ip_address: str | None) -> None:
         """
         Set the remote IP address associated with a session.
         DEPRECATED: Use set_session_metadata() instead.
@@ -184,7 +184,7 @@ class SessionTracker:
             if session_id in self._session_metadata:
                 self._session_metadata[session_id].pop("ip", None)
 
-    def get_session_ip(self, session_id: str) -> Optional[str]:
+    def get_session_ip(self, session_id: str) -> str | None:
         """
         Get the remote IP address for a session if known.
         DEPRECATED: Use get_session_metadata() instead.
@@ -203,7 +203,7 @@ class SessionTracker:
             session_id: Socket.IO session ID
             vfo_id: VFO number ("1", "2", "3", "4", or "none")
         """
-        vfo_number: Optional[int]
+        vfo_number: int | None
         if vfo_id == "none" or vfo_id is None:
             vfo_number = None
         else:
@@ -214,7 +214,7 @@ class SessionTracker:
         self._session_vfo_map[session_id] = vfo_number
         logger.debug(f"Set session {session_id} VFO to {vfo_number}")
 
-    def set_session_vfo_int(self, session_id: str, vfo_number: Optional[int]) -> None:
+    def set_session_vfo_int(self, session_id: str, vfo_number: int | None) -> None:
         """
         Preferred setter: accepts VFO as Optional[int] (1-4 or None).
 
@@ -238,7 +238,7 @@ class SessionTracker:
         self._session_rig_map[session_id] = rig_id
         logger.debug(f"Set session {session_id} tracking rig {rig_id}")
 
-    def get_session_vfo(self, session_id: str) -> Optional[str]:
+    def get_session_vfo(self, session_id: str) -> str | None:
         """
         Backward-compatible getter: returns VFO as string ("1"-"4") or "none".
 
@@ -256,13 +256,13 @@ class SessionTracker:
             return None
         return str(v)
 
-    def get_session_vfo_int(self, session_id: str) -> Optional[int]:
+    def get_session_vfo_int(self, session_id: str) -> int | None:
         """
         Preferred getter: returns VFO as Optional[int] (1-4) or None.
         """
         return self._session_vfo_map.get(session_id)
 
-    def get_session_sdr(self, session_id: str) -> Optional[str]:
+    def get_session_sdr(self, session_id: str) -> str | None:
         """
         Get the SDR a session is streaming from.
 
@@ -274,7 +274,7 @@ class SessionTracker:
         """
         return self._session_sdr_map.get(session_id)
 
-    def get_session_rig(self, session_id: str) -> Optional[str]:
+    def get_session_rig(self, session_id: str) -> str | None:
         """
         Get the rig a session is tracking.
 
@@ -286,7 +286,7 @@ class SessionTracker:
         """
         return self._session_rig_map.get(session_id)
 
-    def get_sessions_for_sdr(self, sdr_id: str) -> Set[str]:
+    def get_sessions_for_sdr(self, sdr_id: str) -> set[str]:
         """
         Get all sessions streaming from a specific SDR.
 
@@ -298,7 +298,7 @@ class SessionTracker:
         """
         return {session_id for session_id, sid in self._session_sdr_map.items() if sid == sdr_id}
 
-    def get_sessions_with_vfo_for_rig(self, rig_id: str) -> Dict[str, str]:
+    def get_sessions_with_vfo_for_rig(self, rig_id: str) -> dict[str, str]:
         """
         Get all sessions that are tracking a specific rig and have a VFO selected.
 
@@ -308,7 +308,7 @@ class SessionTracker:
         Returns:
             Dict mapping session_id -> vfo_id for sessions with VFOs selected
         """
-        result: Dict[str, str] = {}
+        result: dict[str, str] = {}
         for session_id, rid in self._session_rig_map.items():
             if rid == rig_id:
                 vfo_number = self._session_vfo_map.get(session_id)
@@ -316,7 +316,7 @@ class SessionTracker:
                     result[session_id] = str(vfo_number)
         return result
 
-    def get_session_sdr_config(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def get_session_sdr_config(self, session_id: str) -> dict[str, Any] | None:
         """
         Get SDR configuration for a session.
 
@@ -328,9 +328,9 @@ class SessionTracker:
         """
         from session.service import get_sdr_session
 
-        return cast(Dict[str, Any] | None, get_sdr_session(session_id))
+        return cast(dict[str, Any] | None, get_sdr_session(session_id))
 
-    def get_all_active_sdrs_with_config(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_active_sdrs_with_config(self) -> dict[str, dict[str, Any]]:
         """
         Get all unique SDRs currently being streamed with their configurations.
 
@@ -345,7 +345,7 @@ class SessionTracker:
         """
         from session.service import active_sdr_clients
 
-        sdrs: Dict[str, Dict[str, Any]] = {}
+        sdrs: dict[str, dict[str, Any]] = {}
         for session_id, config in active_sdr_clients.items():
             sdr_id = config.get("sdr_id")
             if not sdr_id:
@@ -366,7 +366,7 @@ class SessionTracker:
 
         return sdrs
 
-    def get_runtime_snapshot(self, process_manager) -> Dict[str, Any]:
+    def get_runtime_snapshot(self, process_manager) -> dict[str, Any]:
         """
         Build a read-only snapshot of current sessions, their relationships, and
         runtime workloads by querying ProcessManager introspection APIs.
@@ -377,23 +377,23 @@ class SessionTracker:
 
         # Typed views for mypy-safe mutation below
         class ConsumersEntry(TypedDict):
-            clients: List[str]
-            demodulators: Dict[str, Dict[int, Optional[str]]]
-            recorders: Dict[str, Optional[str]]
-            decoders: Dict[str, Dict[int, Optional[str]]]
+            clients: list[str]
+            demodulators: dict[str, dict[int, str | None]]
+            recorders: dict[str, str | None]
+            decoders: dict[str, dict[int, str | None]]
 
         class SdrSnapshot(TypedDict):
             alive: bool
-            clients: List[str]
-            demodulators: Dict[str, Dict[int, Optional[str]]]
-            recorders: Dict[str, Optional[str]]
-            decoders: Dict[str, Dict[int, Optional[str]]]
-            device: Optional[Dict[str, Any]]
+            clients: list[str]
+            demodulators: dict[str, dict[int, str | None]]
+            recorders: dict[str, str | None]
+            decoders: dict[str, dict[int, str | None]]
+            device: dict[str, Any] | None
 
         # Get VFO manager for VFO state information
         vfo_manager = VFOManager()
 
-        sessions: Dict[str, Dict[str, Any]] = {}
+        sessions: dict[str, dict[str, Any]] = {}
         for sid in self.get_all_sessions():
             sess_sdr_id = self.get_session_sdr(sid)
             rig_id = self.get_session_rig(sid)
@@ -433,7 +433,7 @@ class SessionTracker:
             }
 
         # Query ProcessManager for process/consumer state
-        sdrs: Dict[str, SdrSnapshot] = {}
+        sdrs: dict[str, SdrSnapshot] = {}
         try:
             sdr_ids = process_manager.list_sdrs()
         except AttributeError:
@@ -468,9 +468,9 @@ class SessionTracker:
                 "device": device_info,
             }
 
-        all_consumers: Dict[str, ConsumersEntry] = {}
+        all_consumers: dict[str, ConsumersEntry] = {}
         try:
-            all_consumers = cast(Dict[str, ConsumersEntry], process_manager.list_all_consumers())
+            all_consumers = cast(dict[str, ConsumersEntry], process_manager.list_all_consumers())
         except AttributeError:
             # Last-resort fallback to raw structures for compatibility
             pm_procs = getattr(process_manager, "processes", {})
@@ -480,7 +480,7 @@ class SessionTracker:
                     continue
                 proc_sdr_id = raw_sid
                 entry: ConsumersEntry = {
-                    "clients": list(cast(List[str], pinfo.get("clients", []))),
+                    "clients": list(cast(list[str], pinfo.get("clients", []))),
                     "demodulators": {},
                     "recorders": {},
                     "decoders": {},
@@ -553,14 +553,14 @@ class SessionTracker:
         self._session_metadata.pop(session_id, None)
         logger.debug(f"Cleared all data for session {session_id}")
 
-    def get_all_sessions(self) -> Set[str]:
+    def get_all_sessions(self) -> set[str]:
         """
         Get all known session IDs.
 
         Returns:
             Set of all session IDs
         """
-        all_sessions: Set[str] = set()
+        all_sessions: set[str] = set()
         all_sessions.update(self._session_sdr_map.keys())
         all_sessions.update(self._session_vfo_map.keys())
         all_sessions.update(self._session_rig_map.keys())
@@ -603,8 +603,8 @@ class SessionTracker:
         observation_id: str,
         sdr_id: str,
         vfo_number: int,
-        metadata: Optional[Dict[str, Any]] = None,
-        session_key: Optional[str] = None,
+        metadata: dict[str, Any] | None = None,
+        session_key: str | None = None,
     ) -> str:
         """
         Register an internal observation session.
@@ -646,7 +646,7 @@ class SessionTracker:
         return str(session_id)
 
     def unregister_internal_session(
-        self, observation_id: str, session_key: Optional[str] = None
+        self, observation_id: str, session_key: str | None = None,
     ) -> bool:
         """
         Unregister an internal observation session.
@@ -696,7 +696,7 @@ class SessionTracker:
         """
         return session_id in self._internal_sessions
 
-    def get_all_internal_sessions(self) -> Set[str]:
+    def get_all_internal_sessions(self) -> set[str]:
         """
         Get all internal observation session IDs.
 
@@ -705,7 +705,7 @@ class SessionTracker:
         """
         return self._internal_sessions.copy()
 
-    def get_all_user_sessions(self) -> Set[str]:
+    def get_all_user_sessions(self) -> set[str]:
         """
         Get all user (non-internal) session IDs.
 
@@ -723,7 +723,7 @@ class SessionTracker:
         """
         return len(self._internal_sessions)
 
-    def clear_vfo_initialization_state(self, rig_id: Optional[str] = None) -> None:
+    def clear_vfo_initialization_state(self, rig_id: str | None = None) -> None:
         """
         Clear VFO initialization state.
 

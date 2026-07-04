@@ -15,7 +15,7 @@
 
 """TLE source handlers."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
@@ -23,8 +23,8 @@ from tlesync.state import sync_state_manager
 
 
 async def get_tle_sources(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get all TLE sources.
 
@@ -44,8 +44,8 @@ async def get_tle_sources(
 
 
 async def submit_tle_source(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Add a new TLE source.
 
@@ -70,8 +70,8 @@ async def submit_tle_source(
 
 
 async def edit_tle_source(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Edit an existing TLE source.
 
@@ -99,8 +99,8 @@ async def edit_tle_source(
 
 
 async def delete_tle_sources(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | dict | str]:
     """
     Delete TLE sources.
 
@@ -127,8 +127,8 @@ async def delete_tle_sources(
 
 
 async def fetch_sync_state(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, dict]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict]:
     """
     Get TLE synchronization state.
 
@@ -154,5 +154,5 @@ def register_handlers(registry):
             "edit-tle-source": (edit_tle_source, "data_submission"),
             "delete-tle-sources": (delete_tle_sources, "data_submission"),
             "fetch-sync-state": (fetch_sync_state, "data_request"),
-        }
+        },
     )

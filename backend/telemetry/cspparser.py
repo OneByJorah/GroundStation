@@ -11,11 +11,11 @@ tries a v2-like mapping first and falls back to a v1-like mapping to
 produce reasonable header fields for telemetry routing (e.g., dport).
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class CSPParser:
-    def parse(self, packet: bytes) -> Dict[str, Any]:
+    def parse(self, packet: bytes) -> dict[str, Any]:
         if len(packet) < 4:
             return {"success": False, "error": "Packet too short for CSP header"}
 
@@ -44,7 +44,7 @@ class CSPParser:
             "warning": "Uncertain CSP mapping",
         }
 
-    def _parse_v2_like(self, word: int) -> Dict[str, Any]:
+    def _parse_v2_like(self, word: int) -> dict[str, Any]:
         # Bit layout (approx):
         # [31:30]=prio (2), [29]=rdp, [28]=xtea, [27]=hmac, [26]=res
         # [25:21]=src (5), [20:16]=dst (5), [15:10]=dport (6), [9:4]=sport (6), [3:0]=len (4) or lower bits
@@ -63,7 +63,7 @@ class CSPParser:
             "version_guess": 2,
         }
 
-    def _parse_v1_like(self, word: int) -> Dict[str, Any]:
+    def _parse_v1_like(self, word: int) -> dict[str, Any]:
         # v1 classic mapping (best-effort):
         # [31:30]=prio(2) [29:25]=src(5) [24:20]=dst(5) [19:14]=dport(6) [13:8]=sport(6) [7:0]=flags
         return {
@@ -77,7 +77,7 @@ class CSPParser:
             "version_guess": 1,
         }
 
-    def _looks_reasonable(self, hdr: Dict[str, Any], total_len: int) -> bool:
+    def _looks_reasonable(self, hdr: dict[str, Any], total_len: int) -> bool:
         # dport and sport should be in 0..63 typically
         dport = hdr.get("dport")
         sport = hdr.get("sport")

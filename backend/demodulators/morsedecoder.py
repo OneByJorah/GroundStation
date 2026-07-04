@@ -27,11 +27,10 @@ import time
 import uuid
 from collections import deque
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 from scipy.signal import butter, sosfilt
-
 from vfos.state import VFOManager
 
 logger = logging.getLogger("morsedecoder")
@@ -160,9 +159,9 @@ class MorseDecoder(threading.Thread):
         self.space_threshold = 15  # Negative counter for word space (3x break)
 
         # WPM tracking
-        self.wpm: Optional[int] = None
-        self.last_dit_duration: Optional[float] = None
-        self.dit_start_time: Optional[float] = None
+        self.wpm: int | None = None
+        self.last_dit_duration: float | None = None
+        self.dit_start_time: float | None = None
 
         # Status and output
         self.status = DecoderStatus.IDLE
@@ -176,7 +175,7 @@ class MorseDecoder(threading.Thread):
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "audio_chunks_in": 0,
             "audio_samples_in": 0,
             "data_messages_out": 0,
@@ -192,11 +191,11 @@ class MorseDecoder(threading.Thread):
         logger.info(
             f"Morse decoder initialized: session {session_id}, VFO {vfo}, "
             f"target freq: {target_freq}Hz, bandwidth: {bandwidth}Hz, "
-            f"sample_rate: {sample_rate}Hz, auto_tune: {self.auto_tune}"
+            f"sample_rate: {sample_rate}Hz, auto_tune: {self.auto_tune}",
         )
         logger.info(
             f"Thresholds: dit={self.dit_threshold}, dat={self.dat_threshold}, "
-            f"break={self.break_threshold}, space={self.space_threshold}"
+            f"break={self.break_threshold}, space={self.space_threshold}",
         )
 
     def _design_bandpass_filter(self):
@@ -214,7 +213,7 @@ class MorseDecoder(threading.Thread):
 
         self.sos = butter(4, [low, high], btype="band", output="sos")
         logger.debug(
-            f"Designed bandpass filter: {low*self.sample_rate/2:.1f}-{high*self.sample_rate/2:.1f}Hz"
+            f"Designed bandpass filter: {low*self.sample_rate/2:.1f}-{high*self.sample_rate/2:.1f}Hz",
         )
 
     def _auto_detect_tone_frequency(self, signal):
@@ -261,7 +260,7 @@ class MorseDecoder(threading.Thread):
             if freq_diff > 200:
                 logger.info(
                     f"Auto-tune: Detected CW tone at {detected_freq:.0f}Hz (was {self.target_freq:.0f}Hz), "
-                    f"peak strength: {peak_strength:.2f}, avg: {np.mean(cw_mags):.2f}"
+                    f"peak strength: {peak_strength:.2f}, avg: {np.mean(cw_mags):.2f}",
                 )
                 self.target_freq = detected_freq
                 self._design_bandpass_filter()
@@ -351,7 +350,7 @@ class MorseDecoder(threading.Thread):
         if current_time - self.last_threshold_log > 5.0:
             logger.info(
                 f"Signal level: {current_level:.6f}, Threshold: {threshold:.6f}, "
-                f"Ratio: {current_level/threshold:.2f}x, Tone: {current_level > threshold}"
+                f"Ratio: {current_level/threshold:.2f}x, Tone: {current_level > threshold}",
             )
             self.last_threshold_log = current_time
 

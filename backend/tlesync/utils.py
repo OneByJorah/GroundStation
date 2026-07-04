@@ -17,12 +17,11 @@ import asyncio
 import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 import requests
-from sqlalchemy import delete, select
-
 from db.models import Groups, SatelliteGroupType, Satellites, Transmitters
+from sqlalchemy import delete, select
 
 
 def create_initial_sync_state():
@@ -60,7 +59,7 @@ def create_progress_tracker(progress_phases, sync_state, sync_state_manager):
     Returns:
         tuple: (update_progress function, completed_phases set, highest_progress counter)
     """
-    completed_phases: Set[str] = set()
+    completed_phases: set[str] = set()
     highest_progress = [0]  # Use list to make it mutable in closure
 
     def update_progress(phase, completed, total=1, message=None):
@@ -97,7 +96,7 @@ def create_progress_tracker(progress_phases, sync_state, sync_state_manager):
     return update_progress, completed_phases, highest_progress
 
 
-def sync_fetch(url: str) -> Optional[requests.Response]:
+def sync_fetch(url: str) -> requests.Response | None:
     """
     Synchronously fetch data from a URL.
 
@@ -111,7 +110,7 @@ def sync_fetch(url: str) -> Optional[requests.Response]:
     return reply
 
 
-async def async_fetch(url: str, executor: ThreadPoolExecutor) -> Optional[requests.Response]:
+async def async_fetch(url: str, executor: ThreadPoolExecutor) -> requests.Response | None:
     """
     Asynchronously fetch data from a URL using a thread pool executor.
 
@@ -163,7 +162,7 @@ def get_norad_id_from_tle(tle: str) -> int:
 
     if tle_line is None:
         raise ValueError(
-            f"A valid TLE first data line was not found in the provided input (TLE: {tle})"
+            f"A valid TLE first data line was not found in the provided input (TLE: {tle})",
         )
 
     # According to the TLE format, NORAD ID is within columns 3 to 7 (1-indexed)
@@ -188,8 +187,8 @@ def detect_duplicate_satellites(celestrak_list, logger):
         dict: Contains duplicate information and deduplicated list
     """
     # Track satellites by NORAD ID
-    satellites_by_norad: Dict[int, Dict[str, Any]] = {}
-    duplicates_info: Dict[int, Dict[str, Any]] = {}
+    satellites_by_norad: dict[int, dict[str, Any]] = {}
+    duplicates_info: dict[int, dict[str, Any]] = {}
 
     for sat in celestrak_list:
         norad_id = get_norad_id_from_tle(sat["line1"])
@@ -217,7 +216,7 @@ def detect_duplicate_satellites(celestrak_list, logger):
                 logger.debug(
                     f"Duplicate satellite detected - NORAD ID: {norad_id}, "
                     f"Names: {duplicates_info[norad_id]['names']}, "
-                    f"Occurrences: {duplicates_info[norad_id]['occurrences']}"
+                    f"Occurrences: {duplicates_info[norad_id]['occurrences']}",
                 )
 
     # Create deduplicated list
@@ -231,11 +230,11 @@ def detect_duplicate_satellites(celestrak_list, logger):
 
     logger.info(
         f"Duplicate detection complete: {duplicate_count} unique satellites have duplicates, "
-        f"{total_duplicates} total duplicate entries found"
+        f"{total_duplicates} total duplicate entries found",
     )
     logger.info(
         f"Original list: {len(celestrak_list)} satellites, "
-        f"Deduplicated list: {len(deduplicated_list)} satellites"
+        f"Deduplicated list: {len(deduplicated_list)} satellites",
     )
 
     return {
@@ -297,7 +296,7 @@ async def query_existing_data(dbsession, logger):
             }
 
         logger.info(
-            f"Found {len(existing_satellite_norad_ids)} existing satellites and {len(existing_transmitter_uuids)} existing transmitters in database"
+            f"Found {len(existing_satellite_norad_ids)} existing satellites and {len(existing_transmitter_uuids)} existing transmitters in database",
         )
 
     except Exception as e:
@@ -403,7 +402,7 @@ def update_satellite_with_satnogs_data(satellite, satnogs_sat_info):
 
 
 def detect_satellite_modifications(
-    norad_id, satellite_data_for_comparison, existing_satellites, sync_state, logger
+    norad_id, satellite_data_for_comparison, existing_satellites, sync_state, logger,
 ):
     """
     Detect if a satellite has been modified and update sync state.
@@ -434,10 +433,10 @@ def detect_satellite_modifications(
                 "norad_id": norad_id,
                 "name": satellite_data_for_comparison.get("name", "Unknown"),
                 "changes": changes,
-            }
+            },
         )
         logger.debug(
-            f"Satellite modified: {satellite_data_for_comparison.get('name', 'Unknown')} (NORAD ID: {norad_id}), changes: {changes}"
+            f"Satellite modified: {satellite_data_for_comparison.get('name', 'Unknown')} (NORAD ID: {norad_id}), changes: {changes}",
         )
         return True
 
@@ -543,10 +542,10 @@ def detect_transmitter_modifications(
                 "satellite_name": satellite_name,
                 "norad_id": norad_id,
                 "changes": changes,
-            }
+            },
         )
         logger.info(
-            f"Transmitter modified: {transmitter_data_for_comparison.get('description', 'Unknown')} for satellite {satellite_name} (UUID: {transmitter_uuid}), changes: {changes}"
+            f"Transmitter modified: {transmitter_data_for_comparison.get('description', 'Unknown')} for satellite {satellite_name} (UUID: {transmitter_uuid}), changes: {changes}",
         )
         return True
 
@@ -616,7 +615,7 @@ def get_norad_ids(tle_objects: list) -> list:
     return [parse_norad_id_from_line1(obj["line1"]) for obj in tle_objects]
 
 
-def get_satellite_by_norad_id(norad_id: int, satellites: List[dict]) -> Optional[dict]:
+def get_satellite_by_norad_id(norad_id: int, satellites: list[dict]) -> dict | None:
     """
     Returns the satellite object from the provided list that matches the given NORAD ID.
 
@@ -687,7 +686,7 @@ def simple_parse_3le(file_contents: str) -> list:
 
 
 async def detect_and_remove_satellites(
-    session, tle_source_identifier, current_satellite_ids, logger
+    session, tle_source_identifier, current_satellite_ids, logger,
 ):
     """
     Detect satellites that were removed from a TLE source and handle their removal.
@@ -704,7 +703,7 @@ async def detect_and_remove_satellites(
 
     # Get the existing satellite group for this TLE source
     result = await session.execute(
-        select(Groups).filter_by(identifier=tle_source_identifier, type=SatelliteGroupType.SYSTEM)
+        select(Groups).filter_by(identifier=tle_source_identifier, type=SatelliteGroupType.SYSTEM),
     )
     existing_group = result.scalar_one_or_none()
 
@@ -719,18 +718,18 @@ async def detect_and_remove_satellites(
     # Find satellites that were in the previous list but not in the current list
     removed_satellite_ids = list(previous_ids_set - current_ids_set)
 
-    removed_data: Dict[str, List[Any]] = {"satellites": [], "transmitters": []}
+    removed_data: dict[str, list[Any]] = {"satellites": [], "transmitters": []}
 
     if removed_satellite_ids:
         logger.info(
-            f"Detected {len(removed_satellite_ids)} removed satellites from TLE source '{tle_source_identifier}': {removed_satellite_ids}"
+            f"Detected {len(removed_satellite_ids)} removed satellites from TLE source '{tle_source_identifier}': {removed_satellite_ids}",
         )
 
         # Handle removal of satellites and their transmitters
         for norad_id in removed_satellite_ids:
             # Get satellite details before removing
             satellite_result = await session.execute(
-                select(Satellites).filter_by(norad_id=norad_id)
+                select(Satellites).filter_by(norad_id=norad_id),
             )
             satellite = satellite_result.scalar_one_or_none()
 
@@ -740,7 +739,7 @@ async def detect_and_remove_satellites(
                     select(Groups).filter(
                         Groups.identifier != tle_source_identifier,
                         Groups.type == SatelliteGroupType.SYSTEM,
-                    )
+                    ),
                 )
                 other_groups = other_groups_result.scalars().all()
 
@@ -754,12 +753,12 @@ async def detect_and_remove_satellites(
                 if not satellite_in_other_sources:
                     # Satellite is not in any other TLE source, safe to remove
                     logger.info(
-                        f"Removing satellite {norad_id} ({satellite.name}) and its transmitters (not found in other TLE sources)"
+                        f"Removing satellite {norad_id} ({satellite.name}) and its transmitters (not found in other TLE sources)",
                     )
 
                     # Get transmitter details before removing
                     transmitters_result = await session.execute(
-                        select(Transmitters).filter_by(norad_cat_id=norad_id)
+                        select(Transmitters).filter_by(norad_cat_id=norad_id),
                     )
                     transmitters = transmitters_result.scalars().all()
 
@@ -774,17 +773,17 @@ async def detect_and_remove_satellites(
                                 "downlink_low": transmitter.downlink_low,
                                 "downlink_high": transmitter.downlink_high,
                                 "mode": transmitter.mode,
-                            }
+                            },
                         )
 
                     # Remove transmitters first (due to foreign key constraint)
                     transmitters_delete_result = await session.execute(
-                        delete(Transmitters).filter_by(norad_cat_id=norad_id)
+                        delete(Transmitters).filter_by(norad_cat_id=norad_id),
                     )
                     transmitters_deleted = transmitters_delete_result.rowcount
                     if transmitters_deleted > 0:
                         logger.info(
-                            f"Removed {transmitters_deleted} transmitters for satellite {norad_id}"
+                            f"Removed {transmitters_deleted} transmitters for satellite {norad_id}",
                         )
 
                     # Add satellite details to removed data
@@ -794,19 +793,19 @@ async def detect_and_remove_satellites(
                             "name": satellite.name,
                             "sat_id": satellite.sat_id,
                             "tle_source": tle_source_identifier,
-                        }
+                        },
                     )
 
                     # Remove the satellite
                     satellite_delete_result = await session.execute(
-                        delete(Satellites).filter_by(norad_id=norad_id)
+                        delete(Satellites).filter_by(norad_id=norad_id),
                     )
                     satellite_deleted = satellite_delete_result.rowcount
                     if satellite_deleted > 0:
                         logger.info(f"Removed satellite {norad_id} ({satellite.name})")
                 else:
                     logger.info(
-                        f"Satellite {norad_id} ({satellite.name}) found in other TLE sources, keeping it"
+                        f"Satellite {norad_id} ({satellite.name}) found in other TLE sources, keeping it",
                     )
             else:
                 logger.info(f"Satellite {norad_id} not found in database, skipping removal")
@@ -815,7 +814,7 @@ async def detect_and_remove_satellites(
 
 
 async def update_satellite_group_with_removal_detection(
-    session, tle_source_identifier, satellite_ids, group_name, logger
+    session, tle_source_identifier, satellite_ids, group_name, logger,
 ):
     """
     Update or create a satellite group and detect removed satellites.
@@ -833,12 +832,12 @@ async def update_satellite_group_with_removal_detection(
 
     # First, detect and handle removed satellites
     removed_data = await detect_and_remove_satellites(
-        session, tle_source_identifier, satellite_ids, logger
+        session, tle_source_identifier, satellite_ids, logger,
     )
 
     # Then update or create the satellite group
     result = await session.execute(
-        select(Groups).filter_by(identifier=tle_source_identifier, type=SatelliteGroupType.SYSTEM)
+        select(Groups).filter_by(identifier=tle_source_identifier, type=SatelliteGroupType.SYSTEM),
     )
     existing_group = result.scalar_one_or_none()
 
@@ -859,7 +858,7 @@ async def update_satellite_group_with_removal_detection(
         )
         session.add(new_group)
         logger.info(
-            f"Created new satellite group '{group_name}' with {len(satellite_ids)} satellites"
+            f"Created new satellite group '{group_name}' with {len(satellite_ids)} satellites",
         )
 
     return removed_data

@@ -19,11 +19,10 @@ import logging
 import queue
 import threading
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy import signal
-
 from vfos.state import VFOManager
 
 logger = logging.getLogger("ssb-demodulator")
@@ -95,11 +94,11 @@ class SSBDemodulator(threading.Thread):
         self.current_mode = None
 
         # Filters (will be initialized when we know sample rates)
-        self.decimation_filter: Optional[Tuple[np.ndarray, int]] = None
-        self.audio_filter: Optional[np.ndarray] = None
+        self.decimation_filter: tuple[np.ndarray, int] | None = None
+        self.audio_filter: np.ndarray | None = None
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "iq_samples_in": 0,
             "audio_chunks_out": 0,
@@ -234,7 +233,7 @@ class SSBDemodulator(threading.Thread):
         numtaps = 201
         # Design bandpass filter for SSB audio
         filter_taps = signal.firwin(
-            numtaps, [normalized_low, normalized_high], pass_zero=False, window="hamming"
+            numtaps, [normalized_low, normalized_high], pass_zero=False, window="hamming",
         )
 
         return filter_taps
@@ -372,7 +371,7 @@ class SSBDemodulator(threading.Thread):
 
                     # Design filters
                     iir_coeffs, decimation = self._design_decimation_filter(
-                        sdr_sample_rate, vfo_bandwidth
+                        sdr_sample_rate, vfo_bandwidth,
                     )
                     self.decimation_filter = (iir_coeffs, decimation)
 
@@ -383,15 +382,15 @@ class SSBDemodulator(threading.Thread):
                     initial_value = samples[0] if len(samples) > 0 else 0
                     b, a = iir_coeffs
                     decimation_state = self._resize_filter_state(
-                        decimation_state, b, initial_value, a
+                        decimation_state, b, initial_value, a,
                     )
                     audio_filter_state = self._resize_filter_state(
-                        audio_filter_state, self.audio_filter, 0
+                        audio_filter_state, self.audio_filter, 0,
                     )
 
                     logger.info(
                         f"Filters initialized (internal_mode={self.internal_mode}): SDR rate={sdr_sample_rate/1e6:.2f} MHz, "
-                        f"decimation={decimation}, intermediate={intermediate_rate/1e3:.1f} kHz, mode={self.mode.upper()}"
+                        f"decimation={decimation}, intermediate={intermediate_rate/1e3:.1f} kHz, mode={self.mode.upper()}",
                     )
 
                 # Step 1: Frequency translation (tune to VFO frequency)
@@ -428,14 +427,14 @@ class SSBDemodulator(threading.Thread):
                         self.stats["is_sleeping"] = False
                     logger.info(
                         f"VFO back in SDR bandwidth, resuming SSB demodulation: VFO={vfo_center_freq/1e6:.3f}MHz, "
-                        f"SDR={sdr_center_freq/1e6:.3f}MHz, offset={offset/1e3:.1f}kHz"
+                        f"SDR={sdr_center_freq/1e6:.3f}MHz, offset={offset/1e3:.1f}kHz",
                     )
 
                 offset_freq = vfo_center_freq - sdr_center_freq
                 if abs(offset_freq) > sdr_sample_rate / 2:
                     logger.debug(
                         f"VFO frequency {vfo_center_freq} Hz is outside SDR bandwidth "
-                        f"(SDR center: {sdr_center_freq} Hz, rate: {sdr_sample_rate} Hz)"
+                        f"(SDR center: {sdr_center_freq} Hz, rate: {sdr_sample_rate} Hz)",
                     )
                     continue
 
@@ -482,12 +481,12 @@ class SSBDemodulator(threading.Thread):
                     audio_filter_state = signal.lfilter_zi(self.audio_filter, 1) * demodulated[0]
 
                 audio_filtered, audio_filter_state = signal.lfilter(
-                    self.audio_filter, 1, demodulated, zi=audio_filter_state
+                    self.audio_filter, 1, demodulated, zi=audio_filter_state,
                 )
 
                 # Step 5: Resample to audio rate (44.1 kHz)
                 num_output_samples = int(
-                    len(audio_filtered) * self.audio_sample_rate / intermediate_rate
+                    len(audio_filtered) * self.audio_sample_rate / intermediate_rate,
                 )
                 if num_output_samples > 0:
                     audio = signal.resample(audio_filtered, num_output_samples)
@@ -550,12 +549,12 @@ class SSBDemodulator(threading.Thread):
                         if not self.internal_mode:
                             logger.warning(
                                 f"Audio buffer overflow ({len(self.audio_buffer)} samples), "
-                                f"dropping old audio to prevent lag buildup"
+                                f"dropping old audio to prevent lag buildup",
                             )
                         else:
                             logger.debug(
                                 f"Audio buffer overflow ({len(self.audio_buffer)} samples), "
-                                f"dropping old audio (internal mode)"
+                                f"dropping old audio (internal mode)",
                             )
 
                     # Send chunks of target size when buffer is full enough
@@ -585,16 +584,16 @@ class SSBDemodulator(threading.Thread):
                         except queue.Full:
                             # Queue is full - drop this chunk to prevent lag accumulation
                             logger.debug(
-                                f"Audio queue full, dropping chunk for session {self.session_id}"
+                                f"Audio queue full, dropping chunk for session {self.session_id}",
                             )
                             break  # Exit while loop to process next IQ samples
                         except Exception as e:
-                            logger.warning(f"Could not queue audio: {str(e)}")
+                            logger.warning(f"Could not queue audio: {e!s}")
                             break
 
             except Exception as e:
                 if self.running:
-                    logger.error(f"Error in SSB demodulator: {str(e)}")
+                    logger.error(f"Error in SSB demodulator: {e!s}")
                     logger.exception(e)
                     with self.stats_lock:
                         self.stats["errors"] += 1

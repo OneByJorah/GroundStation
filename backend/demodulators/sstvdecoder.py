@@ -14,7 +14,7 @@ import os
 import queue
 import time
 from enum import Enum
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import psutil
@@ -398,7 +398,7 @@ class SSTVDecoder(BaseDecoderProcess):
         """Send statistics update to UI and performance monitor"""
         # Full performance stats for monitoring (thread-safe copy)
         with self.stats_lock:
-            perf_stats: Dict[str, Any] = self.stats.copy()
+            perf_stats: dict[str, Any] = self.stats.copy()
             ingest_sps = perf_stats.get("ingest_samples_per_sec", 0.0)
             ingest_cps = perf_stats.get("ingest_chunks_per_sec", 0.0)
 
@@ -437,7 +437,7 @@ class SSTVDecoder(BaseDecoderProcess):
         try:
             curr_iq_chunks = int(perf_stats.get("iq_chunks_in", 0) or 0)
             curr_samples = int(
-                perf_stats.get("samples_in", 0) or perf_stats.get("iq_samples_in", 0) or 0
+                perf_stats.get("samples_in", 0) or perf_stats.get("iq_samples_in", 0) or 0,
             )
             curr_msgs_out = int(perf_stats.get("data_messages_out", 0) or 0)
 
@@ -477,7 +477,7 @@ class SSTVDecoder(BaseDecoderProcess):
         self._rates_prev_counters = {
             "iq_chunks_in": int(perf_stats.get("iq_chunks_in", 0) or 0),
             "samples_in": int(
-                perf_stats.get("samples_in", 0) or perf_stats.get("iq_samples_in", 0) or 0
+                perf_stats.get("samples_in", 0) or perf_stats.get("iq_samples_in", 0) or 0,
             ),
             "data_messages_out": int(perf_stats.get("data_messages_out", 0) or 0),
         }
@@ -727,7 +727,7 @@ class SSTVDecoder(BaseDecoderProcess):
                     px_pos = round(
                         seq_start
                         + (chan_offset + px * chan_pixel_time - chan_centre_window)
-                        * self.audio_sample_rate
+                        * self.audio_sample_rate,
                     )
                     px_end = px_pos + chan_pixel_window
 
@@ -841,7 +841,7 @@ class SSTVDecoder(BaseDecoderProcess):
                 "filesize": filesize,
                 "timestamp": decode_timestamp,
                 "timestamp_iso": time.strftime(
-                    "%Y-%m-%dT%H:%M:%S%z", time.localtime(decode_timestamp)
+                    "%Y-%m-%dT%H:%M:%S%z", time.localtime(decode_timestamp),
                 ),
             },
             "decoder": {
@@ -1040,7 +1040,7 @@ class SSTVDecoder(BaseDecoderProcess):
 
                         # Validate VFO center is within SDR bandwidth
                         is_in_band, vfo_offset, margin = self._is_vfo_in_sdr_bandwidth(
-                            vfo_center, sdr_center, sdr_rate
+                            vfo_center, sdr_center, sdr_rate,
                         )
 
                         if not is_in_band:
@@ -1048,10 +1048,10 @@ class SSTVDecoder(BaseDecoderProcess):
                             with self.stats_lock:
                                 # Safely increment (mypy-safe in case initial value is None)
                                 current_dropped = int(
-                                    (self.stats.get("samples_dropped_out_of_band", 0) or 0)
+                                    (self.stats.get("samples_dropped_out_of_band", 0) or 0),
                                 )
                                 self.stats["samples_dropped_out_of_band"] = current_dropped + len(
-                                    samples
+                                    samples,
                                 )
 
                             if not self.is_sleeping:
@@ -1085,7 +1085,7 @@ class SSTVDecoder(BaseDecoderProcess):
                             self.is_sleeping = False
                             logger.info(
                                 f"VFO back in SDR bandwidth, resuming: VFO={vfo_center/1e6:.3f}MHz, "
-                                f"SDR={sdr_center/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz"
+                                f"SDR={sdr_center/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz",
                             )
                             # For SSTV, LISTENING is the idle state
                             self._send_status_update(
@@ -1104,16 +1104,16 @@ class SSTVDecoder(BaseDecoderProcess):
 
                             # Design filters
                             stages, total_decimation = self._design_decimation_filter(
-                                sdr_rate, vfo_bandwidth
+                                sdr_rate, vfo_bandwidth,
                             )
                             self.decimation_filter = (stages, total_decimation)
 
                             intermediate_rate = sdr_rate / total_decimation
                             self.audio_filter = self._design_audio_filter(
-                                intermediate_rate, vfo_bandwidth
+                                intermediate_rate, vfo_bandwidth,
                             )
                             self.deemphasis_filter = self._design_deemphasis_filter(
-                                intermediate_rate
+                                intermediate_rate,
                             )
 
                             # Initialize filter states
@@ -1130,7 +1130,7 @@ class SSTVDecoder(BaseDecoderProcess):
                             logger.info(
                                 f"SSTV decoder initialized: SDR={sdr_rate / 1e6:.2f}MS/s, "
                                 f"VFO={vfo_center / 1e6:.3f}MHz, BW={vfo_bandwidth / 1e3:.0f}kHz, "
-                                f"decimation={total_decimation}, intermediate={intermediate_rate / 1e3:.1f}kHz"
+                                f"decimation={total_decimation}, intermediate={intermediate_rate / 1e3:.1f}kHz",
                             )
 
                         # Step 1: Frequency translation
@@ -1147,7 +1147,7 @@ class SSTVDecoder(BaseDecoderProcess):
                                 decimation_state.append(signal.lfilter_zi(b, a) * decimated[0])
 
                             filtered, decimation_state[stage_idx] = signal.lfilter(
-                                b, a, decimated, zi=decimation_state[stage_idx]
+                                b, a, decimated, zi=decimation_state[stage_idx],
                             )
                             decimated = filtered[::stage_decimation]
 
@@ -1162,7 +1162,7 @@ class SSTVDecoder(BaseDecoderProcess):
                                 signal.lfilter_zi(self.audio_filter, 1) * demodulated[0]
                             )
                         audio_filtered, audio_filter_state = signal.lfilter(
-                            self.audio_filter, 1, demodulated, zi=audio_filter_state
+                            self.audio_filter, 1, demodulated, zi=audio_filter_state,
                         )
 
                         # Step 5: De-emphasis
@@ -1170,12 +1170,12 @@ class SSTVDecoder(BaseDecoderProcess):
                         if deemph_state is None:
                             deemph_state = signal.lfilter_zi(b, a) * audio_filtered[0]
                         deemphasized, deemph_state = signal.lfilter(
-                            b, a, audio_filtered, zi=deemph_state
+                            b, a, audio_filtered, zi=deemph_state,
                         )
 
                         # Step 6: Resample to audio rate (44.1 kHz)
                         num_output_samples = int(
-                            len(deemphasized) * self.audio_sample_rate / intermediate_rate
+                            len(deemphasized) * self.audio_sample_rate / intermediate_rate,
                         )
                         if num_output_samples > 0:
                             audio = signal.resample(deemphasized, num_output_samples)
@@ -1271,7 +1271,7 @@ class SSTVDecoder(BaseDecoderProcess):
                     image = self._draw_image(image_data)
 
                     self._send_progress_update(
-                        mode_spec["height"], mode_spec["height"], mode_spec["name"]
+                        mode_spec["height"], mode_spec["height"], mode_spec["name"],
                     )
                     self._send_completed_image(image, mode_spec["name"])
 
@@ -1283,7 +1283,7 @@ class SSTVDecoder(BaseDecoderProcess):
                     next_decode_buffer = np.array([], dtype=np.float32)
                     processing = False
                     logger.info(
-                        f"Finished processing, starting next decode with {len(self.audio_buffer)} buffered samples"
+                        f"Finished processing, starting next decode with {len(self.audio_buffer)} buffered samples",
                     )
                     self._send_status_update(DecoderStatus.LISTENING)
 

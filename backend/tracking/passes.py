@@ -17,23 +17,21 @@
 
 import json
 import logging
-from typing import Dict, Union
 
 import numpy as np
-from skyfield.api import EarthSatellite, Loader, Topos
-
 from common.common import ModelEncoder
+from skyfield.api import EarthSatellite, Loader, Topos
 
 logger = logging.getLogger("passes-worker")
 
 
 def calculate_next_events(
-    satellite_data: Union[Dict, list],
-    home_location: Dict[str, float],
+    satellite_data: dict | list,
+    home_location: dict[str, float],
     hours: float = 6.0,
     above_el=0,
     step_minutes=1,
-) -> Dict:
+) -> dict:
     """
     This function calculates upcoming satellite observation events based on satellite data, observation location,
     duration, and elevation threshold. It primarily uses Skyfield's efficient find_events method.
@@ -53,7 +51,7 @@ def calculate_next_events(
     :rtype: dict
     """
 
-    reply: Dict[str, Union[bool, None, list, None, Dict, str]] = {
+    reply: dict[str, bool | None | list | None | dict | str] = {
         "success": None,
         "data": None,
         "parameters": None,
@@ -134,7 +132,7 @@ def calculate_next_events(
                         logger.error(
                             f"Satellite {norad_id} skipped: Extreme first derivative of mean motion {ndot:.8f} "
                             f"(threshold: {ndot_threshold}). This satellite is in rapid orbital decay and "
-                            f"will cause performance issues during propagation."
+                            f"will cause performance issues during propagation.",
                         )
                         continue  # Skip this satellite
             except (ValueError, IndexError) as e:
@@ -156,11 +154,11 @@ def calculate_next_events(
 
             # APPROACH 1: Use find_events method as the primary, efficient approach
             times, events_type = satellite.find_events(
-                observer, t0, t_end, altitude_degrees=above_el
+                observer, t0, t_end, altitude_degrees=above_el,
             )
 
             logger.debug(
-                f"find_events method found {len(times)} times and events {events_type} for satellite {norad_id}"
+                f"find_events method found {len(times)} times and events {events_type} for satellite {norad_id}",
             )
 
             # First, check if the satellite is already visible at the start time
@@ -255,7 +253,7 @@ def calculate_next_events(
                             "start_azimuth": start_az_value,
                             "end_azimuth": end_az_value,
                             "peak_azimuth": float(az_peak_value),
-                        }
+                        },
                     )
 
                     current_pass = {}
@@ -269,7 +267,7 @@ def calculate_next_events(
                     # Sample points to find maximum altitude
                     num_checks = 20
                     check_times = current_pass["start_time"] + np.linspace(
-                        0, (t_end.tt - current_pass["start_time"].tt), num_checks
+                        0, (t_end.tt - current_pass["start_time"].tt), num_checks,
                     )
 
                     topocentric = difference.at(current_pass["start_time"])
@@ -335,17 +333,17 @@ def calculate_next_events(
                         "end_azimuth": end_az_value,
                         "peak_azimuth": float(az_peak_value),
                         "estimated_end": True,
-                    }
+                    },
                 )
 
             if satellite_events:
                 logger.debug(
-                    f"find_events method found {len(satellite_events)} passes for satellite {norad_id}"
+                    f"find_events method found {len(satellite_events)} passes for satellite {norad_id}",
                 )
                 events.extend(satellite_events)
             else:
                 logger.debug(
-                    f"find_events found no passes for satellite {norad_id}. Falling back to time-step method."
+                    f"find_events found no passes for satellite {norad_id}. Falling back to time-step method.",
                 )
 
                 # APPROACH 2: Fallback to traditional time-step method
@@ -418,12 +416,12 @@ def calculate_next_events(
                             "start_azimuth": float(azimuths[start_i]),
                             "end_azimuth": float(azimuths[end_i]),
                             "peak_azimuth": float(pass_azimuths[peak_i]),
-                        }
+                        },
                     )
 
                 if timestep_events:
                     logger.debug(
-                        f"Time-step method found {len(timestep_events)} passes for satellite {norad_id}"
+                        f"Time-step method found {len(timestep_events)} passes for satellite {norad_id}",
                     )
                     events.extend(timestep_events)
                 else:

@@ -6,7 +6,7 @@ introduce any runtime dependencies or validation. All shapes remain JSON-safe
 in public views (e.g., runtime snapshots) and keep existing behavior.
 """
 
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 
 class SessionConfig(TypedDict, total=False):
@@ -26,11 +26,11 @@ class SessionConfig(TypedDict, total=False):
     rtl_agc: bool
     fft_window: str
     fft_averaging: int
-    antenna: Optional[str]
-    recording_path: Optional[str]
-    serial_number: Optional[str]
-    host: Optional[str]
-    port: Optional[int]
+    antenna: str | None
+    recording_path: str | None
+    serial_number: str | None
+    host: str | None
+    port: int | None
     client_id: str
     soapy_agc: bool
     offset_freq: float
@@ -40,9 +40,9 @@ class SessionView(TypedDict, total=False):
     """Merged relationship/config view for a session."""
 
     session_id: str
-    sdr_id: Optional[str]
-    rig_id: Optional[str]
-    vfo: Optional[int]
+    sdr_id: str | None
+    rig_id: str | None
+    vfo: int | None
     config: SessionConfig
     is_internal: bool  # True for internal observations, False for user sessions
 
@@ -57,31 +57,31 @@ class ConsumerMeta(TypedDict, total=False):
 
     instance: object
     subscription_key: str
-    class_name: Optional[str]
-    thread_name: Optional[str]
-    vfo_number: Optional[int]
+    class_name: str | None
+    thread_name: str | None
+    vfo_number: int | None
 
 
 class SDRProcessStatus(TypedDict, total=False):
     """Basic status of an SDR worker process."""
 
     alive: bool
-    pid: Optional[int]
-    name: Optional[str]
+    pid: int | None
+    name: str | None
 
 
 class RuntimeSDRConsumers(TypedDict, total=False):
     """JSON-safe snapshot entry for one SDR in a runtime snapshot."""
 
     alive: bool
-    clients: List[str]
-    demodulators: Dict[str, Dict[int, Optional[str]]]
-    recorders: Dict[str, Optional[str]]
-    decoders: Dict[str, Dict[int, Optional[str]]]
+    clients: list[str]
+    demodulators: dict[str, dict[int, str | None]]
+    recorders: dict[str, str | None]
+    decoders: dict[str, dict[int, str | None]]
 
 
 class RuntimeSnapshot(TypedDict, total=False):
     """Top-level runtime snapshot structure."""
 
-    sessions: Dict[str, SessionView]
-    sdrs: Dict[str, RuntimeSDRConsumers]
+    sessions: dict[str, SessionView]
+    sdrs: dict[str, RuntimeSDRConsumers]

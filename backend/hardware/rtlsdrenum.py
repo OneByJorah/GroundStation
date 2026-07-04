@@ -16,7 +16,7 @@
 import json
 import logging
 from ctypes import c_ubyte
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rtlsdr import librtlsdr
 
@@ -46,10 +46,10 @@ def probe_available_rtl_sdrs() -> str:
             - log: List of log messages
     """
 
-    log_messages: List[str] = []
-    devices: List[Dict[str, Any]] = []
-    success: Optional[bool] = None
-    error: Optional[str] = None
+    log_messages: list[str] = []
+    devices: list[dict[str, Any]] = []
+    success: bool | None = None
+    error: str | None = None
 
     log_messages.append("Enumerating available RTL-SDR devices")
 
@@ -65,7 +65,7 @@ def probe_available_rtl_sdrs() -> str:
             product_buf = (c_ubyte * 256)()
             serial_buf = (c_ubyte * 256)()
             res = librtlsdr.rtlsdr_get_device_usb_strings(
-                index, manufacturer_buf, product_buf, serial_buf
+                index, manufacturer_buf, product_buf, serial_buf,
             )
 
             if res == 0:
@@ -95,12 +95,12 @@ def probe_available_rtl_sdrs() -> str:
         success = True
 
     except Exception as exc:
-        log_messages.append(f"Error: Error enumerating RTL-SDR devices: {str(exc)}")
-        log_messages.append(f"Exception: {str(exc)}")
+        log_messages.append(f"Error: Error enumerating RTL-SDR devices: {exc!s}")
+        log_messages.append(f"Exception: {exc!s}")
         success = False
         error = str(exc)
 
-    reply: Dict[str, Any] = {
+    reply: dict[str, Any] = {
         "success": success,
         "data": devices,
         "error": error,

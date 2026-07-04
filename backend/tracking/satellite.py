@@ -16,7 +16,6 @@
 
 import math
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Tuple
 
 from skyfield.api import EarthSatellite, load, wgs84
 
@@ -27,7 +26,7 @@ def get_satellite_az_el(
     satellite_tle_line1: str,
     satellite_tle_line2: str,
     observation_time: datetime,
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Given a home location (latitude, longitude), a satellite TLE (two-line element),
     and a specific observation time, this function returns the
@@ -112,8 +111,8 @@ def get_satellite_position_from_tle(tle_lines):
 
 
 def get_satellite_path(
-    tle: List[str], duration_minutes: float, step_minutes: float = 1.0
-) -> Dict[str, List[List[Dict[str, float]]]]:
+    tle: list[str], duration_minutes: float, step_minutes: float = 1.0,
+) -> dict[str, list[list[dict[str, float]]]]:
     """
     Computes the satellite's past and future path coordinates from its TLE.
     The path is computed at a fixed time step and then split into segments so that
@@ -203,7 +202,7 @@ def get_satellite_path(
         return {"past": past_segments, "future": future_segments}
 
     except Exception as e:
-        print(f"Error computing satellite paths: {str(e)}")
+        print(f"Error computing satellite paths: {e!s}")
         return {"past": [], "future": []}
 
 
@@ -224,7 +223,7 @@ def normalize_longitude(lon: float) -> float:
     return lon
 
 
-def split_at_dateline(points: List[Dict[str, float]]) -> List[List[Dict[str, float]]]:
+def split_at_dateline(points: list[dict[str, float]]) -> list[list[dict[str, float]]]:
     """
     Splits a list of coordinate points into segments so that no segment
     crosses the international date line (longitude ±180°).

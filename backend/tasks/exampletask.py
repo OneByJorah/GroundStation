@@ -18,7 +18,6 @@ Usage (called from manager):
 import signal
 import time
 from multiprocessing import Queue
-from typing import Optional
 
 
 class GracefulKiller:
@@ -37,8 +36,8 @@ def example_long_task(
     name: str,
     duration: int = 5,
     interval: int = 1,
-    fail_at: Optional[int] = None,
-    _progress_queue: Optional[Queue] = None,
+    fail_at: int | None = None,
+    _progress_queue: Queue | None = None,
 ):
     """
     Example long-running task for testing.
@@ -58,13 +57,13 @@ def example_long_task(
     # Send initial message
     if _progress_queue:
         _progress_queue.put(
-            {"type": "output", "output": f"Starting task: {name}", "stream": "stdout"}
+            {"type": "output", "output": f"Starting task: {name}", "stream": "stdout"},
         )
         _progress_queue.put(
-            {"type": "output", "output": f"Duration: {duration} seconds", "stream": "stdout"}
+            {"type": "output", "output": f"Duration: {duration} seconds", "stream": "stdout"},
         )
         _progress_queue.put(
-            {"type": "output", "output": f"Update interval: {interval} seconds", "stream": "stdout"}
+            {"type": "output", "output": f"Update interval: {interval} seconds", "stream": "stdout"},
         )
         _progress_queue.put({"type": "output", "output": "-" * 60, "stream": "stdout"})
 
@@ -85,7 +84,7 @@ def example_long_task(
                         "type": "output",
                         "output": f"Task '{name}' was interrupted after {elapsed:.1f} seconds",
                         "stream": "stdout",
-                    }
+                    },
                 )
             return {"status": "interrupted", "elapsed": elapsed, "updates": update_count}
 
@@ -111,7 +110,7 @@ def example_long_task(
                         "output": f"Update #{update_count} | Processing frame {update_count * 100}",
                         "stream": "stdout",
                         "progress": progress_percent,
-                    }
+                    },
                 )
             elif update_count % 3 == 1:
                 _progress_queue.put(
@@ -120,7 +119,7 @@ def example_long_task(
                         "output": f"Status: Working... | Memory: {update_count * 10}MB | CPU: {min(50 + (update_count % 30), 95)}%",
                         "stream": "stdout",
                         "progress": progress_percent,
-                    }
+                    },
                 )
             else:
                 _progress_queue.put(
@@ -129,7 +128,7 @@ def example_long_task(
                         "output": f"Info: Processed {update_count * 50} samples | Queue size: {update_count % 10} | Active threads: 4",
                         "stream": "stdout",
                         "progress": progress_percent,
-                    }
+                    },
                 )
 
             # Occasionally send warning to stderr
@@ -140,7 +139,7 @@ def example_long_task(
                         "output": "[WARNING] Checkpoint - Task running normally",
                         "stream": "stderr",
                         "progress": progress_percent,
-                    }
+                    },
                 )
 
         # Sleep for the interval
@@ -155,26 +154,26 @@ def example_long_task(
                 "type": "output",
                 "output": f"Task '{name}' completed successfully!",
                 "stream": "stdout",
-            }
+            },
         )
         _progress_queue.put(
             {
                 "type": "output",
                 "output": f"Total duration: {elapsed:.1f} seconds",
                 "stream": "stdout",
-            }
+            },
         )
         _progress_queue.put(
-            {"type": "output", "output": f"Total updates: {update_count}", "stream": "stdout"}
+            {"type": "output", "output": f"Total updates: {update_count}", "stream": "stdout"},
         )
         _progress_queue.put(
-            {"type": "output", "output": "Final progress: 100.0%", "stream": "stdout"}
+            {"type": "output", "output": "Final progress: 100.0%", "stream": "stdout"},
         )
 
     return {"status": "completed", "elapsed": elapsed, "updates": update_count, "name": name}
 
 
-def example_quick_task(message: str, _progress_queue: Optional[Queue] = None):
+def example_quick_task(message: str, _progress_queue: Queue | None = None):
     """
     Quick example task that completes immediately.
 
@@ -184,16 +183,16 @@ def example_quick_task(message: str, _progress_queue: Optional[Queue] = None):
     """
     if _progress_queue:
         _progress_queue.put(
-            {"type": "output", "output": f"Quick task says: {message}", "stream": "stdout"}
+            {"type": "output", "output": f"Quick task says: {message}", "stream": "stdout"},
         )
         _progress_queue.put(
-            {"type": "output", "output": "Task completed immediately!", "stream": "stdout"}
+            {"type": "output", "output": "Task completed immediately!", "stream": "stdout"},
         )
 
     return {"status": "completed", "message": message}
 
 
-def example_failing_task(fail_message: str, _progress_queue: Optional[Queue] = None):
+def example_failing_task(fail_message: str, _progress_queue: Queue | None = None):
     """
     Example task that always fails.
 
@@ -203,7 +202,7 @@ def example_failing_task(fail_message: str, _progress_queue: Optional[Queue] = N
     """
     if _progress_queue:
         _progress_queue.put(
-            {"type": "output", "output": "This task will fail in 2 seconds...", "stream": "stdout"}
+            {"type": "output", "output": "This task will fail in 2 seconds...", "stream": "stdout"},
         )
 
     time.sleep(2)

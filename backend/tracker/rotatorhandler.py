@@ -47,7 +47,7 @@ class RotatorHandler:
                 "target_el": None,
                 "last_command_ts": 0.0,
                 "settle_hits": 0,
-            }
+            },
         )
         self.tracker.rotator_data["slewing"] = False
 
@@ -71,7 +71,7 @@ class RotatorHandler:
                     "target_el": target_el,
                     "last_command_ts": time.time(),
                     "settle_hits": 0,
-                }
+                },
             )
             logger.debug(f"Current position: AZ={az}°, EL={el}°, slewing={is_slewing}")
         except StopAsyncIteration:
@@ -115,18 +115,18 @@ class RotatorHandler:
                 rotator_details = self.tracker.rotator_details
                 if not rotator_details:
                     raise Exception(
-                        f"No rotator details provided for ID: {self.tracker.current_rotator_id}"
+                        f"No rotator details provided for ID: {self.tracker.current_rotator_id}",
                     )
 
                 self.tracker.rotator_data.update(
                     {
                         "host": self.tracker.rotator_details["host"],
                         "port": self.tracker.rotator_details["port"],
-                    }
+                    },
                 )
 
                 self.tracker.rotator_controller = RotatorController(
-                    host=rotator_details["host"], port=rotator_details["port"]
+                    host=rotator_details["host"], port=rotator_details["port"],
                 )
 
                 await self.tracker.rotator_controller.connect()
@@ -142,7 +142,7 @@ class RotatorHandler:
                         "slewing": False,
                         "outofbounds": False,
                         "stopped": True,
-                    }
+                    },
                 )
 
                 self.tracker.queue_out.put(
@@ -152,7 +152,7 @@ class RotatorHandler:
                             DictKeys.EVENTS: [{DictKeys.NAME: TrackingEvents.ROTATOR_CONNECTED}],
                             DictKeys.ROTATOR_DATA: self.tracker.rotator_data.copy(),
                         },
-                    }
+                    },
                 )
 
             except Exception as e:
@@ -171,7 +171,7 @@ class RotatorHandler:
                 "error": True,
                 "host": self.tracker.rotator_data.get("host", ""),
                 "port": self.tracker.rotator_data.get("port", ""),
-            }
+            },
         )
 
         updated_tracking_state = dict(self.tracker.input_tracking_state or {})
@@ -183,12 +183,12 @@ class RotatorHandler:
                 DictKeys.EVENT: SocketEvents.SATELLITE_TRACKING,
                 DictKeys.DATA: {
                     DictKeys.EVENTS: [
-                        {DictKeys.NAME: TrackingEvents.ROTATOR_ERROR, "error": str(error)}
+                        {DictKeys.NAME: TrackingEvents.ROTATOR_ERROR, "error": str(error)},
                     ],
                     DictKeys.ROTATOR_DATA: self.tracker.rotator_data.copy(),
                     DictKeys.TRACKING_STATE: updated_tracking_state,
                 },
-            }
+            },
         )
 
         self.tracker.rotator_controller = None
@@ -238,7 +238,7 @@ class RotatorHandler:
         if self.tracker.rotator_controller is not None:
             logger.info(
                 f"Disconnecting from rotator at "
-                f"{self.tracker.rotator_controller.host}:{self.tracker.rotator_controller.port}..."
+                f"{self.tracker.rotator_controller.host}:{self.tracker.rotator_controller.port}...",
             )
             try:
                 await self.tracker.rotator_controller.disconnect()
@@ -250,7 +250,7 @@ class RotatorHandler:
                             DictKeys.EVENTS: [{DictKeys.NAME: TrackingEvents.ROTATOR_DISCONNECTED}],
                             DictKeys.ROTATOR_DATA: self.tracker.rotator_data.copy(),
                         },
-                    }
+                    },
                 )
             except Exception as e:
                 logger.error(f"Error disconnecting from rotator: {e}")
@@ -274,7 +274,7 @@ class RotatorHandler:
                             DictKeys.EVENTS: [{DictKeys.NAME: TrackingEvents.ROTATOR_PARKED}],
                             DictKeys.ROTATOR_DATA: self.tracker.rotator_data.copy(),
                         },
-                    }
+                    },
                 )
             else:
                 raise Exception("Failed to park rotator")
@@ -290,10 +290,10 @@ class RotatorHandler:
         # Check azimuth limits
         if skypoint[0] < self.tracker.azimuth_limits[0]:
             logger.debug(
-                f"Azimuth below minimum for satellite #{self.tracker.current_norad_id} {satellite_name}"
+                f"Azimuth below minimum for satellite #{self.tracker.current_norad_id} {satellite_name}",
             )
             if self.tracker.in_tracking_state() and not self.tracker.notified.get(
-                TrackingEvents.MIN_AZIMUTH_OUT_OF_BOUNDS, False
+                TrackingEvents.MIN_AZIMUTH_OUT_OF_BOUNDS, False,
             ):
                 events.append({DictKeys.NAME: TrackingEvents.MIN_AZIMUTH_OUT_OF_BOUNDS})
             self.tracker.notified[TrackingEvents.MIN_AZIMUTH_OUT_OF_BOUNDS] = True
@@ -302,10 +302,10 @@ class RotatorHandler:
             out_of_bounds = True
         elif skypoint[0] > self.tracker.azimuth_limits[1]:
             logger.debug(
-                f"Azimuth above maximum for satellite #{self.tracker.current_norad_id} {satellite_name}"
+                f"Azimuth above maximum for satellite #{self.tracker.current_norad_id} {satellite_name}",
             )
             if self.tracker.in_tracking_state() and not self.tracker.notified.get(
-                TrackingEvents.MAX_AZIMUTH_OUT_OF_BOUNDS, False
+                TrackingEvents.MAX_AZIMUTH_OUT_OF_BOUNDS, False,
             ):
                 events.append({DictKeys.NAME: TrackingEvents.MAX_AZIMUTH_OUT_OF_BOUNDS})
             self.tracker.notified[TrackingEvents.MAX_AZIMUTH_OUT_OF_BOUNDS] = True
@@ -321,10 +321,10 @@ class RotatorHandler:
         if skypoint[1] < self.tracker.elevation_limits[0]:
             logger.debug(
                 f"Elevation below minimum for satellite "
-                f"#{self.tracker.current_norad_id} {satellite_name}"
+                f"#{self.tracker.current_norad_id} {satellite_name}",
             )
             if self.tracker.in_tracking_state() and not self.tracker.notified.get(
-                TrackingEvents.MIN_ELEVATION_OUT_OF_BOUNDS, False
+                TrackingEvents.MIN_ELEVATION_OUT_OF_BOUNDS, False,
             ):
                 events.append({DictKeys.NAME: TrackingEvents.MIN_ELEVATION_OUT_OF_BOUNDS})
             self.tracker.notified[TrackingEvents.MIN_ELEVATION_OUT_OF_BOUNDS] = True
@@ -334,10 +334,10 @@ class RotatorHandler:
         elif skypoint[1] > self.tracker.elevation_limits[1]:
             logger.debug(
                 f"Elevation above maximum for satellite "
-                f"#{self.tracker.current_norad_id} {satellite_name}"
+                f"#{self.tracker.current_norad_id} {satellite_name}",
             )
             if self.tracker.in_tracking_state() and not self.tracker.notified.get(
-                TrackingEvents.MAX_ELEVATION_OUT_OF_BOUNDS, False
+                TrackingEvents.MAX_ELEVATION_OUT_OF_BOUNDS, False,
             ):
                 events.append({DictKeys.NAME: TrackingEvents.MAX_ELEVATION_OUT_OF_BOUNDS})
             self.tracker.notified[TrackingEvents.MAX_ELEVATION_OUT_OF_BOUNDS] = True
@@ -367,7 +367,7 @@ class RotatorHandler:
                             "satellite_data": self.tracker.satellite_data,
                         },
                     },
-                }
+                },
             )
 
     async def control_rotator_position(self, skypoint):
@@ -395,7 +395,7 @@ class RotatorHandler:
             # No command currently in flight: send only if needed.
             if not state["in_flight"]:
                 needs_move = not self._target_within_tolerance(
-                    current_az, current_el, target_az, target_el
+                    current_az, current_el, target_az, target_el,
                 )
                 if needs_move:
                     await self._issue_rotator_command(target_az, target_el)
@@ -411,7 +411,7 @@ class RotatorHandler:
                     return
 
                 reached_active_target = self._target_within_tolerance(
-                    current_az, current_el, active_target_az, active_target_el
+                    current_az, current_el, active_target_az, active_target_el,
                 )
                 if reached_active_target:
                     state["settle_hits"] += 1

@@ -70,7 +70,7 @@ import time
 import traceback
 from enum import Enum
 from types import SimpleNamespace
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import psutil
@@ -87,14 +87,16 @@ except ImportError:
 # This prevents shared memory segment exhaustion
 os.environ.setdefault("GR_BUFFER_TYPE", "vmcirc_mmap_tmpfile")
 
-from gnuradio import blocks, gr  # noqa: E402
-from satellites.components.demodulators.bpsk_demodulator import bpsk_demodulator  # noqa: E402
-from scipy import signal  # noqa: E402
-
 from constants import FramingType  # noqa: E402
+from gnuradio import blocks, gr  # noqa: E402
+from satellites.components.demodulators.bpsk_demodulator import (
+    bpsk_demodulator,  # noqa: E402
+)
+from scipy import signal  # noqa: E402
+from telemetry.parser import TelemetryParser  # noqa: E402
+
 from demodulators.basedecoderprocess import BaseDecoderProcess  # noqa: E402
 from demodulators.deframerfactory import create_bpsk_deframer  # noqa: E402
-from telemetry.parser import TelemetryParser  # noqa: E402
 
 logger = logging.getLogger("bpskdecoder")
 
@@ -372,7 +374,7 @@ class BPSKFlowgraph(gr.top_block):
             logger.info(
                 f"Batch: {len(samples_to_process)} samp ({time_elapsed:.1f}s, {flow_rate_sps/1e3:.1f}kS/s) | "
                 f"BPSK: {self.baudrate}bd, {self.sample_rate:.0f}sps, diff={self.differential} | "
-                f"Frame: {frame_info} | VFO: {self.batch_vfo_center:.0f}Hz, BW={self.batch_vfo_bandwidth:.0f}Hz"
+                f"Frame: {frame_info} | VFO: {self.batch_vfo_center:.0f}Hz, BW={self.batch_vfo_bandwidth:.0f}Hz",
             )
 
             # Create message handler for this batch (pass framing and logger)
@@ -508,7 +510,7 @@ class BPSKDecoder(BaseDecoderProcess):
         self.batch_interval = batch_interval
 
         logger.debug(
-            f"BPSKDecoder initialized: packet_count=0, SHM threshold={shm_restart_threshold}"
+            f"BPSKDecoder initialized: packet_count=0, SHM threshold={shm_restart_threshold}",
         )
 
         # Extract all parameters from resolved config (including metadata)
@@ -560,7 +562,7 @@ class BPSKDecoder(BaseDecoderProcess):
         # Single consolidated initialization log with all relevant parameters
         logger.info(
             f"BPSK decoder initialized: session={session_id}, VFO {vfo} | {sat_info} | {tx_info} | {params_str} | "
-            f"batch={self.batch_interval}s | src: {self.config_source}"
+            f"batch={self.batch_interval}s | src: {self.config_source}",
         )
 
         os.makedirs(self.output_dir, exist_ok=True)
@@ -569,7 +571,7 @@ class BPSKDecoder(BaseDecoderProcess):
         self.flowgraph = None
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "samples_in": 0,
             "data_messages_out": 0,
@@ -869,7 +871,7 @@ class BPSKDecoder(BaseDecoderProcess):
                 "ingest_chunks_per_sec": 0.0,
                 # Out-of-band accounting
                 "samples_dropped_out_of_band": 0,
-            }
+            },
         )
 
         logger.info(f"BPSK decoder started for {self.session_id}")
@@ -958,7 +960,7 @@ class BPSKDecoder(BaseDecoderProcess):
 
                         # Validate VFO center is within SDR bandwidth
                         is_in_band, vfo_offset, margin = self._is_vfo_in_sdr_bandwidth(
-                            vfo_center, sdr_center, sdr_rate
+                            vfo_center, sdr_center, sdr_rate,
                         )
 
                         if not is_in_band:
@@ -996,7 +998,7 @@ class BPSKDecoder(BaseDecoderProcess):
                             self.is_sleeping = False
                             logger.info(
                                 f"VFO back in SDR bandwidth, resuming decoding: VFO={vfo_center/1e6:.3f}MHz, "
-                                f"SDR={sdr_center/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz"
+                                f"SDR={sdr_center/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz",
                             )
                             self._send_status_update(
                                 DecoderStatus.DECODING,
@@ -1023,7 +1025,7 @@ class BPSKDecoder(BaseDecoderProcess):
 
                             # Design decimation filter
                             self.decimation_filter = self._design_decimation_filter(
-                                decimation, vfo_bandwidth, self.sdr_sample_rate
+                                decimation, vfo_bandwidth, self.sdr_sample_rate,
                             )
 
                             # Calculate offset frequency for logging
@@ -1055,13 +1057,13 @@ class BPSKDecoder(BaseDecoderProcess):
                                 f"{self.baudrate}bd, {target_sample_rate/1e3:.2f}kS/s ({target_sps}sps){diff_info}, {self.framing.upper()}, pkt_sz={self.packet_size}B | "
                                 f"SDR={self.sdr_sample_rate/1e6:.2f}MS/s@{sdr_center/1e6:.3f}MHz, "
                                 f"VFO={vfo_center/1e6:.3f}MHz (ofs={offset_freq_init/1e3:.1f}kHz, BW={vfo_bandwidth/1e3:.0f}kHz, dec={decimation}) | "
-                                f"batch={self.batch_interval}s{tx_info}"
+                                f"batch={self.batch_interval}s{tx_info}",
                             )
 
                         # Step 1: Frequency translation to put SIGNAL at baseband center
                         offset_freq = vfo_center - sdr_center
                         translated = self._frequency_translate(
-                            samples, offset_freq, self.sdr_sample_rate
+                            samples, offset_freq, self.sdr_sample_rate,
                         )
 
                         # Measure signal power AFTER frequency translation, BEFORE decimation/AGC
@@ -1137,7 +1139,7 @@ class BPSKDecoder(BaseDecoderProcess):
 
         logger.info(
             f"BPSK decoder process stopped for {self.session_id}. "
-            f"Final SHM segments: {self.get_shm_segment_count()}"
+            f"Final SHM segments: {self.get_shm_segment_count()}",
         )
 
         # stop() method removed - now in BaseDecoderProcess

@@ -6,18 +6,17 @@ Create Date: 2026-01-04 20:28:01.366424
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy import DateTime
-
 from alembic import op
+from sqlalchemy import DateTime
 
 # revision identifiers, used by Alembic.
 revision: str = "16019e90ddb7"
-down_revision: Union[str, None] = "16d276c75884"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "16d276c75884"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -56,10 +55,10 @@ def upgrade() -> None:
     )
     with op.batch_alter_table("monitored_satellites", schema=None) as batch_op:
         batch_op.create_index(
-            batch_op.f("ix_monitored_satellites_enabled"), ["enabled"], unique=False
+            batch_op.f("ix_monitored_satellites_enabled"), ["enabled"], unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_monitored_satellites_norad_id"), ["norad_id"], unique=True
+            batch_op.f("ix_monitored_satellites_norad_id"), ["norad_id"], unique=True,
         )
 
     op.create_table(
@@ -70,7 +69,7 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum(
-                "SCHEDULED", "RUNNING", "COMPLETED", "CANCELLED", "FAILED", name="observationstatus"
+                "SCHEDULED", "RUNNING", "COMPLETED", "CANCELLED", "FAILED", name="observationstatus",
             ),
             nullable=False,
         ),
@@ -106,16 +105,16 @@ def upgrade() -> None:
     )
     with op.batch_alter_table("scheduled_observations", schema=None) as batch_op:
         batch_op.create_index(
-            batch_op.f("ix_scheduled_observations_enabled"), ["enabled"], unique=False
+            batch_op.f("ix_scheduled_observations_enabled"), ["enabled"], unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_scheduled_observations_event_start"), ["event_start"], unique=False
+            batch_op.f("ix_scheduled_observations_event_start"), ["event_start"], unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_scheduled_observations_norad_id"), ["norad_id"], unique=False
+            batch_op.f("ix_scheduled_observations_norad_id"), ["norad_id"], unique=False,
         )
         batch_op.create_index(
-            batch_op.f("ix_scheduled_observations_status"), ["status"], unique=False
+            batch_op.f("ix_scheduled_observations_status"), ["status"], unique=False,
         )
 
     op.create_table(
@@ -124,10 +123,10 @@ def upgrade() -> None:
         sa.Column("monitored_satellite_id", sa.String(), nullable=False),
         sa.Column("generated_at", DateTime(timezone=False), nullable=False),
         sa.ForeignKeyConstraint(
-            ["monitored_satellite_id"], ["monitored_satellites.id"], ondelete="CASCADE"
+            ["monitored_satellite_id"], ["monitored_satellites.id"], ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["observation_id"], ["scheduled_observations.id"], ondelete="CASCADE"
+            ["observation_id"], ["scheduled_observations.id"], ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("observation_id"),
     )

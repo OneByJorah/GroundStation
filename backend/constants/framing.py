@@ -7,7 +7,6 @@ This module centralizes framing identifiers used across decoder config,
 demodulators, and telemetry protocol routing.
 """
 
-from typing import Optional
 
 
 class FramingType:
@@ -43,7 +42,7 @@ GR_SATELLITES_FRAMING_MAP = {
 }
 
 
-def payload_protocol_from_framing(framing: Optional[str], default: str = "ax25") -> str:
+def payload_protocol_from_framing(framing: str | None, default: str = "ax25") -> str:
     """Map a framing protocol key to telemetry payload protocol family."""
     if framing in CCSDS_FRAMINGS:
         return "ccsds"

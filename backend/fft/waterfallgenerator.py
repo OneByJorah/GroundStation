@@ -18,7 +18,6 @@
 import json
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
 
 import numpy as np
 from PIL import Image
@@ -46,9 +45,9 @@ class WaterfallConfig:
         max_height: int = 2500,
         window: str = "hann",
         overlap: float = 0.5,
-        db_range: Tuple[float, float] = (-80, 0),
+        db_range: tuple[float, float] = (-80, 0),
         generate_thumbnail: bool = True,
-        thumbnail_size: Tuple[int, int] = (512, 256),
+        thumbnail_size: tuple[int, int] = (512, 256),
     ):
         self.fft_size = fft_size
         self.max_height = max_height
@@ -81,7 +80,7 @@ class WaterfallConfig:
                 if "db_range" in config_data and isinstance(config_data["db_range"], list):
                     config_data["db_range"] = tuple(config_data["db_range"])
                 if "thumbnail_size" in config_data and isinstance(
-                    config_data["thumbnail_size"], list
+                    config_data["thumbnail_size"], list,
                 ):
                     config_data["thumbnail_size"] = tuple(config_data["thumbnail_size"])
 
@@ -92,7 +91,7 @@ class WaterfallConfig:
                 return cls()
         except Exception as e:
             logger.warning(
-                f"Error loading waterfall config from {config_path}: {e}, using defaults"
+                f"Error loading waterfall config from {config_path}: {e}, using defaults",
             )
             return cls()
 
@@ -170,11 +169,11 @@ class WaterfallGenerator:
     Generate waterfall spectrograms from IQ recordings in SigMF format.
     """
 
-    def __init__(self, config: Optional[WaterfallConfig] = None):
+    def __init__(self, config: WaterfallConfig | None = None):
         self.config = config or WaterfallConfig()
         self.logger = logging.getLogger("waterfall-generator")
 
-    def _get_sigmf_dtype_info(self, datatype: str) -> Optional[dict]:
+    def _get_sigmf_dtype_info(self, datatype: str) -> dict | None:
         if not datatype:
             return None
 
@@ -294,7 +293,7 @@ class WaterfallGenerator:
 
             self.logger.info(
                 f"Generating waterfall for {recording_path.name}: "
-                f"{duration_sec:.1f}s, {total_samples:,} samples, {sample_rate/1e6:.2f} MS/s"
+                f"{duration_sec:.1f}s, {total_samples:,} samples, {sample_rate/1e6:.2f} MS/s",
             )
 
             # Calculate dimensions
@@ -315,7 +314,7 @@ class WaterfallGenerator:
 
             # Auto-scale dB range by sampling FFTs from the recording
             self.config.db_range = self._auto_scale_db_range(
-                sample_reader, total_samples, fft_size, window
+                sample_reader, total_samples, fft_size, window,
             )
 
             # Generate full waterfall
@@ -327,13 +326,13 @@ class WaterfallGenerator:
 
             self.logger.info(
                 f"Waterfall saved: {output_path.name} "
-                f"({dimensions['width']}x{dimensions['height']})"
+                f"({dimensions['width']}x{dimensions['height']})",
             )
 
             # Generate thumbnail if requested
             if self.config.generate_thumbnail:
                 thumbnail_path = recording_path.with_name(
-                    f"{recording_path.name}_waterfall_thumb.png"
+                    f"{recording_path.name}_waterfall_thumb.png",
                 )
                 self._generate_thumbnail(output_path, thumbnail_path)
                 self.logger.info(f"Thumbnail saved: {thumbnail_path.name}")
@@ -341,7 +340,7 @@ class WaterfallGenerator:
             return True
 
         except Exception as e:
-            self.logger.error(f"Error generating waterfall: {str(e)}")
+            self.logger.error(f"Error generating waterfall: {e!s}")
             self.logger.exception(e)
             return False
 
@@ -351,7 +350,7 @@ class WaterfallGenerator:
         total_samples: int,
         fft_size: int,
         window: np.ndarray,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Auto-scale dB range by sampling FFT frames from the recording.
         Uses the same algorithm as the UI waterfall (auto-scaling.js).
@@ -423,13 +422,13 @@ class WaterfallGenerator:
 
         self.logger.info(
             f"Auto-scaled dB range: [{min_db:.1f}, {max_db:.1f}] "
-            f"(mean: {mean_db:.1f}, median: {median_db:.1f}, samples: {len(all_values)})"
+            f"(mean: {mean_db:.1f}, median: {median_db:.1f}, samples: {len(all_values)})",
         )
 
         return (min_db, max_db)
 
     def _calculate_dimensions(
-        self, duration_sec: float, sample_rate: float, total_samples: int
+        self, duration_sec: float, sample_rate: float, total_samples: int,
     ) -> dict:
         """
         Calculate optimal waterfall dimensions based on recording duration.
@@ -472,7 +471,7 @@ class WaterfallGenerator:
         }
 
     def _generate_waterfall_data(
-        self, sample_reader, total_samples: int, dimensions: dict
+        self, sample_reader, total_samples: int, dimensions: dict,
     ) -> np.ndarray:
         """
         Generate waterfall data from IQ samples.

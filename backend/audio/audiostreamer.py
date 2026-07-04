@@ -31,10 +31,9 @@ import logging
 import queue
 import threading
 import time
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
-
 from vfos.state import VFOManager
 
 # Configure logging
@@ -51,7 +50,7 @@ class WebAudioStreamer(threading.Thread):
         self.running = True
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "audio_chunks_in": 0,
             "audio_samples_in": 0,
             "messages_emitted": 0,
@@ -62,7 +61,7 @@ class WebAudioStreamer(threading.Thread):
         self.stats_lock = threading.Lock()
 
         # Per-session activity tracking
-        self.session_stats: Dict[str, Dict[str, Any]] = {}
+        self.session_stats: dict[str, dict[str, Any]] = {}
         self.session_stats_lock = threading.Lock()
 
     def run(self):
@@ -95,7 +94,7 @@ class WebAudioStreamer(threading.Thread):
                     # Get VFO state - vfo_number is required
                     if vfo_number is None:
                         logger.error(
-                            f"vfo_number is required for audio routing (session {originating_session_id})"
+                            f"vfo_number is required for audio routing (session {originating_session_id})",
                         )
                         self.audio_queue.task_done()
                         continue
@@ -156,12 +155,12 @@ class WebAudioStreamer(threading.Thread):
                                 "channels": channels,  # Mono (1) or Stereo (2)
                                 "format": "float32",  # Specify format
                                 "length": len(
-                                    audio_data
+                                    audio_data,
                                 ),  # Number of samples (including both L and R for stereo)
                                 "vfo": vfo_data,
                                 "session_id": originating_session_id,
                                 "rf_power_db": audio_message.get(
-                                    "rf_power_db"
+                                    "rf_power_db",
                                 ),  # RF power measurement
                             },
                             room=originating_session_id,
@@ -191,7 +190,7 @@ class WebAudioStreamer(threading.Thread):
 
                 except Exception as e:
                     logger.error(
-                        f"Error processing audio for session {originating_session_id} when sending audio data: {e}"
+                        f"Error processing audio for session {originating_session_id} when sending audio data: {e}",
                     )
                     with self.stats_lock:
                         self.stats["errors"] += 1

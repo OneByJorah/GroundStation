@@ -15,7 +15,7 @@
 
 """Satellite group handlers."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
@@ -24,8 +24,8 @@ from tracking.events import fetch_next_events_for_group
 
 
 async def get_satellite_groups(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get all satellite groups.
 
@@ -48,8 +48,8 @@ async def get_satellite_groups(
 
 
 async def get_satellite_groups_user(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get user-created satellite groups only.
 
@@ -77,8 +77,8 @@ async def get_satellite_groups_user(
 
 
 async def get_satellite_groups_system(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get system-created satellite groups only.
 
@@ -105,8 +105,8 @@ async def get_satellite_groups_system(
 
 
 async def submit_satellite_group(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Add a new satellite group.
 
@@ -131,8 +131,8 @@ async def submit_satellite_group(
 
 
 async def edit_satellite_group(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Edit an existing satellite group.
 
@@ -160,8 +160,8 @@ async def edit_satellite_group(
 
 
 async def delete_satellite_group(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Delete satellite groups.
 
@@ -186,8 +186,8 @@ async def delete_satellite_group(
 
 
 async def fetch_next_passes_for_group(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, float]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | float]:
     """
     Fetch next passes for a satellite group.
 
@@ -205,10 +205,10 @@ async def fetch_next_passes_for_group(
     force_recalculate = data.get("force_recalculate", False) if data else False
     logger.info(
         f"Handling request from client_id={sid}, group_id={group_id}, hours={hours}, "
-        f"force_recalculate={force_recalculate} (get_next_passes_for_group)"
+        f"force_recalculate={force_recalculate} (get_next_passes_for_group)",
     )
     next_passes = await fetch_next_events_for_group(
-        group_id=group_id, hours=hours, force_recalculate=force_recalculate
+        group_id=group_id, hours=hours, force_recalculate=force_recalculate,
     )
     return {
         "success": next_passes["success"],
@@ -231,5 +231,5 @@ def register_handlers(registry):
             "edit-satellite-group": (edit_satellite_group, "data_submission"),
             "delete-satellite-group": (delete_satellite_group, "data_submission"),
             "fetch-next-passes-for-group": (fetch_next_passes_for_group, "data_request"),
-        }
+        },
     )

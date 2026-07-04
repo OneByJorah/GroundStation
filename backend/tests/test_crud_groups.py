@@ -20,7 +20,6 @@ Unit tests for satellite group CRUD operations.
 import uuid
 
 import pytest
-
 from crud.groups import (
     add_satellite_group,
     delete_satellite_group,
@@ -80,13 +79,13 @@ class TestGroupsCRUD:
         """Test fetching all satellite groups."""
         # Add multiple groups
         await add_satellite_group(
-            db_session, {"name": "Group 1", "type": "user", "satellite_ids": [11111]}
+            db_session, {"name": "Group 1", "type": "user", "satellite_ids": [11111]},
         )
         await add_satellite_group(
-            db_session, {"name": "Group 2", "type": "system", "satellite_ids": [22222]}
+            db_session, {"name": "Group 2", "type": "system", "satellite_ids": [22222]},
         )
         await add_satellite_group(
-            db_session, {"name": "Group 3", "type": "user", "satellite_ids": [33333]}
+            db_session, {"name": "Group 3", "type": "user", "satellite_ids": [33333]},
         )
 
         result = await fetch_satellite_group(db_session)
@@ -97,7 +96,7 @@ class TestGroupsCRUD:
     async def test_fetch_satellite_group_by_id(self, db_session):
         """Test fetching a single group by ID."""
         add_result = await add_satellite_group(
-            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [12345]}
+            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [12345]},
         )
 
         group_id = add_result["data"]["id"]
@@ -111,13 +110,13 @@ class TestGroupsCRUD:
         """Test fetching groups filtered by type."""
         # Add groups of different types
         await add_satellite_group(
-            db_session, {"name": "User Group 1", "type": "user", "satellite_ids": [11111]}
+            db_session, {"name": "User Group 1", "type": "user", "satellite_ids": [11111]},
         )
         await add_satellite_group(
-            db_session, {"name": "System Group", "type": "system", "satellite_ids": [22222]}
+            db_session, {"name": "System Group", "type": "system", "satellite_ids": [22222]},
         )
         await add_satellite_group(
-            db_session, {"name": "User Group 2", "type": "user", "satellite_ids": [33333]}
+            db_session, {"name": "User Group 2", "type": "user", "satellite_ids": [33333]},
         )
 
         # Fetch only user groups
@@ -131,7 +130,7 @@ class TestGroupsCRUD:
     async def test_fetch_satellite_group_by_id_and_type(self, db_session):
         """Test fetching a group by ID with type filter."""
         add_result = await add_satellite_group(
-            db_session, {"name": "System Group", "type": "system", "satellite_ids": [12345]}
+            db_session, {"name": "System Group", "type": "system", "satellite_ids": [12345]},
         )
 
         group_id = add_result["data"]["id"]
@@ -188,7 +187,7 @@ class TestGroupsCRUD:
     async def test_edit_satellite_group_success(self, db_session):
         """Test successful satellite group editing."""
         add_result = await add_satellite_group(
-            db_session, {"name": "Old Name", "type": "user", "satellite_ids": [11111, 22222]}
+            db_session, {"name": "Old Name", "type": "user", "satellite_ids": [11111, 22222]},
         )
 
         group_id = add_result["data"]["id"]
@@ -215,7 +214,7 @@ class TestGroupsCRUD:
     async def test_edit_satellite_group_removes_id_from_data(self, db_session):
         """Test that edit operation removes 'id' from data dict."""
         add_result = await add_satellite_group(
-            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [11111]}
+            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [11111]},
         )
 
         group_id = add_result["data"]["id"]
@@ -232,7 +231,7 @@ class TestGroupsCRUD:
     async def test_delete_satellite_group_success(self, db_session):
         """Test successful group deletion."""
         add_result = await add_satellite_group(
-            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [12345]}
+            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [12345]},
         )
 
         group_id = add_result["data"]["id"]
@@ -249,10 +248,10 @@ class TestGroupsCRUD:
     async def test_delete_multiple_satellite_groups(self, db_session):
         """Test deleting multiple groups at once."""
         group1 = await add_satellite_group(
-            db_session, {"name": "Group 1", "type": "user", "satellite_ids": [11111]}
+            db_session, {"name": "Group 1", "type": "user", "satellite_ids": [11111]},
         )
         group2 = await add_satellite_group(
-            db_session, {"name": "Group 2", "type": "user", "satellite_ids": [22222]}
+            db_session, {"name": "Group 2", "type": "user", "satellite_ids": [22222]},
         )
 
         group_ids = [group1["data"]["id"], group2["data"]["id"]]
@@ -300,14 +299,14 @@ class TestGroupsCRUD:
     async def test_edit_satellite_group_change_type(self, db_session):
         """Test changing group type from user to system."""
         add_result = await add_satellite_group(
-            db_session, {"name": "User Group", "type": "user", "satellite_ids": [11111]}
+            db_session, {"name": "User Group", "type": "user", "satellite_ids": [11111]},
         )
 
         group_id = add_result["data"]["id"]
 
         # Change to system type
         result = await edit_satellite_group(
-            db_session, group_id, {"type": "system", "identifier": "new_system"}
+            db_session, group_id, {"type": "system", "identifier": "new_system"},
         )
 
         assert result["success"] is True

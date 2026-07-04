@@ -16,12 +16,12 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger("app-config")
 
 
-DEFAULT_APP_CONFIG: Dict[str, Any] = {
+DEFAULT_APP_CONFIG: dict[str, Any] = {
     "_comment": "Ground Station app defaults. Remove or change values to override.",
     "host": "0.0.0.0",
     "port": 5000,
@@ -36,7 +36,7 @@ DEFAULT_APP_CONFIG: Dict[str, Any] = {
 }
 
 
-def load_app_config(config_path: Path) -> Dict[str, Any]:
+def load_app_config(config_path: Path) -> dict[str, Any]:
     """
     Load app configuration from JSON file.
 

@@ -5,9 +5,13 @@ This module maintains a registry of functions that can be executed as background
 Only registered functions can be started via Socket.IO to prevent arbitrary code execution.
 """
 
-from typing import Callable, Dict
+from collections.abc import Callable
 
-from tasks.exampletask import example_failing_task, example_long_task, example_quick_task
+from tasks.exampletask import (
+    example_failing_task,
+    example_long_task,
+    example_quick_task,
+)
 from tasks.satdumpprocessor import satdump_process_recording
 from tasks.soapysdrdiscovery import soapysdr_discovery_task, soapysdr_quick_refresh_task
 from tasks.tlesync import tle_sync_background_task
@@ -15,7 +19,7 @@ from tasks.waterfallgenerator import generate_waterfall_task
 
 # Registry of available background tasks
 # Format: {"task_name": function_reference}
-TASK_REGISTRY: Dict[str, Callable] = {
+TASK_REGISTRY: dict[str, Callable] = {
     # Example tasks for testing
     "example_long_task": example_long_task,
     "example_quick_task": example_quick_task,

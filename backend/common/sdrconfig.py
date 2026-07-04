@@ -14,7 +14,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Union
+from typing import Any, Union
 
 Number = Union[int, float]
 Gain = Union[int, float, str]
@@ -26,29 +26,29 @@ class SDRConfig:
     center_freq: Number
     sample_rate: Number
     gain: Gain
-    fft_size: Optional[int]
-    bias_t: Union[bool, int]
+    fft_size: int | None
+    bias_t: bool | int
     tuner_agc: bool
     rtl_agc: bool
-    fft_window: Optional[str]
-    fft_averaging: Optional[int]
+    fft_window: str | None
+    fft_averaging: int | None
     sdr_id: str
-    recording_path: Optional[str] = None
-    serial_number: Optional[SerialNumber] = None
-    host: Optional[str] = None
-    port: Optional[int] = None
-    client_id: Optional[str] = None
-    connection_type: Optional[str] = None
-    driver: Optional[str] = None
-    soapy_agc: Optional[bool] = None
-    offset_freq: Optional[Number] = None
-    antenna: Optional[str] = None
-    ppm_error: Optional[Number] = None
-    loop_playback: Optional[bool] = None
-    sdr_settings: Optional[Dict[str, Any]] = None
+    recording_path: str | None = None
+    serial_number: SerialNumber | None = None
+    host: str | None = None
+    port: int | None = None
+    client_id: str | None = None
+    connection_type: str | None = None
+    driver: str | None = None
+    soapy_agc: bool | None = None
+    offset_freq: Number | None = None
+    antenna: str | None = None
+    ppm_error: Number | None = None
+    loop_playback: bool | None = None
+    sdr_settings: dict[str, Any] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
-        payload: Dict[str, Any] = {
+    def to_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
             "center_freq": self.center_freq,
             "sample_rate": self.sample_rate,
             "gain": self.gain,

@@ -17,10 +17,8 @@
 Unit tests for satellite CRUD operations.
 """
 
-import uuid
 
 import pytest
-
 from crud.groups import add_satellite_group
 from crud.satellites import (
     add_satellite,
@@ -305,7 +303,7 @@ class TestSatellitesCRUD:
         )
 
         result = await edit_satellite(
-            db_session, satellite_id=12345, name="New Name", status="dead"
+            db_session, satellite_id=12345, name="New Name", status="dead",
         )
 
         assert result["success"] is True
@@ -368,7 +366,7 @@ class TestSatellitesCRUD:
 
         # Add a group containing the satellite
         await add_satellite_group(
-            db_session, {"name": "Manned Missions", "type": "user", "satellite_ids": [25544]}
+            db_session, {"name": "Manned Missions", "type": "user", "satellite_ids": [25544]},
         )
 
         result = await search_satellites(db_session, keyword="ISS")
@@ -409,7 +407,7 @@ class TestSatellitesCRUD:
 
         # Add a group with both satellites
         group_result = await add_satellite_group(
-            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [11111, 22222]}
+            db_session, {"name": "Test Group", "type": "user", "satellite_ids": [11111, 22222]},
         )
 
         group_id = group_result["data"]["id"]

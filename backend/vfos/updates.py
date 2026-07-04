@@ -94,7 +94,7 @@ async def handle_vfo_updates_for_tracking(sockio, tracking_data):
                                 f"Applied doppler correction to internal VFO: "
                                 f"session={session_id}, vfo={vfo_num}, "
                                 f"tx={locked_tx_id}, freq={doppler_freq/1e6:.6f} MHz "
-                                f"(diff={freq_diff/1e3:.2f} kHz)"
+                                f"(diff={freq_diff/1e3:.2f} kHz)",
                             )
                     break
 
@@ -102,5 +102,5 @@ async def handle_vfo_updates_for_tracking(sockio, tracking_data):
     if updates_applied > 0:
         logger.debug(
             f"Applied doppler correction to {updates_applied} internal VFO(s) "
-            f"across {len(internal_sessions)} observation session(s)"
+            f"across {len(internal_sessions)} observation session(s)",
         )

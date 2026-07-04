@@ -20,7 +20,6 @@ Unit tests for hardware CRUD operations (rotators, rigs, cameras, SDRs).
 import uuid
 
 import pytest
-
 from crud.hardware import (
     add_camera,
     add_rig,
@@ -416,7 +415,7 @@ class TestSDRsCRUD:
     async def test_fetch_sdr_by_id(self, db_session):
         """Test fetching a single SDR by ID."""
         add_result = await add_sdr(
-            db_session, {"name": "Test SDR", "type": "rtlsdrusbv3", "serial": "12345"}
+            db_session, {"name": "Test SDR", "type": "rtlsdrusbv3", "serial": "12345"},
         )
 
         sdr_id = add_result["data"]["id"]
@@ -435,7 +434,7 @@ class TestSDRsCRUD:
     async def test_edit_sdr_success(self, db_session):
         """Test successful SDR editing."""
         add_result = await add_sdr(
-            db_session, {"name": "Old SDR", "type": "rtlsdrusbv3", "serial": "12345"}
+            db_session, {"name": "Old SDR", "type": "rtlsdrusbv3", "serial": "12345"},
         )
 
         sdr_id = add_result["data"]["id"]
@@ -450,7 +449,7 @@ class TestSDRsCRUD:
     async def test_delete_sdrs_success(self, db_session):
         """Test successful SDR deletion."""
         add_result = await add_sdr(
-            db_session, {"name": "Test SDR", "type": "rtlsdrusbv3", "serial": "12345"}
+            db_session, {"name": "Test SDR", "type": "rtlsdrusbv3", "serial": "12345"},
         )
 
         sdr_id = add_result["data"]["id"]

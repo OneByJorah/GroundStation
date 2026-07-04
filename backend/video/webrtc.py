@@ -1,13 +1,11 @@
 """WebRTC helper models and routes."""
 
 import json
-from typing import Dict, Optional
 
 import httpx
+from common.logger import logger
 from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel
-
-from common.logger import logger
 
 
 class RTCSessionDescription(BaseModel):
@@ -23,18 +21,18 @@ class IceCandidate(BaseModel):
 
 class CameraSource(BaseModel):
     source_url: str
-    camera_id: Optional[str] = None
+    camera_id: str | None = None
 
 
 class WebRTCRequest(BaseModel):
     source_url: str
-    camera_id: Optional[str] = None
+    camera_id: str | None = None
     type: str
     sdp: str
 
 
 # Store active connections
-active_connections: Dict[str, WebSocket] = {}
+active_connections: dict[str, WebSocket] = {}
 
 
 def register_webrtc_routes(app: FastAPI) -> None:
@@ -65,10 +63,10 @@ def register_webrtc_routes(app: FastAPI) -> None:
                 answer_data = response.json()
                 return RTCSessionDescription(type=answer_data["type"], sdp=answer_data["sdp"])
         except Exception as e:  # pragma: no cover - network errors
-            logger.error(f"Error creating WebRTC session: {str(e)}")
+            logger.error(f"Error creating WebRTC session: {e!s}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Error creating WebRTC session: {str(e)}",
+                detail=f"Error creating WebRTC session: {e!s}",
             )
 
     @app.websocket("/ws/webrtc/{client_id}")
@@ -85,7 +83,7 @@ def register_webrtc_routes(app: FastAPI) -> None:
                     pass
                 await websocket.send_text(json.dumps({"type": "echo", "data": message}))
         except Exception as e:  # pragma: no cover - network errors
-            logger.error(f"WebSocket error: {str(e)}")
+            logger.error(f"WebSocket error: {e!s}")
         finally:
             if client_id in active_connections:
                 del active_connections[client_id]

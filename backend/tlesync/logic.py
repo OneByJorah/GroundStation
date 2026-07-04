@@ -17,12 +17,10 @@ import asyncio
 import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Any, Dict, List
-
-import requests
-from sqlalchemy import select
+from typing import Any
 
 import crud
+import requests
 from common.common import *  # noqa: F401,F403
 from common.exceptions import SynchronizationErrorMainTLESource
 from db.models import Satellites
@@ -30,6 +28,8 @@ from handlers.entities.transmitterimport import (
     import_gr_satellites_transmitters,
     import_satdump_transmitters,
 )
+from sqlalchemy import select
+
 from tlesync.state import SatelliteSyncState
 from tlesync.utils import (
     async_fetch,
@@ -87,7 +87,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
     async def _notify_tracker_manager(
         satellite_norad_ids: set[int],
         transmitter_norad_ids: set[int],
-        transmitters_by_norad: Dict[int, List[Dict[str, Any]]],
+        transmitters_by_norad: dict[int, list[dict[str, Any]]],
     ) -> None:
         if not satellite_norad_ids and not transmitter_norad_ids:
             return
@@ -109,7 +109,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 for norad_id in transmitter_norad_ids:
                     try:
                         manager.notify_transmitters_changed_with_items(
-                            norad_id, transmitters_by_norad.get(norad_id, [])
+                            norad_id, transmitters_by_norad.get(norad_id, []),
                         )
                     except Exception as e:
                         logger.error(
@@ -149,15 +149,15 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
         # Create progress tracker
         update_progress, completed_phases, highest_progress = create_progress_tracker(
-            progress_phases, sync_state, sync_state_manager
+            progress_phases, sync_state, sync_state_manager,
         )
 
         satnogs_satellites_url = "http://db.satnogs.org/api/satellites/?format=json"
         satnogs_transmitters_url = "http://db.satnogs.org/api/transmitters/?format=json"
-        satnogs_satellite_data: List[Dict[str, Any]] = []
-        satnogs_transmitter_data: List[Dict[str, Any]] = []
-        celestrak_list: List[Dict[str, Any]] = []
-        group_assignments: Dict[str, List[int]] = {}
+        satnogs_satellite_data: list[dict[str, Any]] = []
+        satnogs_transmitter_data: list[dict[str, Any]] = []
+        celestrak_list: list[dict[str, Any]] = []
+        group_assignments: dict[str, list[int]] = {}
 
         tle_sources_reply = await crud.tlesources.fetch_satellite_tle_source(dbsession)
         sources = tle_sources_reply.get("data", [])
@@ -173,7 +173,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
                 # Update active sources in state and progress
                 progress_state = update_progress(
-                    "fetch_tle_sources", i, len(sources), f"Fetching {tle_source_url}"
+                    "fetch_tle_sources", i, len(sources), f"Fetching {tle_source_url}",
                 )
                 sync_state["active_sources"] = [tle_source_name]
                 await _emit(progress_state)
@@ -183,10 +183,10 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                     response = await async_fetch(tle_source_url, pool)
                     if response.status_code != 200:
                         logger.error(
-                            f"HTTP Error: Received status code {response.status_code} from {tle_source_url}"
+                            f"HTTP Error: Received status code {response.status_code} from {tle_source_url}",
                         )
                         raise requests.exceptions.RequestException(
-                            f"Unable to fetch data from {tle_source_url}, error code was {response.status_code}"
+                            f"Unable to fetch data from {tle_source_url}, error code was {response.status_code}",
                         )
                     else:
                         satellite_data = simple_parse_3le(response.text)
@@ -225,12 +225,12 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
                 # Update progress, completed sources, and emit event
                 progress_state = update_progress(
-                    "fetch_tle_sources", i + 1, len(sources), f"Fetched {tle_source_url}"
+                    "fetch_tle_sources", i + 1, len(sources), f"Fetched {tle_source_url}",
                 )
                 await _emit(progress_state)
 
                 logger.info(
-                    f"Group {tle_source_identifier} has {len(group_assignments[tle_source_identifier])} members"
+                    f"Group {tle_source_identifier} has {len(group_assignments[tle_source_identifier])} members",
                 )
 
                 # Use the new removal detection function instead of the old group management code
@@ -251,7 +251,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                         removed_sats_count = len(removed_data["satellites"])
                         removed_trx_count = len(removed_data["transmitters"])
                         logger.info(
-                            f"Removed {removed_sats_count} satellites and {removed_trx_count} transmitters from TLE source '{tle_source_identifier}'"
+                            f"Removed {removed_sats_count} satellites and {removed_trx_count} transmitters from TLE source '{tle_source_identifier}'",
                         )
 
                     # Commit the changes
@@ -259,7 +259,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
                 except Exception as e:
                     logger.error(
-                        f"Error during satellite removal detection for TLE source '{tle_source_identifier}': {e}"
+                        f"Error during satellite removal detection for TLE source '{tle_source_identifier}': {e}",
                     )
                     await dbsession.rollback()
 
@@ -304,7 +304,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
             if duplicate_detection_result["duplicate_count"] > 0:
                 logger.warning(
                     f"Found {duplicate_detection_result['duplicate_count']} satellites "
-                    f"with {duplicate_detection_result['total_duplicates']} duplicate entries"
+                    f"with {duplicate_detection_result['total_duplicates']} duplicate entries",
                 )
 
                 # Note: Some satellites may legitimately appear multiple times in Celestrak data
@@ -316,7 +316,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
             # Start fetching satellite data from SATNOGS
             progress_state = update_progress(
-                "fetch_satnogs_satellites", 0, 1, "Fetching satellite data from SATNOGS"
+                "fetch_satnogs_satellites", 0, 1, "Fetching satellite data from SATNOGS",
             )
             sync_state["active_sources"] = ["SATNOGS Satellites"]
             sync_state_manager.set_state(sync_state)
@@ -328,7 +328,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 response = await async_fetch(satnogs_satellites_url, pool)
                 if response.status_code != 200:
                     logger.error(
-                        f"HTTP Error: Received status code {response.status_code} from {satnogs_satellites_url}"
+                        f"HTTP Error: Received status code {response.status_code} from {satnogs_satellites_url}",
                     )
                 else:
                     satnogs_satellite_data = json.loads(response.text)
@@ -340,7 +340,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 sync_state["active_sources"] = []
                 completed_phases.add("fetch_satnogs_satellites")
                 progress_state = update_progress(
-                    "fetch_satnogs_satellites", 1, 1, "Satellite data fetched from SATNOGS"
+                    "fetch_satnogs_satellites", 1, 1, "Satellite data fetched from SATNOGS",
                 )
                 await _emit(progress_state)
 
@@ -355,7 +355,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
             # Start fetching transmitter data from SATNOGS
             progress_state = update_progress(
-                "fetch_satnogs_transmitters", 0, 1, "Fetching transmitter data from SATNOGS"
+                "fetch_satnogs_transmitters", 0, 1, "Fetching transmitter data from SATNOGS",
             )
             sync_state["active_sources"] = ["SATNOGS Transmitters"]
             sync_state_manager.set_state(sync_state)
@@ -367,7 +367,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 response = await async_fetch(satnogs_transmitters_url, pool)
                 if response.status_code != 200:
                     logger.error(
-                        f"HTTP Error: Received status code {response.status_code} from {satnogs_transmitters_url}"
+                        f"HTTP Error: Received status code {response.status_code} from {satnogs_transmitters_url}",
                     )
                 else:
                     satnogs_transmitter_data = json.loads(response.text)
@@ -379,7 +379,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 sync_state["active_sources"] = []
                 completed_phases.add("fetch_satnogs_transmitters")
                 progress_state = update_progress(
-                    "fetch_satnogs_transmitters", 1, 1, "Transmitter data fetched from SATNOGS"
+                    "fetch_satnogs_transmitters", 1, 1, "Transmitter data fetched from SATNOGS",
                 )
                 await _emit(progress_state)
 
@@ -416,7 +416,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
             # Fetch manually-added satellites once; we'll enrich them with SATNOGS transmitters
             # after normal TLE processing (for NORAD IDs not already covered by Celestrak data).
             manual_satellites_result = await dbsession.execute(
-                select(Satellites).filter(Satellites.source == "manual")
+                select(Satellites).filter(Satellites.source == "manual"),
             )
             manual_satellites = manual_satellites_result.scalars().all()
             manual_satellites_by_norad = {sat.norad_id: sat for sat in manual_satellites}
@@ -441,7 +441,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 total_transmitters_to_process += len(transmitters)
 
             logger.info(
-                f"Expected to process {total_transmitters_to_process} transmitters in total"
+                f"Expected to process {total_transmitters_to_process} transmitters in total",
             )
             if manual_only_norad_ids:
                 logger.info(
@@ -481,7 +481,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
                 # Update satellite with SATNOGS data and get comparison data
                 satellite_data_for_comparison = update_satellite_with_satnogs_data(
-                    satellite, satnogs_sat_info
+                    satellite, satnogs_sat_info,
                 )
 
                 # Check if satellite was modified (not new but has changes)
@@ -503,12 +503,12 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 # If this is a new satellite, add it to the newly added list
                 if is_new_satellite:
                     sync_state["newly_added"]["satellites"].append(
-                        {"norad_id": norad_id, "name": satellite.name, "sat_id": satellite.sat_id}
+                        {"norad_id": norad_id, "name": satellite.name, "sat_id": satellite.sat_id},
                     )
 
                 # let's find transmitter info in the satnogs_transmitter_data list
                 satnogs_transmitter_info = get_transmitter_info_by_norad_id(
-                    norad_id, satnogs_transmitter_data
+                    norad_id, satnogs_transmitter_data,
                 )
 
                 for j, transmitter_info in enumerate(satnogs_transmitter_info):
@@ -569,7 +569,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                                 "downlink_low": transmitter.downlink_low,
                                 "downlink_high": transmitter.downlink_high,
                                 "mode": transmitter.mode,
-                            }
+                            },
                         )
 
             # Enrich manually-added satellites (that were not part of Celestrak list)
@@ -578,7 +578,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 manual_satellite = manual_satellites_by_norad.get(norad_id)
                 satellite_name = manual_satellite.name if manual_satellite else f"NORAD {norad_id}"
                 satnogs_transmitter_info = get_transmitter_info_by_norad_id(
-                    norad_id, satnogs_transmitter_data
+                    norad_id, satnogs_transmitter_data,
                 )
 
                 for transmitter_info in satnogs_transmitter_info:
@@ -625,7 +625,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                                 "downlink_low": transmitter.downlink_low,
                                 "downlink_high": transmitter.downlink_high,
                                 "mode": transmitter.mode,
-                            }
+                            },
                         )
 
             # Mark processing phases as complete
@@ -641,16 +641,16 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
             modified_transmitters_count = len(sync_state["modified"]["transmitters"])
 
             logger.info(
-                f"Successfully synchronized {count_sats} satellites and {count_transmitters} transmitters"
+                f"Successfully synchronized {count_sats} satellites and {count_transmitters} transmitters",
             )
             logger.info(
-                f"New items added: {new_satellites_count} satellites, {new_transmitters_count} transmitters"
+                f"New items added: {new_satellites_count} satellites, {new_transmitters_count} transmitters",
             )
             logger.info(
-                f"Items removed: {removed_satellites_count} satellites, {removed_transmitters_count} transmitters"
+                f"Items removed: {removed_satellites_count} satellites, {removed_transmitters_count} transmitters",
             )
             logger.info(
-                f"Items modified: {modified_satellites_count} satellites, {modified_transmitters_count} transmitters"
+                f"Items modified: {modified_satellites_count} satellites, {modified_transmitters_count} transmitters",
             )
 
             # Import gr-satellites and SatDump transmitters using the existing session
@@ -670,7 +670,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
 
             # Create a detailed success message
             success_message = create_final_success_message(
-                count_sats, count_transmitters, sync_state
+                count_sats, count_transmitters, sync_state,
             )
 
             sync_state["message"] = success_message
@@ -690,7 +690,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
             sync_state["status"] = "complete"
             sync_state["progress"] = 100
             sync_state["success"] = False
-            sync_state["message"] = f"Error: {str(e)}"
+            sync_state["message"] = f"Error: {e!s}"
             sync_state["errors"].append(str(e))
             sync_state["last_update"] = datetime.now(timezone.utc).isoformat()
             sync_state_manager.set_state(sync_state)
@@ -709,7 +709,7 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 {
                     sat.get("norad_id")
                     for sat in sync_state.get("newly_added", {}).get("satellites", [])
-                }
+                },
             )
             satellite_norad_ids = {nid for nid in satellite_norad_ids if nid}
 
@@ -720,14 +720,14 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
                 {
                     tx.get("norad_id")
                     for tx in sync_state.get("newly_added", {}).get("transmitters", [])
-                }
+                },
             )
             transmitter_norad_ids.update(
-                {tx.get("norad_id") for tx in sync_state.get("removed", {}).get("transmitters", [])}
+                {tx.get("norad_id") for tx in sync_state.get("removed", {}).get("transmitters", [])},
             )
             transmitter_norad_ids = {nid for nid in transmitter_norad_ids if nid}
 
-            transmitters_by_norad: Dict[int, List[Dict[str, Any]]] = {}
+            transmitters_by_norad: dict[int, list[dict[str, Any]]] = {}
             if transmitter_norad_ids:
                 for transmitter in satnogs_transmitter_data:
                     norad_id = transmitter.get("norad_cat_id")
@@ -741,8 +741,8 @@ async def synchronize_satellite_data_internal(dbsession, logger, emit_callback):
             if satellite_norad_ids or transmitter_norad_ids:
                 asyncio.create_task(
                     _notify_tracker_manager(
-                        satellite_norad_ids, transmitter_norad_ids, transmitters_by_norad
-                    )
+                        satellite_norad_ids, transmitter_norad_ids, transmitters_by_norad,
+                    ),
                 )
             # Always close the session when you're done
             await dbsession.close()

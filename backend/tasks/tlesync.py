@@ -12,7 +12,6 @@ import multiprocessing
 import signal
 import sys
 from multiprocessing import Queue
-from typing import Optional
 
 try:
     import setproctitle
@@ -21,9 +20,8 @@ try:
 except ImportError:
     HAS_SETPROCTITLE = False
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
 from db import create_subprocess_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from tlesync.logic import synchronize_satellite_data_internal
 
 logger = logging.getLogger("tlesync-task")
@@ -41,7 +39,7 @@ class GracefulKiller:
         self.kill_now = True
 
 
-def tle_sync_background_task(_progress_queue: Optional[Queue] = None):
+def tle_sync_background_task(_progress_queue: Queue | None = None):
     """
     Synchronize TLE and satellite data as a background task.
 
@@ -73,7 +71,7 @@ def tle_sync_background_task(_progress_queue: Optional[Queue] = None):
                 "output": "Starting TLE synchronization...",
                 "stream": "stdout",
                 "progress": 0,
-            }
+            },
         )
 
     # Create new event loop for this process
@@ -94,7 +92,7 @@ def tle_sync_background_task(_progress_queue: Optional[Queue] = None):
                 # Create a new engine for this subprocess to avoid sharing connections
                 subprocess_engine = create_subprocess_engine()
                 SubprocessSessionLocal = async_sessionmaker(
-                    bind=subprocess_engine, expire_on_commit=False, class_=AsyncSession
+                    bind=subprocess_engine, expire_on_commit=False, class_=AsyncSession,
                 )
 
                 async with SubprocessSessionLocal() as session:
@@ -115,7 +113,7 @@ def tle_sync_background_task(_progress_queue: Optional[Queue] = None):
                                     "type": "tle_sync_state",
                                     "state": state,
                                     "progress": state.get("progress", 0),
-                                }
+                                },
                             )
 
                     # Run the synchronization with our callback
@@ -135,7 +133,7 @@ def tle_sync_background_task(_progress_queue: Optional[Queue] = None):
                     "output": "TLE synchronization completed successfully",
                     "stream": "stdout",
                     "progress": 100,
-                }
+                },
             )
 
         return {"status": "completed"}
@@ -146,14 +144,14 @@ def tle_sync_background_task(_progress_queue: Optional[Queue] = None):
             _progress_queue.put(
                 {
                     "type": "output",
-                    "output": f"TLE synchronization cancelled: {str(e)}",
+                    "output": f"TLE synchronization cancelled: {e!s}",
                     "stream": "stdout",
-                }
+                },
             )
         return {"status": "cancelled"}
 
     except Exception as e:
-        error_msg = f"TLE synchronization failed: {str(e)}"
+        error_msg = f"TLE synchronization failed: {e!s}"
         logger.error(error_msg, exc_info=True)
         if _progress_queue:
             _progress_queue.put({"type": "error", "error": error_msg, "stream": "stderr"})

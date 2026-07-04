@@ -15,7 +15,7 @@
 
 """Scheduler handlers for scheduled observations and monitored satellites."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import crud.monitoredsatellites as crud_satellites
 import crud.scheduledobservations as crud_observations
@@ -31,8 +31,8 @@ from observations.validation import validate_transmitter_frequencies
 
 
 async def get_scheduled_observations(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, List, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Get all scheduled observations or a single observation by ID.
 
@@ -55,8 +55,8 @@ async def get_scheduled_observations(
 
 
 async def create_scheduled_observation(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Create a new scheduled observation.
 
@@ -99,7 +99,7 @@ async def create_scheduled_observation(
 
                     # Delete the observation since it can't be scheduled
                     await crud_observations.delete_scheduled_observations(
-                        dbsession, [observation_id]
+                        dbsession, [observation_id],
                     )
 
                     return {
@@ -118,8 +118,8 @@ async def create_scheduled_observation(
 
 
 async def update_scheduled_observation(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Update an existing scheduled observation.
 
@@ -161,12 +161,14 @@ async def update_scheduled_observation(
                     logger.error(error_msg)
 
                     # Mark observation as failed in database
-                    from crud.scheduledobservations import update_scheduled_observation_status
+                    from crud.scheduledobservations import (
+                        update_scheduled_observation_status,
+                    )
                     from observations.constants import STATUS_FAILED
 
                     async with AsyncSessionLocal() as status_session:
                         await update_scheduled_observation_status(
-                            status_session, observation_id, STATUS_FAILED, error_msg
+                            status_session, observation_id, STATUS_FAILED, error_msg,
                         )
 
                     return {
@@ -185,8 +187,8 @@ async def update_scheduled_observation(
 
 
 async def delete_scheduled_observations(
-    sio: Any, data: Optional[List], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: list | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Delete one or more scheduled observations.
 
@@ -219,19 +221,19 @@ async def delete_scheduled_observations(
                 # Cancel running observations first
                 if running_observations:
                     logger.info(
-                        f"Cancelling {len(running_observations)} running observation(s) before deletion"
+                        f"Cancelling {len(running_observations)} running observation(s) before deletion",
                     )
                     for obs in running_observations:
                         obs_id = obs["id"]
                         if obs_events.observation_sync.executor:
                             cancel_result = (
                                 await obs_events.observation_sync.executor.cancel_observation(
-                                    obs_id
+                                    obs_id,
                                 )
                             )
                             if not cancel_result.get("success", False):
                                 logger.warning(
-                                    f"Failed to cancel observation {obs_id}: {cancel_result.get('error', 'Unknown error')}"
+                                    f"Failed to cancel observation {obs_id}: {cancel_result.get('error', 'Unknown error')}",
                                 )
 
     async with AsyncSessionLocal() as dbsession:
@@ -254,8 +256,8 @@ async def delete_scheduled_observations(
 
 
 async def toggle_observation_enabled(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Enable or disable a scheduled observation.
 
@@ -282,7 +284,7 @@ async def toggle_observation_enabled(
     async with AsyncSessionLocal() as dbsession:
         # Directly update only the enabled field
         result = await crud_observations.toggle_scheduled_observation_enabled(
-            dbsession, observation_id, enabled
+            dbsession, observation_id, enabled,
         )
 
         # Sync to APScheduler if successful
@@ -298,8 +300,8 @@ async def toggle_observation_enabled(
 
 
 async def cancel_observation(
-    sio: Any, data: Optional[str], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: str | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Cancel a running observation.
 
@@ -321,7 +323,7 @@ async def cancel_observation(
     # Cancel via executor (handles running observations properly)
     if obs_events.observation_sync and obs_events.observation_sync.executor:
         cancel_result = await obs_events.observation_sync.executor.cancel_observation(
-            observation_id
+            observation_id,
         )
         if not cancel_result.get("success", False):
             return {
@@ -343,8 +345,8 @@ async def cancel_observation(
 
 
 async def get_monitored_satellites(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, List, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Get all monitored satellites.
 
@@ -363,8 +365,8 @@ async def get_monitored_satellites(
 
 
 async def create_monitored_satellite(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Create a new monitored satellite.
 
@@ -402,8 +404,8 @@ async def create_monitored_satellite(
 
 
 async def update_monitored_satellite(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Update an existing monitored satellite.
 
@@ -441,8 +443,8 @@ async def update_monitored_satellite(
 
 
 async def delete_monitored_satellites(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Delete one or more monitored satellites.
 
@@ -471,7 +473,7 @@ async def delete_monitored_satellites(
 
     async with AsyncSessionLocal() as dbsession:
         result = await crud_satellites.delete_monitored_satellites(
-            dbsession, ids, delete_observations=delete_observations
+            dbsession, ids, delete_observations=delete_observations,
         )
 
         # If observations were deleted, emit event to refresh UI
@@ -479,7 +481,7 @@ async def delete_monitored_satellites(
             deleted_obs_count = result.get("data", {}).get("deleted_observations", 0)
             if deleted_obs_count > 0:
                 logger.info(
-                    f"Deleted {deleted_obs_count} observations, emitting update event to clients"
+                    f"Deleted {deleted_obs_count} observations, emitting update event to clients",
                 )
                 await emit_scheduled_observations_changed()
 
@@ -491,8 +493,8 @@ async def delete_monitored_satellites(
 
 
 async def toggle_monitored_satellite_enabled(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Enable or disable a monitored satellite.
 
@@ -519,7 +521,7 @@ async def toggle_monitored_satellite_enabled(
     async with AsyncSessionLocal() as dbsession:
         # Directly update only the enabled field
         result = await crud_satellites.toggle_monitored_satellite_enabled(
-            dbsession, satellite_id, enabled
+            dbsession, satellite_id, enabled,
         )
         if result["success"]:
             return {"success": True, "data": {"id": satellite_id, "enabled": enabled}}
@@ -532,8 +534,8 @@ async def toggle_monitored_satellite_enabled(
 
 
 async def regenerate_observations(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, Dict[str, int], str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict[str, int] | str]:
     """
     Regenerate scheduled observations for monitored satellites.
 
@@ -556,12 +558,12 @@ async def regenerate_observations(
 
     mode = "DRY-RUN preview" if dry_run else "regeneration"
     logger.info(
-        f"Starting observation {mode} for {'all satellites' if not monitored_satellite_id else f'satellite {monitored_satellite_id}'}"
+        f"Starting observation {mode} for {'all satellites' if not monitored_satellite_id else f'satellite {monitored_satellite_id}'}",
     )
 
     async with AsyncSessionLocal() as dbsession:
         result = await generate_observations_for_monitored_satellites(
-            dbsession, monitored_satellite_id, dry_run, user_conflict_overrides
+            dbsession, monitored_satellite_id, dry_run, user_conflict_overrides,
         )
 
         if result["success"] and not dry_run:
@@ -574,7 +576,7 @@ async def regenerate_observations(
                 f"{stats.get('generated', 0)} created, "
                 f"{stats.get('updated', 0)} updated, "
                 f"{stats.get('skipped', 0)} skipped, "
-                f"{stats.get('satellites_processed', 0)} satellites processed"
+                f"{stats.get('satellites_processed', 0)} satellites processed",
             )
 
             # Sync all observations to APScheduler
@@ -583,12 +585,12 @@ async def regenerate_observations(
                 if sync_result["success"]:
                     sync_stats = sync_result.get("stats", {})
                     logger.info(
-                        f"APScheduler sync complete: {sync_stats.get('scheduled', 0)} scheduled"
+                        f"APScheduler sync complete: {sync_stats.get('scheduled', 0)} scheduled",
                     )
         elif result["success"] and dry_run:
             logger.info(
                 f"Dry-run complete: {len(result.get('conflicts', []))} conflicts detected, "
-                f"{len(result.get('no_conflicts', []))} passes without conflicts"
+                f"{len(result.get('no_conflicts', []))} passes without conflicts",
             )
 
         return {
@@ -624,5 +626,5 @@ def register_handlers(registry):
             ),
             # Observation generation
             "regenerate-observations": (regenerate_observations, "data_submission"),
-        }
+        },
     )

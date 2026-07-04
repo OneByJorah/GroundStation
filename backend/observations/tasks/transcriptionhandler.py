@@ -16,9 +16,7 @@
 """Transcription task handler - manages transcription worker lifecycle."""
 
 import traceback
-from typing import Any, Dict, Optional
-
-from sqlalchemy import select
+from typing import Any
 
 from common.logger import logger
 from crud.preferences import fetch_all_preferences
@@ -27,6 +25,7 @@ from db.models import Transmitters
 from demodulators.amdemodulator import AMDemodulator
 from demodulators.fmdemodulator import FMDemodulator
 from demodulators.ssbdemodulator import SSBDemodulator
+from sqlalchemy import select
 from vfos.state import VFOManager
 
 
@@ -47,9 +46,9 @@ class TranscriptionHandler:
         observation_id: str,
         session_id: str,
         sdr_id: str,
-        sdr_config: Dict[str, Any],
-        satellite: Dict[str, Any],
-        task_config: Dict[str, Any],
+        sdr_config: dict[str, Any],
+        satellite: dict[str, Any],
+        task_config: dict[str, Any],
     ) -> bool:
         """
         Start a transcription task.
@@ -73,7 +72,7 @@ class TranscriptionHandler:
             vfo_frequency = task_config.get("frequency", sdr_config["center_freq"])
             # Map frontend 'modulation' field to backend 'demodulator_type'
             demodulator_type = task_config.get(
-                "modulation", task_config.get("demodulator_type", "FM")
+                "modulation", task_config.get("demodulator_type", "FM"),
             )
             bandwidth = task_config.get("bandwidth", 40000)
             provider = task_config.get("provider", "gemini")
@@ -85,7 +84,7 @@ class TranscriptionHandler:
             transmitter_dict = None
             if transcription_transmitter_id and transcription_transmitter_id != "none":
                 vfo_frequency = await self._fetch_transmitter_frequency(
-                    transcription_transmitter_id, vfo_frequency, task_config
+                    transcription_transmitter_id, vfo_frequency, task_config,
                 )
                 # Also fetch transmitter dict for metadata
                 transmitter_dict = await self._fetch_transmitter_dict(transcription_transmitter_id)
@@ -104,22 +103,22 @@ class TranscriptionHandler:
             )
 
             logger.info(
-                f"Configured VFO {transcription_vfo_number} for transcription at {vfo_frequency/1e6:.3f} MHz"
+                f"Configured VFO {transcription_vfo_number} for transcription at {vfo_frequency/1e6:.3f} MHz",
             )
 
             # 2. Start demodulator for this VFO
             demod_started = self._start_demodulator(
-                sdr_id, session_id, demodulator_type, transcription_vfo_number
+                sdr_id, session_id, demodulator_type, transcription_vfo_number,
             )
 
             if not demod_started:
                 logger.error(
-                    f"Failed to start demodulator for transcription VFO {transcription_vfo_number}"
+                    f"Failed to start demodulator for transcription VFO {transcription_vfo_number}",
                 )
                 return False
 
             logger.info(
-                f"Started {demodulator_type} demodulator for transcription VFO {transcription_vfo_number}"
+                f"Started {demodulator_type} demodulator for transcription VFO {transcription_vfo_number}",
             )
 
             # 3. Get transcription manager and fetch API keys
@@ -186,7 +185,7 @@ class TranscriptionHandler:
                 if success:
                     logger.info(
                         f"Started transcription for observation {observation_id} VFO {transcription_vfo_number} "
-                        f"(provider={provider}, language={language}, translate_to={translate_to})"
+                        f"(provider={provider}, language={language}, translate_to={translate_to})",
                     )
                     return True
                 else:
@@ -226,7 +225,7 @@ class TranscriptionHandler:
             return False
 
     def _start_demodulator(
-        self, sdr_id: str, session_id: str, demodulator_type: str, vfo_number: int
+        self, sdr_id: str, session_id: str, demodulator_type: str, vfo_number: int,
     ) -> bool:
         """
         Start a demodulator for transcription.
@@ -244,7 +243,7 @@ class TranscriptionHandler:
 
         if demod_type_lower == "fm":
             result: bool = self.process_manager.start_demodulator(
-                sdr_id, session_id, FMDemodulator, None, vfo_number=vfo_number
+                sdr_id, session_id, FMDemodulator, None, vfo_number=vfo_number,
             )
             return result
         elif demod_type_lower in ["usb", "lsb", "cw"]:
@@ -259,7 +258,7 @@ class TranscriptionHandler:
             return result
         elif demod_type_lower == "am":
             result = self.process_manager.start_demodulator(
-                sdr_id, session_id, AMDemodulator, None, vfo_number=vfo_number
+                sdr_id, session_id, AMDemodulator, None, vfo_number=vfo_number,
             )
             return result
         else:
@@ -267,7 +266,7 @@ class TranscriptionHandler:
             return False
 
     async def _fetch_transmitter_frequency(
-        self, transmitter_id: str, default_frequency: float, task_config: Dict[str, Any]
+        self, transmitter_id: str, default_frequency: float, task_config: dict[str, Any],
     ) -> float:
         """
         Fetch transmitter frequency from database.
@@ -283,15 +282,15 @@ class TranscriptionHandler:
         try:
             async with AsyncSessionLocal() as db_session:
                 result = await db_session.execute(
-                    select(Transmitters).where(Transmitters.id == transmitter_id)
+                    select(Transmitters).where(Transmitters.id == transmitter_id),
                 )
                 transmitter_record = result.scalar_one_or_none()
                 if transmitter_record:
                     frequency: float = float(
-                        task_config.get("frequency", transmitter_record.downlink_low)
+                        task_config.get("frequency", transmitter_record.downlink_low),
                     )
                     logger.info(
-                        f"Loaded transmitter {transmitter_record.description} at {frequency/1e6:.3f} MHz for transcription"
+                        f"Loaded transmitter {transmitter_record.description} at {frequency/1e6:.3f} MHz for transcription",
                     )
                     return frequency
         except Exception as e:
@@ -299,7 +298,7 @@ class TranscriptionHandler:
 
         return default_frequency
 
-    async def _fetch_transmitter_dict(self, transmitter_id: str) -> Optional[Dict[str, Any]]:
+    async def _fetch_transmitter_dict(self, transmitter_id: str) -> dict[str, Any] | None:
         """
         Fetch transmitter dict from database.
 
@@ -312,7 +311,7 @@ class TranscriptionHandler:
         try:
             async with AsyncSessionLocal() as db_session:
                 result = await db_session.execute(
-                    select(Transmitters).where(Transmitters.id == transmitter_id)
+                    select(Transmitters).where(Transmitters.id == transmitter_id),
                 )
                 transmitter_record = result.scalar_one_or_none()
                 if not transmitter_record:

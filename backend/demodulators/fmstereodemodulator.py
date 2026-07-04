@@ -19,11 +19,10 @@ import logging
 import queue
 import threading
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy import signal
-
 from vfos.state import VFOManager
 
 logger = logging.getLogger("fm-stereo-demodulator")
@@ -54,7 +53,7 @@ class FMStereoDemodulator(threading.Thread):
 
     def __init__(self, iq_queue, audio_queue, session_id, vfo_number=None):
         super().__init__(
-            daemon=True, name=f"FMStereoDemodulator-{session_id}-VFO{vfo_number or ''}"
+            daemon=True, name=f"FMStereoDemodulator-{session_id}-VFO{vfo_number or ''}",
         )
         self.iq_queue = iq_queue
         self.audio_queue = audio_queue
@@ -77,18 +76,18 @@ class FMStereoDemodulator(threading.Thread):
         self.current_bandwidth = None
 
         # Filters (will be initialized when we know sample rates)
-        self.decimation_filter: Optional[Tuple[np.ndarray, int]] = None
-        self.audio_filter_left: Optional[np.ndarray] = None
-        self.audio_filter_right: Optional[np.ndarray] = None
-        self.pilot_filter: Optional[np.ndarray] = None
-        self.subcarrier_filter: Optional[np.ndarray] = None
-        self.deemphasis_filter: Optional[Tuple[np.ndarray, np.ndarray]] = None
+        self.decimation_filter: tuple[np.ndarray, int] | None = None
+        self.audio_filter_left: np.ndarray | None = None
+        self.audio_filter_right: np.ndarray | None = None
+        self.pilot_filter: np.ndarray | None = None
+        self.subcarrier_filter: np.ndarray | None = None
+        self.deemphasis_filter: tuple[np.ndarray, np.ndarray] | None = None
 
         # Filter states (will be initialized when filters are created)
-        self.audio_filter_left_state: Optional[np.ndarray] = None
-        self.audio_filter_right_state: Optional[np.ndarray] = None
-        self.pilot_filter_state: Optional[np.ndarray] = None
-        self.subcarrier_filter_state: Optional[np.ndarray] = None
+        self.audio_filter_left_state: np.ndarray | None = None
+        self.audio_filter_right_state: np.ndarray | None = None
+        self.pilot_filter_state: np.ndarray | None = None
+        self.subcarrier_filter_state: np.ndarray | None = None
 
         # De-emphasis time constant (75 microseconds for US, 50 for EU)
         self.deemphasis_tau = 50e-6
@@ -103,7 +102,7 @@ class FMStereoDemodulator(threading.Thread):
         self.pll_freq = 19000.0  # 19 kHz pilot tone
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "iq_samples_in": 0,
             "audio_chunks_out": 0,
@@ -118,7 +117,7 @@ class FMStereoDemodulator(threading.Thread):
         """Get VFO state for this demodulator's VFO."""
         if self.vfo_number is None:
             logger.error(
-                f"vfo_number is required for FMStereoDemodulator (session {self.session_id})"
+                f"vfo_number is required for FMStereoDemodulator (session {self.session_id})",
             )
             return None
 
@@ -222,7 +221,7 @@ class FMStereoDemodulator(threading.Thread):
                 nyquist2 = rate_after_stage1 / 2.0
                 # Final cutoff preserves stereo bandwidth
                 cutoff2 = min(
-                    effective_bandwidth / 2.0, (rate_after_stage1 / stage2_decimation) * 0.4
+                    effective_bandwidth / 2.0, (rate_after_stage1 / stage2_decimation) * 0.4,
                 )
                 normalized_cutoff2 = min(0.4, max(0.01, cutoff2 / nyquist2))
                 b2, a2 = signal.butter(4, normalized_cutoff2, btype="low")
@@ -348,7 +347,7 @@ class FMStereoDemodulator(threading.Thread):
         window_size = max(1, int(sample_rate / 1000))  # 1 ms window
         if len(phase_error) >= window_size:
             phase_error_filtered = np.convolve(
-                phase_error, np.ones(window_size) / window_size, mode="same"
+                phase_error, np.ones(window_size) / window_size, mode="same",
             )
         else:
             phase_error_filtered = phase_error
@@ -388,7 +387,7 @@ class FMStereoDemodulator(threading.Thread):
             l_plus_r = mpx_signal
         else:
             l_plus_r, filter_state = signal.lfilter(
-                self.audio_filter_left, 1, mpx_signal, zi=self.audio_filter_left_state
+                self.audio_filter_left, 1, mpx_signal, zi=self.audio_filter_left_state,
             )
             self.audio_filter_left_state = filter_state
 
@@ -399,7 +398,7 @@ class FMStereoDemodulator(threading.Thread):
             return l_plus_r, l_plus_r
 
         pilot, filter_state = signal.lfilter(
-            self.pilot_filter, 1, mpx_signal, zi=self.pilot_filter_state
+            self.pilot_filter, 1, mpx_signal, zi=self.pilot_filter_state,
         )
         self.pilot_filter_state = filter_state
 
@@ -413,7 +412,7 @@ class FMStereoDemodulator(threading.Thread):
             return l_plus_r, l_plus_r
 
         subcarrier, filter_state = signal.lfilter(
-            self.subcarrier_filter, 1, mpx_signal, zi=self.subcarrier_filter_state
+            self.subcarrier_filter, 1, mpx_signal, zi=self.subcarrier_filter_state,
         )
         self.subcarrier_filter_state = filter_state
 
@@ -425,7 +424,7 @@ class FMStereoDemodulator(threading.Thread):
             l_minus_r = l_minus_r_raw
         else:
             l_minus_r, filter_state = signal.lfilter(
-                self.audio_filter_right, 1, l_minus_r_raw, zi=self.audio_filter_right_state
+                self.audio_filter_right, 1, l_minus_r_raw, zi=self.audio_filter_right_state,
             )
             self.audio_filter_right_state = filter_state
 
@@ -488,7 +487,7 @@ class FMStereoDemodulator(threading.Thread):
                     self.stats["iq_samples_in"] += len(samples)
 
                 logger.debug(
-                    f"Processing {len(samples)} IQ samples at {sdr_sample_rate/1e6:.2f} MHz"
+                    f"Processing {len(samples)} IQ samples at {sdr_sample_rate/1e6:.2f} MHz",
                 )
 
                 # Check if we need to reinitialize filters
@@ -502,7 +501,7 @@ class FMStereoDemodulator(threading.Thread):
 
                     # Design filters
                     stages, total_decimation = self._design_decimation_filter(
-                        sdr_sample_rate, vfo_state.bandwidth
+                        sdr_sample_rate, vfo_state.bandwidth,
                     )
                     self.decimation_filter = (stages, total_decimation)
 
@@ -522,30 +521,30 @@ class FMStereoDemodulator(threading.Thread):
 
                     # Initialize audio filter states
                     self.audio_filter_left_state = self._resize_filter_state(
-                        self.audio_filter_left_state, self.audio_filter_left, 0
+                        self.audio_filter_left_state, self.audio_filter_left, 0,
                     )
                     self.audio_filter_right_state = self._resize_filter_state(
-                        self.audio_filter_right_state, self.audio_filter_right, 0
+                        self.audio_filter_right_state, self.audio_filter_right, 0,
                     )
                     self.pilot_filter_state = self._resize_filter_state(
-                        self.pilot_filter_state, self.pilot_filter, 0
+                        self.pilot_filter_state, self.pilot_filter, 0,
                     )
                     self.subcarrier_filter_state = self._resize_filter_state(
-                        self.subcarrier_filter_state, self.subcarrier_filter, 0
+                        self.subcarrier_filter_state, self.subcarrier_filter, 0,
                     )
 
                     b_deemph, a_deemph = self.deemphasis_filter  # type: ignore[misc]
                     deemph_left_state = self._resize_filter_state(
-                        deemph_left_state, b_deemph, 0, a_deemph
+                        deemph_left_state, b_deemph, 0, a_deemph,
                     )
                     deemph_right_state = self._resize_filter_state(
-                        deemph_right_state, b_deemph, 0, a_deemph
+                        deemph_right_state, b_deemph, 0, a_deemph,
                     )
 
                     logger.info(
                         f"Filters initialized: SDR rate={sdr_sample_rate/1e6:.2f} MHz, "
                         f"stages={len(stages)}, total_decimation={total_decimation}, "
-                        f"intermediate={intermediate_rate/1e3:.1f} kHz"
+                        f"intermediate={intermediate_rate/1e3:.1f} kHz",
                     )
 
                 # Step 1: Frequency translation (tune to VFO frequency)
@@ -558,7 +557,7 @@ class FMStereoDemodulator(threading.Thread):
                 if abs(offset_freq) > sdr_sample_rate / 2:
                     logger.debug(
                         f"VFO frequency {vfo_state.center_freq} Hz is outside SDR bandwidth "
-                        f"(SDR center: {sdr_center_freq} Hz, rate: {sdr_sample_rate} Hz)"
+                        f"(SDR center: {sdr_center_freq} Hz, rate: {sdr_sample_rate} Hz)",
                     )
                     continue
 
@@ -579,7 +578,7 @@ class FMStereoDemodulator(threading.Thread):
 
                     # Apply IIR filter
                     filtered, decimation_state[stage_idx] = signal.lfilter(
-                        b, a, decimated, zi=decimation_state[stage_idx]
+                        b, a, decimated, zi=decimation_state[stage_idx],
                     )
 
                     # Decimate
@@ -622,15 +621,15 @@ class FMStereoDemodulator(threading.Thread):
                     deemph_right_state = signal.lfilter_zi(b, a) * right_audio[0]
 
                 left_deemph, deemph_left_state = signal.lfilter(
-                    b, a, left_audio, zi=deemph_left_state
+                    b, a, left_audio, zi=deemph_left_state,
                 )
                 right_deemph, deemph_right_state = signal.lfilter(
-                    b, a, right_audio, zi=deemph_right_state
+                    b, a, right_audio, zi=deemph_right_state,
                 )
 
                 # Step 6: Resample to audio rate (44.1 kHz)
                 num_output_samples = int(
-                    len(left_deemph) * self.audio_sample_rate / intermediate_rate
+                    len(left_deemph) * self.audio_sample_rate / intermediate_rate,
                 )
                 if num_output_samples > 0:
                     left_resampled = signal.resample(left_deemph, num_output_samples)
@@ -673,7 +672,7 @@ class FMStereoDemodulator(threading.Thread):
                         self.audio_buffer = self.audio_buffer[-max_buffer_samples:]
                         logger.warning(
                             f"Audio buffer overflow ({len(self.audio_buffer)} samples), "
-                            f"dropping old audio to prevent lag buildup"
+                            f"dropping old audio to prevent lag buildup",
                         )
 
                     # Send chunks of target size when buffer is full enough
@@ -695,7 +694,7 @@ class FMStereoDemodulator(threading.Thread):
                                     "vfo_number": self.vfo_number,  # Tag audio with VFO number
                                     "audio_type": "stereo",  # Explicitly mark as stereo (interleaved L/R)
                                     "rf_power_db": self.last_rf_power_db,  # Include latest power measurement
-                                }
+                                },
                             )
                             # Update stats
                             with self.stats_lock:
@@ -705,16 +704,16 @@ class FMStereoDemodulator(threading.Thread):
                         except queue.Full:
                             # Queue is full - drop this chunk to prevent lag accumulation
                             logger.debug(
-                                f"Audio queue full, dropping chunk for session {self.session_id}"
+                                f"Audio queue full, dropping chunk for session {self.session_id}",
                             )
                             break  # Exit while loop to process next IQ samples
                         except Exception as e:
-                            logger.warning(f"Could not queue audio: {str(e)}")
+                            logger.warning(f"Could not queue audio: {e!s}")
                             break
 
             except Exception as e:
                 if self.running:
-                    logger.error(f"Error in FM Stereo demodulator: {str(e)}")
+                    logger.error(f"Error in FM Stereo demodulator: {e!s}")
                     logger.exception(e)
                     with self.stats_lock:
                         self.stats["errors"] += 1

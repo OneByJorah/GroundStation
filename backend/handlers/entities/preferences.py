@@ -15,17 +15,18 @@
 
 """Preference and map settings handlers."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
-from handlers.entities.tracking import emit_tracker_data, emit_ui_tracker_values
 from tracker.runner import get_tracker_manager
+
+from handlers.entities.tracking import emit_tracker_data, emit_ui_tracker_values
 
 
 async def fetch_preferences(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Fetch all preferences.
 
@@ -45,8 +46,8 @@ async def fetch_preferences(
 
 
 async def update_preferences(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Update preferences.
 
@@ -69,8 +70,8 @@ async def update_preferences(
 
 
 async def get_map_settings(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Fetch map settings.
 
@@ -90,8 +91,8 @@ async def get_map_settings(
 
 
 async def set_map_settings(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, dict]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict]:
     """
     Update map settings and emit tracker data.
 
@@ -126,5 +127,5 @@ def register_handlers(registry):
             "update-preferences": (update_preferences, "data_submission"),
             "get-map-settings": (get_map_settings, "data_request"),
             "set-map-settings": (set_map_settings, "data_submission"),
-        }
+        },
     )

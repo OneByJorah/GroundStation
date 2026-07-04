@@ -12,11 +12,10 @@
 import json
 import logging
 import pathlib
-from typing import Any, Dict, Optional
-
-from satellites.satyaml.satyaml import SatYAML
+from typing import Any
 
 from constants import GR_SATELLITES_FRAMING_MAP, FramingType
+from satellites.satyaml.satyaml import SatYAML
 
 logger = logging.getLogger("satellite-config")
 
@@ -50,13 +49,13 @@ class SatelliteConfigService:
         try:
             self.satyaml = SatYAML()
             logger.info(
-                f"Loaded gr-satellites database with {len(list(self.satyaml.yaml_files()))} satellites"
+                f"Loaded gr-satellites database with {len(list(self.satyaml.yaml_files()))} satellites",
             )
         except Exception as e:
             logger.error(f"Failed to initialize SatYAML: {e}")
             self.satyaml = None
 
-    def _load_overrides(self) -> Dict[str, Any]:
+    def _load_overrides(self) -> dict[str, Any]:
         """Load user overrides from JSON file."""
         if not self.overrides_path.exists():
             logger.info(f"No overrides file found at {self.overrides_path}")
@@ -64,9 +63,9 @@ class SatelliteConfigService:
 
         try:
             with open(self.overrides_path, "r") as f:
-                overrides: Dict[str, Any] = json.load(f)
+                overrides: dict[str, Any] = json.load(f)
             logger.info(
-                f"Loaded overrides for {len(overrides)} satellites from {self.overrides_path}"
+                f"Loaded overrides for {len(overrides)} satellites from {self.overrides_path}",
             )
             return overrides
         except Exception as e:
@@ -85,7 +84,7 @@ class SatelliteConfigService:
         except Exception as e:
             logger.error(f"Failed to save overrides: {e}")
 
-    def get_satellite_by_norad(self, norad_id: int) -> Optional[Dict[str, Any]]:
+    def get_satellite_by_norad(self, norad_id: int) -> dict[str, Any] | None:
         """
         Get satellite configuration by NORAD ID from gr-satellites.
 
@@ -100,7 +99,7 @@ class SatelliteConfigService:
             return None
 
         try:
-            result: Optional[Dict[str, Any]] = self.satyaml.search_norad(norad_id)
+            result: dict[str, Any] | None = self.satyaml.search_norad(norad_id)
             return result
         except ValueError:
             logger.debug(f"Satellite with NORAD {norad_id} not found in gr-satellites")
@@ -109,7 +108,7 @@ class SatelliteConfigService:
             logger.error(f"Error loading satellite {norad_id}: {e}")
             return None
 
-    def get_satellite_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_satellite_by_name(self, name: str) -> dict[str, Any] | None:
         """
         Get satellite configuration by name from gr-satellites.
         Uses fuzzy matching (case-insensitive, ignores punctuation/spaces).
@@ -125,7 +124,7 @@ class SatelliteConfigService:
             return None
 
         try:
-            result: Optional[Dict[str, Any]] = self.satyaml.search_name(name)
+            result: dict[str, Any] | None = self.satyaml.search_name(name)
             return result
         except ValueError:
             logger.debug(f"Satellite '{name}' not found in gr-satellites")
@@ -135,8 +134,8 @@ class SatelliteConfigService:
             return None
 
     def get_transmitter_config(
-        self, norad_id: int, frequency: Optional[float] = None, baudrate: Optional[int] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, norad_id: int, frequency: float | None = None, baudrate: int | None = None,
+    ) -> dict[str, Any] | None:
         """
         Get best matching transmitter configuration for given parameters.
 
@@ -157,24 +156,24 @@ class SatelliteConfigService:
         # Match by frequency (within 100 kHz tolerance)
         if frequency:
             for tx_name, tx in transmitters.items():
-                freq_match: Dict[str, Any] = tx
+                freq_match: dict[str, Any] = tx
                 if abs(freq_match.get("frequency", 0) - frequency) < 100e3:
                     return freq_match
 
         # Match by baudrate
         if baudrate:
             for tx_name, tx in transmitters.items():
-                baud_match: Dict[str, Any] = tx
+                baud_match: dict[str, Any] = tx
                 if baud_match.get("baudrate") == baudrate:
                     return baud_match
 
         # Return first transmitter as fallback
-        first_tx: Dict[str, Any] = list(transmitters.values())[0]
+        first_tx: dict[str, Any] = list(transmitters.values())[0]
         return first_tx
 
     def get_decoder_parameters(
-        self, norad_id: int, baudrate: int, frequency: Optional[float] = None
-    ) -> Dict[str, Any]:
+        self, norad_id: int, baudrate: int, frequency: float | None = None,
+    ) -> dict[str, Any]:
         """
         Get decoder parameters for a satellite, with priority system:
         1. User overrides (if exist)
@@ -250,7 +249,7 @@ class SatelliteConfigService:
 
             logger.info(
                 f"{sat_name} (NORAD {norad_id}) | "
-                f"{params['modulation']}, {baudrate}bd, dev={params['deviation']}Hz, {params['framing']} | src: {source_label}"
+                f"{params['modulation']}, {baudrate}bd, dev={params['deviation']}Hz, {params['framing']} | src: {source_label}",
             )
 
             # Optional parameters
@@ -261,7 +260,7 @@ class SatelliteConfigService:
         else:
             # No YAML data, use smart defaults
             logger.warning(
-                f"NORAD {norad_id} not found in gr-satellites database, using smart defaults"
+                f"NORAD {norad_id} not found in gr-satellites database, using smart defaults",
             )
             params["deviation"] = baudrate / 2  # Narrow FSK default
             params["source"] = "smart_default"
@@ -281,7 +280,7 @@ class SatelliteConfigService:
         result = GR_SATELLITES_FRAMING_MAP.get(gr_sat_framing, FramingType.AX25)
         return str(result)
 
-    def _estimate_deviation(self, tx: Dict[str, Any]) -> float:
+    def _estimate_deviation(self, tx: dict[str, Any]) -> float:
         """
         Estimate deviation if not specified in YAML.
         Uses industry-standard heuristics based on modulation and baudrate.
@@ -324,9 +323,9 @@ class SatelliteConfigService:
         norad_id: int,
         baudrate: int,
         deviation: float,
-        framing: Optional[str] = None,
+        framing: str | None = None,
         verified: bool = False,
-        notes: Optional[str] = None,
+        notes: str | None = None,
     ):
         """
         Add or update a user override for a satellite transmitter.
@@ -366,6 +365,6 @@ class SatelliteConfigService:
             self.overrides[norad_str]["notes"] = notes
 
         logger.info(
-            f"Added override for NORAD {norad_id} @ {baudrate} baud: deviation={deviation} Hz"
+            f"Added override for NORAD {norad_id} @ {baudrate} baud: deviation={deviation} Hz",
         )
         self.save_overrides()

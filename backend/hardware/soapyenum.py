@@ -17,7 +17,7 @@
 import json
 import logging
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import SoapySDR
 
@@ -28,7 +28,7 @@ logger = logging.getLogger("soapysdr-usbenum")
 check_freq_range = True
 
 
-def _serialize_range(range_obj: Any) -> Optional[Dict[str, Any]]:
+def _serialize_range(range_obj: Any) -> dict[str, Any] | None:
     if range_obj is None:
         return None
     if hasattr(range_obj, "minimum") and hasattr(range_obj, "maximum"):
@@ -81,7 +81,7 @@ def _normalize_setting_type(type_value: Any) -> Any:
     return type_value
 
 
-def _postprocess_caps(caps: Dict[str, Any]) -> Dict[str, Any]:
+def _postprocess_caps(caps: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(caps, dict):
         return caps
     # Normalize empty bandwidth lists to null
@@ -104,8 +104,8 @@ def _postprocess_caps(caps: Dict[str, Any]) -> Dict[str, Any]:
     return caps
 
 
-def _collect_capabilities(device: Any, channel_index: int) -> Dict[str, Any]:
-    caps: Dict[str, Any] = {
+def _collect_capabilities(device: Any, channel_index: int) -> dict[str, Any]:
+    caps: dict[str, Any] = {
         "settings": [],
         "sensors": [],
         "sensor_values": {},
@@ -133,7 +133,7 @@ def _collect_capabilities(device: Any, channel_index: int) -> Dict[str, Any]:
                     "name": getattr(setting, "name", None),
                     "description": getattr(setting, "description", None),
                     "type": _normalize_setting_type(
-                        _normalize_value(getattr(setting, "type", None))
+                        _normalize_value(getattr(setting, "type", None)),
                     ),
                     "units": _normalize_value(getattr(setting, "units", None)),
                     "range": _serialize_range(getattr(setting, "range", None)),
@@ -245,7 +245,7 @@ def _collect_capabilities(device: Any, channel_index: int) -> Dict[str, Any]:
         try:
             if hasattr(device, "getStreamFormats"):
                 caps["stream_formats"][direction_name] = device.getStreamFormats(
-                    direction, channel_index
+                    direction, channel_index,
                 )
             if hasattr(device, "getNativeStreamFormat"):
                 fmt, full_scale = device.getNativeStreamFormat(direction, channel_index)
@@ -309,10 +309,10 @@ def probe_available_usb_sdrs() -> str:
             - log: List of log messages
     """
 
-    log_messages: List[str] = []
-    usb_devices: List[Dict[str, Any]] = []
-    success: Optional[bool] = None
-    error: Optional[str] = None
+    log_messages: list[str] = []
+    usb_devices: list[dict[str, Any]] = []
+    success: bool | None = None
+    error: str | None = None
 
     log_messages.append("Enumerating available USB-connected SoapySDR devices")
 
@@ -377,7 +377,7 @@ def probe_available_usb_sdrs() -> str:
                         sdr = SoapySDR.Device(simple_args)
 
                         # Get frequency ranges for all available channels (both RX and TX)
-                        frequency_ranges: Dict[str, Any] = {}
+                        frequency_ranges: dict[str, Any] = {}
 
                         # Check RX capabilities
                         try:
@@ -387,7 +387,7 @@ def probe_available_usb_sdrs() -> str:
                                 for channel in range(num_rx_channels):
                                     # Get the frequency range for this channel
                                     ranges = sdr.getFrequencyRange(
-                                        SoapySDRDirection.RX.value, channel
+                                        SoapySDRDirection.RX.value, channel,
                                     )
                                     parsed_ranges = []
                                     for freq_range in ranges:
@@ -397,13 +397,13 @@ def probe_available_usb_sdrs() -> str:
                                                 "min": freq_range.minimum(),
                                                 "max": freq_range.maximum(),
                                                 "step": freq_range.step(),
-                                            }
+                                            },
                                         )
                                     frequency_ranges["rx"].append(parsed_ranges)
 
                         except Exception as e:
                             log_messages.append(
-                                f"Warning: Error probing RX frequency range: {str(e)}"
+                                f"Warning: Error probing RX frequency range: {e!s}",
                             )
 
                         # Check TX capabilities
@@ -414,7 +414,7 @@ def probe_available_usb_sdrs() -> str:
                                 for channel in range(num_tx_channels):
                                     # Get the frequency range for this channel
                                     ranges = sdr.getFrequencyRange(
-                                        SoapySDRDirection.TX.value, channel
+                                        SoapySDRDirection.TX.value, channel,
                                     )
                                     parsed_ranges = []
                                     for freq_range in ranges:
@@ -424,13 +424,13 @@ def probe_available_usb_sdrs() -> str:
                                                 "min": freq_range.minimum(),
                                                 "max": freq_range.maximum(),
                                                 "step": freq_range.step(),
-                                            }
+                                            },
                                         )
                                     frequency_ranges["tx"].append(parsed_ranges)
 
                         except Exception as e:
                             log_messages.append(
-                                f"Warning: Error probing TX frequency range: {str(e)}"
+                                f"Warning: Error probing TX frequency range: {e!s}",
                             )
 
                         # Add frequency range information to device entry
@@ -443,7 +443,7 @@ def probe_available_usb_sdrs() -> str:
                         sdr.close()
 
                     except Exception as e:
-                        log_messages.append(f"Warning: Error probing device capabilities: {str(e)}")
+                        log_messages.append(f"Warning: Error probing device capabilities: {e!s}")
                         device_entry["frequency_ranges"] = {"error": str(e)}
 
                 usb_devices.append(device_entry)
@@ -451,12 +451,12 @@ def probe_available_usb_sdrs() -> str:
         success = True
 
     except Exception as e:
-        log_messages.append(f"Error: Error enumerating SoapySDR devices: {str(e)}")
-        log_messages.append(f"Exception: {str(e)}")
+        log_messages.append(f"Error: Error enumerating SoapySDR devices: {e!s}")
+        log_messages.append(f"Exception: {e!s}")
         success = False
         error = str(e)
 
-    reply: Dict[str, Any] = {
+    reply: dict[str, Any] = {
         "success": success,
         "data": usb_devices,
         "error": error,

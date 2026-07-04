@@ -14,7 +14,6 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
-from typing import Dict, Union
 
 import crud
 from common.sdrconfig import SDRConfig
@@ -24,7 +23,6 @@ from demodulators.amdemodulator import AMDemodulator
 from demodulators.fmdemodulator import FMDemodulator
 from demodulators.fmstereodemodulator import FMStereoDemodulator
 from demodulators.ssbdemodulator import SSBDemodulator
-from handlers.entities.filebrowser import emit_file_browser_state
 from pipeline.orchestration.processmanager import process_manager
 from server.audiorecorder import start_audio_recording, stop_audio_recording
 from server.recorder import start_recording, stop_recording
@@ -32,6 +30,8 @@ from server.snapshots import save_waterfall_snapshot
 from server.startup import audio_queue
 from session.service import session_service
 from session.tracker import session_tracker
+
+from handlers.entities.filebrowser import emit_file_browser_state
 
 
 def _coerce_float(value, default, field_name, logger):
@@ -79,7 +79,7 @@ def _coerce_int(value, default, field_name, logger):
 async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
 
     async with AsyncSessionLocal() as dbsession:
-        reply: Dict[str, Union[bool, None, dict, list, str]] = {"success": False, "data": None}
+        reply: dict[str, bool | None | dict | list | str] = {"success": False, "data": None}
 
         logger.info(f"SDR command received: {cmd}")
 
@@ -116,7 +116,7 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
 
                 # Default to 100 MHz
                 center_freq = _coerce_float(
-                    data.get("centerFrequency", 100e6), 100e6, "centerFrequency", logger
+                    data.get("centerFrequency", 100e6), 100e6, "centerFrequency", logger,
                 )
 
                 # Validate center frequency against device limits
@@ -126,24 +126,24 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                 # Only validate if both limits are defined and numeric; otherwise warn and skip validation.
                 if freq_min is None or freq_max is None:
                     logger.warning(
-                        "SDR frequency limits missing; skipping center frequency validation."
+                        "SDR frequency limits missing; skipping center frequency validation.",
                     )
                 elif not isinstance(freq_min, (int, float)) or not isinstance(
-                    freq_max, (int, float)
+                    freq_max, (int, float),
                 ):
                     logger.warning(
-                        "SDR frequency limits invalid; skipping center frequency validation."
+                        "SDR frequency limits invalid; skipping center frequency validation.",
                     )
                 else:
                     if not (freq_min * 1e6 <= center_freq <= freq_max * 1e6):
                         raise Exception(
                             f"Center frequency {center_freq / 1e6:.2f} MHz is outside device limits "
-                            f"({freq_min:.2f} MHz - {freq_max:.2f} MHz)"
+                            f"({freq_min:.2f} MHz - {freq_max:.2f} MHz)",
                         )
 
                 # Default to 2.048 MSPS
                 sample_rate = _coerce_float(
-                    data.get("sampleRate", 2.048e6), 2.048e6, "sampleRate", logger
+                    data.get("sampleRate", 2.048e6), 2.048e6, "sampleRate", logger,
                 )
 
                 # Default to 20 dB gain
@@ -180,7 +180,7 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
 
                 # Offset frequency for downconverters and upconverters
                 offset_freq = _coerce_float(
-                    data.get("offsetFrequency", 0), 0, "offsetFrequency", logger
+                    data.get("offsetFrequency", 0), 0, "offsetFrequency", logger,
                 )
 
                 # Recording path for sigmfplayback
@@ -235,18 +235,18 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                 is_running = process_manager.is_sdr_process_running(sdr_id)
                 if is_running:
                     logger.info(
-                        f"Updating SDR configuration for client {client_id} with SDR id: {sdr_id}"
+                        f"Updating SDR configuration for client {client_id} with SDR id: {sdr_id}",
                     )
                     await process_manager.update_configuration(sdr_id, sdr_config)
 
                 reply["success"] = True
 
             except Exception as e:
-                logger.error(f"Error configuring SDR: {str(e)}")
+                logger.error(f"Error configuring SDR: {e!s}")
                 logger.exception(e)
                 await sio.emit(
                     "sdr-config-error",
-                    {"message": f"Failed to configure SDR: {str(e)}"},
+                    {"message": f"Failed to configure SDR: {e!s}"},
                     room=client_id,
                 )
                 reply["success"] = False
@@ -285,15 +285,15 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                 # Start or join the SDR process
                 process_sdr_id = await session_service.start_streaming(client_id, sdr_device)
                 logger.info(
-                    f"SDR process started for client {client_id} with process id: {process_sdr_id}"
+                    f"SDR process started for client {client_id} with process id: {process_sdr_id}",
                 )
 
             except Exception as e:
-                logger.error(f"Error starting SDR stream: {str(e)}")
+                logger.error(f"Error starting SDR stream: {e!s}")
                 logger.exception(e)
                 await sio.emit(
                     "sdr-error",
-                    {"message": f"Failed to start SDR stream: {str(e)}"},
+                    {"message": f"Failed to start SDR stream: {e!s}"},
                     room=client_id,
                 )
                 reply["success"] = False
@@ -336,10 +336,10 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                 logger.info(f"Stopped streaming SDR data for client {client_id}")
 
             except Exception as e:
-                logger.error(f"Error stopping SDR stream: {str(e)}")
+                logger.error(f"Error stopping SDR stream: {e!s}")
                 logger.exception(e)
                 await sio.emit(
-                    "sdr-error", {"message": f"Failed to stop SDR stream: {str(e)}"}, room=client_id
+                    "sdr-error", {"message": f"Failed to stop SDR stream: {e!s}"}, room=client_id,
                 )
                 reply["success"] = False
 
@@ -371,11 +371,11 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                     )
 
             except Exception as e:
-                logger.error(f"Error starting recording: {str(e)}")
+                logger.error(f"Error starting recording: {e!s}")
                 logger.exception(e)
                 await sio.emit(
                     "file_browser_error",
-                    {"error": f"Failed to start recording: {str(e)}", "action": "start-recording"},
+                    {"error": f"Failed to start recording: {e!s}", "action": "start-recording"},
                 )
                 reply["success"] = False
                 reply["error"] = str(e)
@@ -388,7 +388,7 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
 
                 if waterfall_image:
                     logger.info(
-                        f"stop-recording command received with waterfall image, length: {len(waterfall_image)} characters"
+                        f"stop-recording command received with waterfall image, length: {len(waterfall_image)} characters",
                     )
                 else:
                     logger.info("stop-recording command received without waterfall image")
@@ -408,11 +408,11 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                     )
 
             except Exception as e:
-                logger.error(f"Error stopping recording: {str(e)}")
+                logger.error(f"Error stopping recording: {e!s}")
                 logger.exception(e)
                 await sio.emit(
                     "file_browser_error",
-                    {"error": f"Failed to stop recording: {str(e)}", "action": "stop-recording"},
+                    {"error": f"Failed to stop recording: {e!s}", "action": "stop-recording"},
                 )
                 reply["success"] = False
                 reply["error"] = str(e)
@@ -455,12 +455,12 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                 )
 
             except Exception as e:
-                logger.error(f"Error starting audio recording: {str(e)}")
+                logger.error(f"Error starting audio recording: {e!s}")
                 logger.exception(e)
                 await sio.emit(
                     "file_browser_error",
                     {
-                        "error": f"Failed to start audio recording: {str(e)}",
+                        "error": f"Failed to start audio recording: {e!s}",
                         "action": "start-audio-recording",
                     },
                 )
@@ -489,12 +489,12 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                 )
 
             except Exception as e:
-                logger.error(f"Error stopping audio recording: {str(e)}")
+                logger.error(f"Error stopping audio recording: {e!s}")
                 logger.exception(e)
                 await sio.emit(
                     "file_browser_error",
                     {
-                        "error": f"Failed to stop audio recording: {str(e)}",
+                        "error": f"Failed to stop audio recording: {e!s}",
                         "action": "stop-audio-recording",
                     },
                 )
@@ -525,11 +525,11 @@ async def sdr_data_request_routing(sio, cmd, data, logger, client_id):
                     raise Exception(result.get("error", "Unknown error"))
 
             except Exception as e:
-                logger.error(f"Error saving waterfall snapshot: {str(e)}")
+                logger.error(f"Error saving waterfall snapshot: {e!s}")
                 await sio.emit(
                     "file_browser_error",
                     {
-                        "error": f"Failed to save waterfall snapshot: {str(e)}",
+                        "error": f"Failed to save waterfall snapshot: {e!s}",
                         "action": "save-snapshot",
                     },
                 )
@@ -562,41 +562,41 @@ def start_demodulator_for_mode(mode, sdr_id, session_id, logger, vfo_number=None
 
     if mode == "fm":
         result = process_manager.start_demodulator(
-            sdr_id, session_id, FMDemodulator, audio_queue, vfo_number=vfo_number
+            sdr_id, session_id, FMDemodulator, audio_queue, vfo_number=vfo_number,
         )
         if result:
             logger.debug(
-                f"FM demodulator ensured for session {session_id}{log_suffix} on SDR {sdr_id}"
+                f"FM demodulator ensured for session {session_id}{log_suffix} on SDR {sdr_id}",
             )
         return result
 
     elif mode == "fm_stereo":
         result = process_manager.start_demodulator(
-            sdr_id, session_id, FMStereoDemodulator, audio_queue, vfo_number=vfo_number
+            sdr_id, session_id, FMStereoDemodulator, audio_queue, vfo_number=vfo_number,
         )
         if result:
             logger.debug(
-                f"FM Stereo demodulator ensured for session {session_id}{log_suffix} on SDR {sdr_id}"
+                f"FM Stereo demodulator ensured for session {session_id}{log_suffix} on SDR {sdr_id}",
             )
         return result
 
     elif mode in ["usb", "lsb", "cw"]:
         result = process_manager.start_demodulator(
-            sdr_id, session_id, SSBDemodulator, audio_queue, vfo_number=vfo_number, mode=mode
+            sdr_id, session_id, SSBDemodulator, audio_queue, vfo_number=vfo_number, mode=mode,
         )
         if result:
             logger.debug(
-                f"SSB demodulator ({mode.upper()}) ensured for session {session_id}{log_suffix} on SDR {sdr_id}"
+                f"SSB demodulator ({mode.upper()}) ensured for session {session_id}{log_suffix} on SDR {sdr_id}",
             )
         return result
 
     elif mode == "am":
         result = process_manager.start_demodulator(
-            sdr_id, session_id, AMDemodulator, audio_queue, vfo_number=vfo_number
+            sdr_id, session_id, AMDemodulator, audio_queue, vfo_number=vfo_number,
         )
         if result:
             logger.debug(
-                f"AM demodulator ensured for session {session_id}{log_suffix} on SDR {sdr_id}"
+                f"AM demodulator ensured for session {session_id}{log_suffix} on SDR {sdr_id}",
             )
         return result
 
@@ -649,7 +649,7 @@ def _auto_start_transcription(sdr_id, session_id, vfo_number, vfo_state, logger)
                     )
                     if not api_key:
                         logger.debug(
-                            "Gemini API key not configured, skipping auto-start transcription"
+                            "Gemini API key not configured, skipping auto-start transcription",
                         )
                         return
                     transcription_manager.set_gemini_api_key(api_key)
@@ -660,7 +660,7 @@ def _auto_start_transcription(sdr_id, session_id, vfo_number, vfo_state, logger)
                     )
                     if not api_key:
                         logger.debug(
-                            "Deepgram API key not configured, skipping auto-start transcription"
+                            "Deepgram API key not configured, skipping auto-start transcription",
                         )
                         return
                     transcription_manager.set_deepgram_api_key(api_key)
@@ -677,7 +677,7 @@ def _auto_start_transcription(sdr_id, session_id, vfo_number, vfo_state, logger)
                     transcription_manager.set_google_translate_api_key(google_translate_key)
                 else:
                     logger.warning(
-                        f"Unknown transcription provider: {provider}, skipping auto-start"
+                        f"Unknown transcription provider: {provider}, skipping auto-start",
                     )
                     return
 
@@ -694,7 +694,7 @@ def _auto_start_transcription(sdr_id, session_id, vfo_number, vfo_state, logger)
                     from handlers.entities.vfo import _fetch_transmitter_and_satellite
 
                     transmitter_dict, satellite_dict = await _fetch_transmitter_and_satellite(
-                        vfo_state.locked_transmitter_id
+                        vfo_state.locked_transmitter_id,
                     )
 
                 # Start transcription worker
@@ -712,7 +712,7 @@ def _auto_start_transcription(sdr_id, session_id, vfo_number, vfo_state, logger)
                 if success:
                     logger.info(
                         f"Auto-started transcription for VFO {vfo_number} "
-                        f"(language={language}, translate_to={translate_to})"
+                        f"(language={language}, translate_to={translate_to})",
                     )
                 else:
                     logger.warning(f"Failed to auto-start transcription for VFO {vfo_number}")
@@ -752,13 +752,13 @@ def handle_vfo_demodulator_state(vfo_state, session_id, logger):
     if vfo_state.active:
         # Start appropriate demodulator for this VFO
         demod_started = start_demodulator_for_mode(
-            vfo_state.modulation, sdr_id, session_id, logger, vfo_number=vfo_number
+            vfo_state.modulation, sdr_id, session_id, logger, vfo_number=vfo_number,
         )
 
         # If demodulator started and transcription is enabled, auto-start transcription
         if demod_started and vfo_state.transcription_enabled:
             logger.info(
-                f"Auto-starting transcription for VFO {vfo_number} (transcription_enabled=True)"
+                f"Auto-starting transcription for VFO {vfo_number} (transcription_enabled=True)",
             )
             _auto_start_transcription(sdr_id, session_id, vfo_number, vfo_state, logger)
     else:

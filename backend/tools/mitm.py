@@ -70,7 +70,7 @@ def start_proxy(local_host, local_port, remote_host, remote_port):
         client_socket, addr = proxy_socket.accept()
         print(f"Accepted connection from {addr[0]}:{addr[1]}")
         handler = threading.Thread(
-            target=handle_client, args=(client_socket, remote_host, remote_port)
+            target=handle_client, args=(client_socket, remote_host, remote_port),
         )
         handler.start()
 

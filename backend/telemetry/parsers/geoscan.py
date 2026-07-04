@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import struct
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from ..payloadanalyzers import PayloadAnalyzer
 
@@ -30,7 +30,7 @@ class Field:
     ftype: str  # 'u8','i8','u16','i16','u32','i32'
     scale: float = 1.0
     bias: float = 0.0
-    unit: Optional[str] = None
+    unit: str | None = None
 
 
 def _decode_int(payload: bytes, offset: int, ftype: str) -> int:
@@ -63,7 +63,7 @@ class GeoscanParser:
 
     # Layouts can be keyed by (frame_size) or (satellite_name_lower)
     # Use precise per-satellite overrides when available.
-    LAYOUTS: Dict[Any, List[Field]] = {
+    LAYOUTS: dict[Any, list[Field]] = {
         # Generic GEOSCAN Type-I (74-byte frame → 72-byte payload)
         # Full payload includes AX.25 header (16), then ID + EPS + OBC + COMMu
         74: [
@@ -230,11 +230,11 @@ class GeoscanParser:
     def parse(
         self,
         payload: bytes,
-        sat_name: Optional[str] = None,
-        norad: Optional[int] = None,
-        frame_size: Optional[int] = None,
-    ) -> Dict[str, Any]:
-        result: Dict[str, Any] = {
+        sat_name: str | None = None,
+        norad: int | None = None,
+        frame_size: int | None = None,
+    ) -> dict[str, Any]:
+        result: dict[str, Any] = {
             "format": "geoscan",
             "length": len(payload),
         }
@@ -252,7 +252,7 @@ class GeoscanParser:
             pass
 
         # Choose layout priority: exact satellite match → AX.25-info view (when applicable) → frame_size → none
-        layout: Optional[List[Field]] = None
+        layout: list[Field] | None = None
         if sat_name:
             key = (sat_name or "").strip().lower()
             layout = self.LAYOUTS.get(key)
@@ -275,7 +275,7 @@ class GeoscanParser:
             )
             result["analysis"] = PayloadAnalyzer.analyze(payload)
             # Heuristic extraction: look for plausible millivolts and deci-degC in little-endian u16/i16
-            candidates: Dict[str, Any] = {"voltages_v": [], "temperatures_c": []}
+            candidates: dict[str, Any] = {"voltages_v": [], "temperatures_c": []}
             # Voltages: u16 in [2500, 25000] mV → report V
             for i in range(0, max(0, len(payload) - 1), 2):
                 try:
@@ -283,7 +283,7 @@ class GeoscanParser:
                     if 2500 <= raw_u16 <= 25000:
                         v = round(raw_u16 / 1000.0, 3)
                         candidates["voltages_v"].append(
-                            {"offset": i, "value": v, "raw_mV": raw_u16}
+                            {"offset": i, "value": v, "raw_mV": raw_u16},
                         )
                 except Exception:
                     pass
@@ -294,15 +294,15 @@ class GeoscanParser:
                     if -400 <= raw_i16 <= 1250:
                         t = round(raw_i16 / 10.0, 1)
                         candidates["temperatures_c"].append(
-                            {"offset": i, "value": t, "raw_deciC": raw_i16}
+                            {"offset": i, "value": t, "raw_deciC": raw_i16},
                         )
                 except Exception:
                     pass
 
             # Deduplicate by offset and keep up to a reasonable number to avoid UI clutter
-            def _dedup(items: List[Dict[str, Any]], limit: int) -> List[Dict[str, Any]]:
+            def _dedup(items: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
                 seen = set()
-                out: List[Dict[str, Any]] = []
+                out: list[dict[str, Any]] = []
                 for it in items:
                     off = it.get("offset")
                     if off in seen:
@@ -318,8 +318,8 @@ class GeoscanParser:
             result["candidates"] = candidates
             return result
 
-        decoded: Dict[str, Any] = {}
-        raw: Dict[str, int] = {}
+        decoded: dict[str, Any] = {}
+        raw: dict[str, int] = {}
         for field in layout:
             try:
                 ival = _decode_int(payload, field.offset, field.ftype)

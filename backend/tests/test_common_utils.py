@@ -20,7 +20,6 @@ Tests for common/utils.py utility functions.
 import uuid
 
 import pytest
-
 from common.utils import convert_strings_to_uuids
 
 

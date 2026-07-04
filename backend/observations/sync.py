@@ -17,16 +17,16 @@
 
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
-from sqlalchemy import update
-
 from common.logger import logger
 from crud.scheduledobservations import fetch_scheduled_observations
 from db import AsyncSessionLocal
 from db.models import ScheduledObservations
+from sqlalchemy import update
+
 from observations.constants import STATUS_MISSED, STATUS_SCHEDULED
 from observations.executor import ObservationExecutor
 from observations.helpers import log_execution_event, update_observation_status
@@ -79,7 +79,7 @@ class ObservationSchedulerSync:
         """
         return f"{self._job_prefix}_{observation_id}_{event_type}"
 
-    async def sync_observation(self, observation_id: str) -> Dict[str, Any]:
+    async def sync_observation(self, observation_id: str) -> dict[str, Any]:
         """
         Synchronize a single observation with APScheduler.
 
@@ -136,7 +136,7 @@ class ObservationSchedulerSync:
             status_lower = status.lower() if isinstance(status, str) else ""
             if status_lower != STATUS_SCHEDULED:
                 logger.warning(
-                    f"Observation {observation_id} ({observation.get('name')}) has status '{status}', not scheduling (expected '{STATUS_SCHEDULED}')"
+                    f"Observation {observation_id} ({observation.get('name')}) has status '{status}', not scheduling (expected '{STATUS_SCHEDULED}')",
                 )
                 return {"success": True, "action": "skipped_status"}
 
@@ -199,11 +199,11 @@ class ObservationSchedulerSync:
                     job = self.scheduler.get_job(start_job_id)
                     if not job:
                         raise RuntimeError(
-                            f"Start job {start_job_id} was not created in APScheduler"
+                            f"Start job {start_job_id} was not created in APScheduler",
                         )
 
                     logger.info(
-                        f"Scheduled start job for {observation.get('name')} at {start_time.isoformat()}"
+                        f"Scheduled start job for {observation.get('name')} at {start_time.isoformat()}",
                     )
                     await log_execution_event(
                         observation_id,
@@ -217,7 +217,7 @@ class ObservationSchedulerSync:
                     raise  # Re-raise to be caught by outer exception handler
             else:
                 logger.debug(
-                    f"Start time for observation {observation_id} has passed, not scheduling start job"
+                    f"Start time for observation {observation_id} has passed, not scheduling start job",
                 )
 
             # 6. Schedule observation stop job
@@ -245,7 +245,7 @@ class ObservationSchedulerSync:
                         raise RuntimeError(f"Stop job {stop_job_id} was not created in APScheduler")
 
                     logger.info(
-                        f"Scheduled stop job for {observation.get('name')} at {stop_time.isoformat()}"
+                        f"Scheduled stop job for {observation.get('name')} at {stop_time.isoformat()}",
                     )
                     await log_execution_event(
                         observation_id,
@@ -266,7 +266,7 @@ class ObservationSchedulerSync:
             logger.error(traceback.format_exc())
             return {"success": False, "error": error_msg}
 
-    async def sync_all_observations(self) -> Dict[str, Any]:
+    async def sync_all_observations(self) -> dict[str, Any]:
         """
         Synchronize all observations from database to APScheduler.
 
@@ -314,7 +314,7 @@ class ObservationSchedulerSync:
                         if task_end_time < now:
                             logger.info(
                                 f"Marking observation {obs_id} ({observation.get('name')}) as missed "
-                                f"(task_end {task_end_time.isoformat()} is in the past)"
+                                f"(task_end {task_end_time.isoformat()} is in the past)",
                             )
                             await update_observation_status(self.sio, obs_id, STATUS_MISSED)
                             missed_count += 1
@@ -349,7 +349,7 @@ class ObservationSchedulerSync:
                 f"Full synchronization complete: {stats['scheduled']} scheduled, "
                 f"{stats['skipped_disabled']} disabled, {stats['skipped_status']} wrong status, "
                 f"{stats['skipped_past']} past, {stats.get('missed', 0)} marked as missed, "
-                f"{stats['errors']} errors"
+                f"{stats['errors']} errors",
             )
 
             return {"success": True, "stats": stats, "errors": errors}
@@ -360,7 +360,7 @@ class ObservationSchedulerSync:
             logger.error(traceback.format_exc())
             return {"success": False, "error": error_msg}
 
-    async def remove_observation(self, observation_id: str) -> Dict[str, Any]:
+    async def remove_observation(self, observation_id: str) -> dict[str, Any]:
         """
         Remove an observation from APScheduler.
 
@@ -446,7 +446,7 @@ class ObservationSchedulerSync:
                     logger.warning(f"Failed to remove job {job.id}: {e}")
         return count
 
-    def get_scheduled_observation_jobs(self) -> List[Dict[str, Any]]:
+    def get_scheduled_observation_jobs(self) -> list[dict[str, Any]]:
         """
         Get all currently scheduled observation jobs.
 
@@ -474,6 +474,6 @@ class ObservationSchedulerSync:
                         "next_run_time": (
                             job.next_run_time.isoformat() if job.next_run_time else None
                         ),
-                    }
+                    },
                 )
         return jobs

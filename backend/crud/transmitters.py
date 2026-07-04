@@ -17,13 +17,12 @@ import json
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Union
-
-from sqlalchemy import delete, insert, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
 
 from common.common import logger, serialize_object
 from db.models import Transmitters
+from sqlalchemy import delete, insert, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 NULL_MARKERS = {"", "-", None}
 
@@ -135,7 +134,7 @@ def _normalize_transmitter_payload(data: dict, for_edit: bool = False) -> dict:
 
     if "itu_notification" in payload:
         payload["itu_notification"] = _coerce_optional_json(
-            payload.get("itu_notification"), "itu_notification"
+            payload.get("itu_notification"), "itu_notification",
         )
     elif not for_edit:
         payload["itu_notification"] = None
@@ -150,7 +149,7 @@ async def fetch_transmitters_for_satellite(session: AsyncSession, norad_id: int)
     """
     try:
         stmt = select(Transmitters).filter(
-            (Transmitters.norad_cat_id == norad_id) | (Transmitters.norad_follow_id == norad_id)
+            (Transmitters.norad_cat_id == norad_id) | (Transmitters.norad_follow_id == norad_id),
         )
         result = await session.execute(stmt)
         transmitters = result.scalars().all()
@@ -163,7 +162,7 @@ async def fetch_transmitters_for_satellite(session: AsyncSession, norad_id: int)
         return {"success": False, "error": str(e)}
 
 
-async def fetch_transmitter(session: AsyncSession, transmitter_id: Union[uuid.UUID, str]) -> dict:
+async def fetch_transmitter(session: AsyncSession, transmitter_id: uuid.UUID | str) -> dict:
     """
     Fetch a single transmitter record by its UUID or string representation.
     """
@@ -259,7 +258,7 @@ async def edit_transmitter(session: AsyncSession, data: dict) -> dict:
         return {"success": False, "error": str(e)}
 
 
-async def delete_transmitter(session: AsyncSession, transmitter_id: Union[uuid.UUID, str]) -> dict:
+async def delete_transmitter(session: AsyncSession, transmitter_id: uuid.UUID | str) -> dict:
     """
     Delete a transmitter record by its UUID or string representation of UUID.
     """

@@ -15,14 +15,14 @@
 
 """System information handlers."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from server.libraryinfo import get_frontend_library_versions, get_library_versions
 
 
 async def fetch_library_versions(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Any]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, Any]:
     """
     Fetch all library versions and metadata.
 
@@ -45,8 +45,8 @@ async def fetch_library_versions(
 
 
 async def fetch_frontend_library_versions(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Any]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, Any]:
     """
     Fetch all frontend library versions from package.json.
 
@@ -77,5 +77,5 @@ def register_handlers(registry):
                 fetch_frontend_library_versions,
                 "data_request",
             ),
-        }
+        },
     )

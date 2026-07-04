@@ -6,15 +6,8 @@ import tempfile
 import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Set
 
 import socketio
-from engineio.payload import Payload
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-
 from audio.audiobroadcaster import AudioBroadcaster
 from audio.audiostreamer import WebAudioStreamer
 from common.arguments import arguments
@@ -22,21 +15,31 @@ from common.logger import logger
 from db import *  # noqa: F401,F403
 from db import engine  # Explicit import for type checker
 from db.migrations import run_migrations
+from engineio.payload import Payload
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from observations import events as obs_events
 from observations.events import emit_scheduled_observations_changed as _emit
 from observations.events import set_socketio_instance
 from observations.executor import ObservationExecutor
 from observations.sync import ObservationSchedulerSync
 from pipeline.orchestration.processmanager import process_manager
-from server import shutdown
-from server.firsttime import first_time_initialization, run_initial_sync
-from server.scheduler import run_initial_observation_generation, start_scheduler, stop_scheduler
-from server.sessionsnapshot import start_session_runtime_emitter
-from server.systeminfo import start_system_info_emitter
-from server.version import get_full_version_info, get_update_check
 from tasks.manager import BackgroundTaskManager
 from tracker.messages import handle_tracker_messages
 from tracker.runner import get_tracker_manager, start_tracker_process
+
+from server import shutdown
+from server.firsttime import first_time_initialization, run_initial_sync
+from server.scheduler import (
+    run_initial_observation_generation,
+    start_scheduler,
+    stop_scheduler,
+)
+from server.sessionsnapshot import start_session_runtime_emitter
+from server.systeminfo import start_system_info_emitter
+from server.version import get_full_version_info, get_update_check
 
 # Increase payload limits to handle large waterfall PNG images and maintenance uploads.
 Payload.max_decode_packets = 50
@@ -44,7 +47,7 @@ Payload.max_decode_packets = 50
 Payload.max_decode_packet_size = 30 * 1024 * 1024  # 30MB
 
 # At the top of the file, add a global to track background tasks
-background_tasks: Set[asyncio.Task] = set()
+background_tasks: set[asyncio.Task] = set()
 
 # Module-level variable to track if initial sync is needed
 _needs_initial_sync: bool = False
@@ -102,7 +105,7 @@ async def lifespan(fastapiapp: FastAPI):
 
         discovery_func = get_task("soapysdr_discovery")
         await background_task_manager.start_task(
-            func=discovery_func, kwargs={"mode": "single"}, name="SoapySDR Discovery (startup)"
+            func=discovery_func, kwargs={"mode": "single"}, name="SoapySDR Discovery (startup)",
         )
     if arguments.enable_soapy_discovery:
         # Continuous monitoring mode
@@ -145,7 +148,7 @@ async def lifespan(fastapiapp: FastAPI):
                 f"Observation sync complete: {stats.get('scheduled', 0)} scheduled, "
                 f"{stats.get('skipped_disabled', 0)} disabled, "
                 f"{stats.get('skipped_status', 0)} wrong status, "
-                f"{stats.get('skipped_past', 0)} past events"
+                f"{stats.get('skipped_past', 0)} past events",
             )
         else:
             logger.error(f"Observation sync failed: {result.get('error')}")
@@ -240,7 +243,7 @@ app.mount("/decoded", StaticFiles(directory=decoded_dir, html=True), name="decod
 app.mount("/audio", StaticFiles(directory=audio_dir, html=True), name="audio")
 # Note: html=False for transcriptions to ensure .txt files are served with correct content-type
 app.mount(
-    "/transcriptions", StaticFiles(directory=transcriptions_dir, html=False), name="transcriptions"
+    "/transcriptions", StaticFiles(directory=transcriptions_dir, html=False), name="transcriptions",
 )
 
 
@@ -252,9 +255,9 @@ async def get_version():
         version_info = get_full_version_info()
         return version_info
     except Exception as e:
-        logger.error(f"Error retrieving version information: {str(e)}")
+        logger.error(f"Error retrieving version information: {e!s}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve version information: {str(e)}"
+            status_code=500, detail=f"Failed to retrieve version information: {e!s}",
         )
 
 
@@ -264,9 +267,9 @@ async def update_check():
     try:
         return get_update_check()
     except Exception as e:
-        logger.error(f"Error retrieving update information: {str(e)}")
+        logger.error(f"Error retrieving update information: {e!s}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve update information: {str(e)}"
+            status_code=500, detail=f"Failed to retrieve update information: {e!s}",
         )
 
 
@@ -330,7 +333,7 @@ async def init_db():
         os.path.join(backend_dir, "data", "recordings"),
         os.path.join(backend_dir, "data", "snapshots"),
         os.path.join(
-            backend_dir, "data", "decoded"
+            backend_dir, "data", "decoded",
         ),  # For SSTV images, AFSK packets, Morse audio, etc.
         os.path.join(backend_dir, "data", "audio"),  # For audio recordings
         os.path.join(backend_dir, "data", "configs"),  # For satellite decoder configurations
@@ -348,7 +351,7 @@ async def init_db():
         async with engine.begin() as conn:
             # Try to get table names - if this succeeds, database exists
             result = await conn.run_sync(
-                lambda sync_conn: engine.dialect.get_table_names(sync_conn)
+                lambda sync_conn: engine.dialect.get_table_names(sync_conn),
             )
             database_existed = len(result) > 0
     except Exception:

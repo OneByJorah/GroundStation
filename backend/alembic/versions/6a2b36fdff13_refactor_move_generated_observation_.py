@@ -6,18 +6,17 @@ Create Date: 2026-01-05 00:00:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy import DateTime
-
 from alembic import op
+from sqlalchemy import DateTime
 
 # revision identifiers, used by Alembic.
 revision: str = "6a2b36fdff13"
-down_revision: Union[str, None] = "16019e90ddb7"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "16019e90ddb7"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -48,8 +47,8 @@ def upgrade() -> None:
             generated_at = go.generated_at
         FROM generated_observations go
         WHERE scheduled_observations.id = go.observation_id
-    """
-        )
+    """,
+        ),
     )
 
     # Drop the generated_observations table
@@ -64,10 +63,10 @@ def downgrade() -> None:
         sa.Column("monitored_satellite_id", sa.String(), nullable=False),
         sa.Column("generated_at", DateTime(timezone=False), nullable=False),
         sa.ForeignKeyConstraint(
-            ["monitored_satellite_id"], ["monitored_satellites.id"], ondelete="CASCADE"
+            ["monitored_satellite_id"], ["monitored_satellites.id"], ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
-            ["observation_id"], ["scheduled_observations.id"], ondelete="CASCADE"
+            ["observation_id"], ["scheduled_observations.id"], ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("observation_id"),
     )
@@ -87,14 +86,14 @@ def downgrade() -> None:
         SELECT id, monitored_satellite_id, generated_at
         FROM scheduled_observations
         WHERE monitored_satellite_id IS NOT NULL
-    """
-        )
+    """,
+        ),
     )
 
     # Remove columns from scheduled_observations
     with op.batch_alter_table("scheduled_observations", schema=None) as batch_op:
         batch_op.drop_constraint(
-            "fk_scheduled_observations_monitored_satellite_id", type_="foreignkey"
+            "fk_scheduled_observations_monitored_satellite_id", type_="foreignkey",
         )
         batch_op.drop_index(batch_op.f("ix_scheduled_observations_monitored_satellite_id"))
         batch_op.drop_column("generated_at")

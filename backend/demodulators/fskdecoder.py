@@ -66,7 +66,7 @@ import time
 import traceback
 from enum import Enum
 from types import SimpleNamespace
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import psutil
@@ -83,14 +83,16 @@ except ImportError:
 # This prevents shared memory segment exhaustion
 os.environ.setdefault("GR_BUFFER_TYPE", "vmcirc_mmap_tmpfile")
 
-from gnuradio import blocks, gr  # noqa: E402
-from satellites.components.demodulators.fsk_demodulator import fsk_demodulator  # noqa: E402
-from scipy import signal  # noqa: E402
-
 from constants import AX25_FRAMINGS, FramingType  # noqa: E402
+from gnuradio import blocks, gr  # noqa: E402
+from satellites.components.demodulators.fsk_demodulator import (
+    fsk_demodulator,  # noqa: E402
+)
+from scipy import signal  # noqa: E402
+from telemetry.parser import TelemetryParser  # noqa: E402
+
 from demodulators.basedecoderprocess import BaseDecoderProcess  # noqa: E402
 from demodulators.deframerfactory import create_fsk_deframer  # noqa: E402
-from telemetry.parser import TelemetryParser  # noqa: E402
 
 
 class DecoderStatus(Enum):
@@ -346,7 +348,7 @@ class FSKFlowgraph(gr.top_block):
             self.logger.info(
                 f"Batch: {len(samples_to_process)} samp ({time_elapsed:.1f}s, {flow_rate_sps/1e3:.1f}kS/s) | "
                 f"FSK: {self.baudrate}bd, {self.sample_rate:.0f}sps, dev={self.deviation} | "
-                f"Frame: {frame_info} | VFO: {self.batch_vfo_center:.0f}Hz, BW={self.batch_vfo_bandwidth:.0f}Hz"
+                f"Frame: {frame_info} | VFO: {self.batch_vfo_center:.0f}Hz, BW={self.batch_vfo_bandwidth:.0f}Hz",
             )
             # Create message handler for this batch
             msg_handler = FSKMessageHandler(self.callback, logger=self.logger, framing=self.framing)
@@ -421,7 +423,7 @@ class FSKFlowgraph(gr.top_block):
         # which would freeze all threads trying to acquire sample_lock if called inside the lock.
         if should_process:
             self.logger.info(
-                f"Flushing {buffer_size} remaining samples from FSK flowgraph ({self.modulation_subtype})"
+                f"Flushing {buffer_size} remaining samples from FSK flowgraph ({self.modulation_subtype})",
             )
             self._process_buffer()
 
@@ -476,7 +478,7 @@ class FSKDecoder(BaseDecoderProcess):
         # Note: packet_count, stats, stats_lock already initialized by BaseDecoderProcess
         self.logger.debug(
             f"FSKDecoder initialized ({modulation_subtype}): packet_count=0, "
-            f"SHM threshold={shm_restart_threshold}, monitor interval={shm_monitor_interval}s"
+            f"SHM threshold={shm_restart_threshold}, monitor interval={shm_monitor_interval}s",
         )
 
         # Previous snapshot for 1 Hz rate computation (authoritative at decoder side)
@@ -517,7 +519,7 @@ class FSKDecoder(BaseDecoderProcess):
                 self.deviation = int(self.baudrate * 0.5)  # High baudrate: ~50% of baudrate
             self.logger.warning(
                 f"Deviation not specified in config, using smart default: {self.deviation} Hz "
-                f"(baudrate={self.baudrate})"
+                f"(baudrate={self.baudrate})",
             )
 
         # Extract satellite and transmitter metadata from config
@@ -534,7 +536,7 @@ class FSKDecoder(BaseDecoderProcess):
         # Log debug if downlink frequency not available (not a warning - expected for manual VFO mode)
         if not self.transmitter_downlink_freq:
             self.logger.debug(
-                "Transmitter downlink frequency not available in config (manual VFO mode)"
+                "Transmitter downlink frequency not available in config (manual VFO mode)",
             )
             self.logger.debug(f"Config metadata: {config.to_dict()}")
 
@@ -569,7 +571,7 @@ class FSKDecoder(BaseDecoderProcess):
         self.logger.info(
             f"FSK decoder initialized ({self.modulation_subtype}): "
             f"session={session_id}, VFO {vfo} | {sat_info} | {tx_info} | {params_str} | "
-            f"batch={self.batch_interval}s | src: {self.config_source}"
+            f"batch={self.batch_interval}s | src: {self.config_source}",
         )
 
         os.makedirs(self.output_dir, exist_ok=True)
@@ -678,14 +680,14 @@ class FSKDecoder(BaseDecoderProcess):
             "batch_interval": self.batch_interval,
         }
 
-    def _get_decoder_config_metadata(self) -> Dict[str, Any]:
+    def _get_decoder_config_metadata(self) -> dict[str, Any]:
         """Return decoder config metadata extended with framing params.
 
         Adds GEOSCAN-specific details so the UI can render a protocol-aware
         dialog showing configured frame size, PN9/CRC status, etc.
         """
         payload_protocol = self._get_payload_protocol()
-        meta: Dict[str, Any] = {
+        meta: dict[str, Any] = {
             "source": self.config_source,
             "framing": self.framing,
             "payload_protocol": payload_protocol,
@@ -876,14 +878,14 @@ class FSKDecoder(BaseDecoderProcess):
         # Set process name for visibility in system monitoring tools
         if HAS_SETPROCTITLE:
             setproctitle.setproctitle(
-                f"Ground Station - {self.modulation_subtype} Decoder (VFO {self.vfo})"
+                f"Ground Station - {self.modulation_subtype} Decoder (VFO {self.vfo})",
             )
 
         # Initialize components in the subprocess
         self.telemetry_parser = TelemetryParser()
 
         # Initialize stats in subprocess
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "samples_in": 0,
             "samples_dropped_out_of_band": 0,
@@ -940,7 +942,7 @@ class FSKDecoder(BaseDecoderProcess):
                     # Read IQ samples from iq_queue
                     try:
                         iq_message = self.iq_queue.get(
-                            timeout=0.2
+                            timeout=0.2,
                         )  # 200ms timeout (reduced wakeups)
                     except queue.Empty:
                         with self.stats_lock:
@@ -988,7 +990,7 @@ class FSKDecoder(BaseDecoderProcess):
 
                         # Validate VFO center is within SDR bandwidth
                         is_in_band, vfo_offset, margin = self._is_vfo_in_sdr_bandwidth(
-                            vfo_center, sdr_center, sdr_rate
+                            vfo_center, sdr_center, sdr_rate,
                         )
 
                         if not is_in_band:
@@ -1027,7 +1029,7 @@ class FSKDecoder(BaseDecoderProcess):
                             self.is_sleeping = False
                             self.logger.info(
                                 f"VFO back in SDR bandwidth, resuming decoding: VFO={vfo_center/1e6:.3f}MHz, "
-                                f"SDR={sdr_center/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz"
+                                f"SDR={sdr_center/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz",
                             )
                             self._send_status_update(
                                 DecoderStatus.DECODING,
@@ -1051,10 +1053,10 @@ class FSKDecoder(BaseDecoderProcess):
                             # Safety check to prevent division by zero
                             if target_sample_rate <= 0:
                                 self.logger.error(
-                                    f"Invalid target_sample_rate: {target_sample_rate} (baudrate={self.baudrate})"
+                                    f"Invalid target_sample_rate: {target_sample_rate} (baudrate={self.baudrate})",
                                 )
                                 self._send_status_update(
-                                    DecoderStatus.ERROR, {"error": "Invalid baudrate configuration"}
+                                    DecoderStatus.ERROR, {"error": "Invalid baudrate configuration"},
                                 )
                                 continue
 
@@ -1065,7 +1067,7 @@ class FSKDecoder(BaseDecoderProcess):
 
                             # Design decimation filter
                             self.decimation_filter = self._design_decimation_filter(
-                                decimation, vfo_bandwidth, self.sdr_sample_rate
+                                decimation, vfo_bandwidth, self.sdr_sample_rate,
                             )
 
                             # Calculate offset frequency for logging
@@ -1099,7 +1101,7 @@ class FSKDecoder(BaseDecoderProcess):
                                 f"{self.baudrate}bd, {target_sample_rate/1e3:.2f}kS/s ({target_sps}sps), dev={self.deviation}Hz, {self.framing.upper()} | "
                                 f"SDR={self.sdr_sample_rate/1e6:.2f}MS/s@{sdr_center/1e6:.3f}MHz, "
                                 f"VFO={vfo_center/1e6:.3f}MHz (ofs={offset_freq_init/1e3:.1f}kHz, BW={vfo_bandwidth/1e3:.0f}kHz, dec={decimation}) | "
-                                f"batch={self.batch_interval}s{tx_info}"
+                                f"batch={self.batch_interval}s{tx_info}",
                             )
 
                         # Step 1: Frequency translation to put SIGNAL at baseband center
@@ -1108,7 +1110,7 @@ class FSKDecoder(BaseDecoderProcess):
                         # VFO state is read on every IQ chunk (~100ms), providing continuous Doppler tracking
                         offset_freq = vfo_center - sdr_center
                         translated = self._frequency_translate(
-                            samples, offset_freq, self.sdr_sample_rate
+                            samples, offset_freq, self.sdr_sample_rate,
                         )
 
                         # Measure signal power AFTER frequency translation, BEFORE decimation/AGC
@@ -1185,7 +1187,7 @@ class FSKDecoder(BaseDecoderProcess):
 
         self.logger.info(
             f"FSK decoder process ({self.modulation_subtype}) stopped for {self.session_id}. "
-            f"Final SHM segments: {self.get_shm_segment_count()}"
+            f"Final SHM segments: {self.get_shm_segment_count()}",
         )
 
         # Send final status with restart flag if applicable

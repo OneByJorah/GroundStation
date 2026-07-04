@@ -15,11 +15,11 @@
 
 
 import logging
-from typing import Dict, Optional
 
 from constants import FramingType
-from pipeline.config.decoderconfig import DecoderConfig
 from satconfig.config import SatelliteConfigService
+
+from pipeline.config.decoderconfig import DecoderConfig
 
 logger = logging.getLogger("decoderconfigservice")
 
@@ -57,9 +57,9 @@ class DecoderConfigService:
     def get_config(
         self,
         decoder_type: str,
-        satellite: Optional[Dict] = None,
-        transmitter: Optional[Dict] = None,
-        overrides: Optional[Dict] = None,
+        satellite: dict | None = None,
+        transmitter: dict | None = None,
+        overrides: dict | None = None,
     ) -> DecoderConfig:
         """
         Resolve decoder configuration from multiple sources.
@@ -102,10 +102,10 @@ class DecoderConfigService:
                     frequency=downlink_freq,
                 )
                 self.logger.info(
-                    f"Loaded satellite config for NORAD {norad_id}: {sat_params['source']}"
+                    f"Loaded satellite config for NORAD {norad_id}: {sat_params['source']}",
                 )
                 return self._build_config_from_satellite(
-                    decoder_type, sat_params, satellite, transmitter, baudrate
+                    decoder_type, sat_params, satellite, transmitter, baudrate,
                 )
             except Exception as e:
                 self.logger.warning(f"Failed to load satellite config for NORAD {norad_id}: {e}")
@@ -125,7 +125,7 @@ class DecoderConfigService:
         self.logger.debug(f"Resolved {decoder_type.upper()} config: {detected_config.to_dict()}")
         return detected_config
 
-    def _resolve_baudrate(self, transmitter: Dict, overrides: Dict) -> int:
+    def _resolve_baudrate(self, transmitter: dict, overrides: dict) -> int:
         """Extract baudrate from transmitter or overrides"""
         if "baudrate" in overrides:
             baudrate = overrides["baudrate"]
@@ -167,7 +167,7 @@ class DecoderConfigService:
         return 9600  # Generic fallback
 
     def _build_config_from_satellite(
-        self, decoder_type: str, sat_params: Dict, satellite: Dict, transmitter: Dict, baudrate: int
+        self, decoder_type: str, sat_params: dict, satellite: dict, transmitter: dict, baudrate: int,
     ) -> DecoderConfig:
         """Build configuration from satellite-specific parameters"""
         # If source is NOT satellite_config, satellite was not found in gr-satellites
@@ -180,7 +180,7 @@ class DecoderConfigService:
             deviation = self._detect_deviation(decoder_type, transmitter, baudrate)
             self.logger.info(
                 f"Satellite not in gr-satellites: using transmitter metadata "
-                f"(framing='{framing}', deviation={deviation})"
+                f"(framing='{framing}', deviation={deviation})",
             )
             # Use transmitter_metadata as source since we're detecting from transmitter
             config_source = "transmitter_metadata" if (mode or description) else "smart_default"
@@ -218,7 +218,7 @@ class DecoderConfigService:
         return config
 
     def _detect_from_metadata(
-        self, decoder_type: str, transmitter: Dict, baudrate: int
+        self, decoder_type: str, transmitter: dict, baudrate: int,
     ) -> DecoderConfig:
         """Detect configuration from transmitter metadata (mode, description fields)"""
         mode = transmitter.get("mode", "").upper()
@@ -289,8 +289,8 @@ class DecoderConfigService:
         return str(FramingType.AX25)
 
     def _detect_deviation(
-        self, decoder_type: str, transmitter: Dict, baudrate: int
-    ) -> Optional[int]:
+        self, decoder_type: str, transmitter: dict, baudrate: int,
+    ) -> int | None:
         """Detect frequency deviation for FSK modes"""
         # Explicit deviation in transmitter dict (highest priority)
         if "deviation" in transmitter:
@@ -329,7 +329,7 @@ class DecoderConfigService:
         else:
             return 1200  # Generic packet radio
 
-    def _apply_overrides(self, config: DecoderConfig, overrides: Dict) -> DecoderConfig:
+    def _apply_overrides(self, config: DecoderConfig, overrides: dict) -> DecoderConfig:
         """Apply manual overrides to configuration"""
         if "baudrate" in overrides:
             config.baudrate = overrides["baudrate"]

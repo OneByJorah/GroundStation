@@ -24,12 +24,12 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 
 from PIL import Image
 
 
-def get_disk_usage(path: Path) -> Dict[str, Union[int, str]]:
+def get_disk_usage(path: Path) -> dict[str, int | str]:
     """
     Get disk usage statistics for the filesystem containing the given path.
 
@@ -94,10 +94,10 @@ def parse_sigmf_metadata(meta_file_path: str) -> dict:
             "annotations": metadata.get("annotations", []),
         }
     except Exception as e:
-        return {"error": f"Failed to parse metadata: {str(e)}"}
+        return {"error": f"Failed to parse metadata: {e!s}"}
 
 
-def get_image_dimensions(image_path: str) -> Tuple[Any, ...]:
+def get_image_dimensions(image_path: str) -> tuple[Any, ...]:
     """
     Get image dimensions without loading the full image.
 
@@ -109,13 +109,13 @@ def get_image_dimensions(image_path: str) -> Tuple[Any, ...]:
     """
     try:
         with Image.open(image_path) as img:
-            size: Tuple[Any, ...] = img.size
+            size: tuple[Any, ...] = img.size
             return size
     except Exception:
         return (None, None)
 
 
-def parse_transcription_metadata(transcription_file_path: str) -> Dict[str, Any]:
+def parse_transcription_metadata(transcription_file_path: str) -> dict[str, Any]:
     """
     Parse metadata from a transcription file header.
 
@@ -126,7 +126,7 @@ def parse_transcription_metadata(transcription_file_path: str) -> Dict[str, Any]
         Dictionary containing parsed metadata or empty dict if parsing fails
     """
     try:
-        metadata: Dict[str, Any] = {}
+        metadata: dict[str, Any] = {}
         with open(transcription_file_path, "r") as f:
             for line in f:
                 line = line.strip()
@@ -183,7 +183,7 @@ def parse_transcription_metadata(transcription_file_path: str) -> Dict[str, Any]
                     metadata["ended"] = line.split(":", 1)[1].strip()
         return metadata
     except Exception as e:
-        return {"error": f"Failed to parse metadata: {str(e)}"}
+        return {"error": f"Failed to parse metadata: {e!s}"}
 
 
 async def emit_file_browser_state(sio, state_data, logger):
@@ -199,7 +199,7 @@ async def emit_file_browser_state(sio, state_data, logger):
         await sio.emit("file_browser_state", state_data)
         logger.debug(f"Emitted file_browser_state: {state_data.get('action', 'unknown')}")
     except Exception as e:
-        logger.error(f"Error emitting file_browser_state: {str(e)}")
+        logger.error(f"Error emitting file_browser_state: {e!s}")
 
 
 async def emit_file_browser_error(sio, error_message, action, logger):
@@ -216,10 +216,10 @@ async def emit_file_browser_error(sio, error_message, action, logger):
         await sio.emit("file_browser_error", {"error": error_message, "action": action})
         logger.error(f"Emitted file_browser_error for action '{action}': {error_message}")
     except Exception as e:
-        logger.error(f"Error emitting file_browser_error: {str(e)}")
+        logger.error(f"Error emitting file_browser_error: {e!s}")
 
 
-def delete_recording_files(recordings_dir: Path, recording_name: str, logger) -> List[str]:
+def delete_recording_files(recordings_dir: Path, recording_name: str, logger) -> list[str]:
     """
     Delete all files associated with a recording.
 
@@ -360,7 +360,7 @@ def delete_audio_file(audio_dir: Path, audio_filename: str, logger) -> bool:
 
 
 def delete_transcription_file(
-    transcriptions_dir: Path, transcription_filename: str, logger
+    transcriptions_dir: Path, transcription_filename: str, logger,
 ) -> bool:
     """
     Delete a transcription file.
@@ -437,7 +437,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
             show_transcriptions = data.get("showTranscriptions", True) if data else True
 
             logger.info(
-                f"Listing all files (recordings: {show_recordings}, snapshots: {show_snapshots}, decoded: {show_decoded}, audio: {show_audio}, transcriptions: {show_transcriptions})"
+                f"Listing all files (recordings: {show_recordings}, snapshots: {show_snapshots}, decoded: {show_decoded}, audio: {show_audio}, transcriptions: {show_transcriptions})",
             )
 
             processed_items = []
@@ -480,10 +480,10 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "meta_file": meta_file.name,
                             "data_size": data_stat.st_size,
                             "created": datetime.fromtimestamp(
-                                data_stat.st_ctime, timezone.utc
+                                data_stat.st_ctime, timezone.utc,
                             ).isoformat(),
                             "modified": datetime.fromtimestamp(
-                                data_stat.st_mtime, timezone.utc
+                                data_stat.st_mtime, timezone.utc,
                             ).isoformat(),
                             "metadata": metadata,
                             "session_id": metadata.get("session_id"),
@@ -493,7 +493,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "data": f"/recordings/{data_file.name}",
                                 "meta": f"/recordings/{meta_file.name}",
                             },
-                        }
+                        },
                     )
 
             # Gather and process snapshots if filter enabled
@@ -511,15 +511,15 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "filename": png_file.name,
                             "size": file_stat.st_size,
                             "created": datetime.fromtimestamp(
-                                file_stat.st_ctime, timezone.utc
+                                file_stat.st_ctime, timezone.utc,
                             ).isoformat(),
                             "modified": datetime.fromtimestamp(
-                                file_stat.st_mtime, timezone.utc
+                                file_stat.st_mtime, timezone.utc,
                             ).isoformat(),
                             "width": width,
                             "height": height,
                             "url": f"/snapshots/{png_file.name}",
-                        }
+                        },
                     )
 
             # Gather and process decoded files if filter enabled
@@ -575,7 +575,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "width": width,
                                 "height": height,
                                 "url": f"/decoded/{folder.name}/{relative_path}",
-                            }
+                            },
                         )
                         total_size += img_stat.st_size
 
@@ -625,10 +625,10 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "foldername": folder.name,
                             "size": total_size,
                             "created": datetime.fromtimestamp(
-                                folder_stat.st_ctime, timezone.utc
+                                folder_stat.st_ctime, timezone.utc,
                             ).isoformat(),
                             "modified": datetime.fromtimestamp(
-                                folder_stat.st_mtime, timezone.utc
+                                folder_stat.st_mtime, timezone.utc,
                             ).isoformat(),
                             "url": f"/decoded/{folder.name}",
                             "thumbnail_url": thumbnail_url,
@@ -642,7 +642,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "has_cadu": len(cadu_files) > 0,
                             "metadata": dataset_meta,
                             "telemetry": telemetry_data,
-                        }
+                        },
                     )
 
                 # STEP 2: Support multiple file types in decoded directory (exclude .json metadata files)
@@ -678,7 +678,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 metadata = json.load(f)
                                 if not isinstance(metadata, dict):
                                     logger.warning(
-                                        f"Decoded metadata for {decoded_file.name} is not an object; skipping details."
+                                        f"Decoded metadata for {decoded_file.name} is not an object; skipping details.",
                                     )
                                     metadata = {}
                                 # Extract decoder type and session_id
@@ -687,7 +687,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 decoder_mode = decoder_info.get("mode")  # SSTV mode like "Robot 36"
                                 baudrate = decoder_info.get("baudrate")  # For FSK/BPSK
                                 session_id = decoder_info.get(
-                                    "session_id"
+                                    "session_id",
                                 )  # Session ID for linking to observations
 
                                 # Extract satellite info from satellite metadata (preferred)
@@ -732,10 +732,10 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "filename": decoded_file.name,
                             "size": file_stat.st_size,
                             "created": datetime.fromtimestamp(
-                                file_stat.st_ctime, timezone.utc
+                                file_stat.st_ctime, timezone.utc,
                             ).isoformat(),
                             "modified": datetime.fromtimestamp(
-                                file_stat.st_mtime, timezone.utc
+                                file_stat.st_mtime, timezone.utc,
                             ).isoformat(),
                             "width": width,
                             "height": height,
@@ -751,7 +751,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "frequency_hz": frequency_hz,
                             "frequency_mhz": frequency_mhz,
                             "session_id": session_id,
-                        }
+                        },
                     )
 
             # Gather and process audio files if filter enabled
@@ -771,7 +771,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 metadata = json.load(f)
                         except Exception as e:
                             logger.warning(
-                                f"Failed to parse audio metadata for {audio_file.name}: {e}"
+                                f"Failed to parse audio metadata for {audio_file.name}: {e}",
                             )
 
                     # Extract key metadata
@@ -793,10 +793,10 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "filename": audio_file.name,
                             "size": file_stat.st_size,
                             "created": datetime.fromtimestamp(
-                                file_stat.st_ctime, timezone.utc
+                                file_stat.st_ctime, timezone.utc,
                             ).isoformat(),
                             "modified": datetime.fromtimestamp(
-                                file_stat.st_mtime, timezone.utc
+                                file_stat.st_mtime, timezone.utc,
                             ).isoformat(),
                             "url": f"/audio/{audio_file.name}",
                             "file_type": ".wav",
@@ -811,7 +811,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "vfo_frequency": vfo_frequency,
                             "session_id": session_id,
                             "metadata": metadata,
-                        }
+                        },
                     )
 
             # Gather and process transcription files if filter enabled
@@ -846,10 +846,10 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "filename": transcription_file.name,
                             "size": file_stat.st_size,
                             "created": datetime.fromtimestamp(
-                                file_stat.st_ctime, timezone.utc
+                                file_stat.st_ctime, timezone.utc,
                             ).isoformat(),
                             "modified": datetime.fromtimestamp(
-                                file_stat.st_mtime, timezone.utc
+                                file_stat.st_mtime, timezone.utc,
                             ).isoformat(),
                             "url": f"/transcriptions/{transcription_file.name}",
                             "file_type": ".txt",
@@ -866,7 +866,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                             "started": started,
                             "ended": ended,
                             "metadata": metadata,
-                        }
+                        },
                     )
 
             # Get disk usage for the recordings directory
@@ -936,7 +936,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                     "data_size": data_stat.st_size,
                     "created": datetime.fromtimestamp(data_stat.st_ctime, timezone.utc).isoformat(),
                     "modified": datetime.fromtimestamp(
-                        data_stat.st_mtime, timezone.utc
+                        data_stat.st_mtime, timezone.utc,
                     ).isoformat(),
                     "metadata": metadata,
                     "snapshot": snapshot_info,
@@ -1008,14 +1008,14 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not recording_name:
                 await emit_file_browser_error(
-                    sio, "Recording name not provided", "delete-recording", logger
+                    sio, "Recording name not provided", "delete-recording", logger,
                 )
                 return
 
             # Validate recording name (security check)
             if not validate_filename(recording_name):
                 await emit_file_browser_error(
-                    sio, "Invalid recording name", "delete-recording", logger
+                    sio, "Invalid recording name", "delete-recording", logger,
                 )
                 return
 
@@ -1023,7 +1023,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not deleted_files:
                 await emit_file_browser_error(
-                    sio, "Recording not found", "delete-recording", logger
+                    sio, "Recording not found", "delete-recording", logger,
                 )
                 return
 
@@ -1068,7 +1068,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                     "size": file_stat.st_size,
                     "created": datetime.fromtimestamp(file_stat.st_ctime, timezone.utc).isoformat(),
                     "modified": datetime.fromtimestamp(
-                        file_stat.st_mtime, timezone.utc
+                        file_stat.st_mtime, timezone.utc,
                     ).isoformat(),
                     "width": width,
                     "height": height,
@@ -1082,20 +1082,20 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not snapshot_filename:
                 await emit_file_browser_error(
-                    sio, "Snapshot filename not provided", "delete-snapshot", logger
+                    sio, "Snapshot filename not provided", "delete-snapshot", logger,
                 )
                 return
 
             # Validate filename (security check)
             if not validate_filename(snapshot_filename):
                 await emit_file_browser_error(
-                    sio, "Invalid snapshot filename", "delete-snapshot", logger
+                    sio, "Invalid snapshot filename", "delete-snapshot", logger,
                 )
                 return
 
             if not snapshot_filename.endswith(".png"):
                 await emit_file_browser_error(
-                    sio, "Only PNG files can be deleted", "delete-snapshot", logger
+                    sio, "Only PNG files can be deleted", "delete-snapshot", logger,
                 )
                 return
 
@@ -1127,14 +1127,14 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not identifier:
                 await emit_file_browser_error(
-                    sio, "Decoded filename or foldername not provided", "delete-decoded", logger
+                    sio, "Decoded filename or foldername not provided", "delete-decoded", logger,
                 )
                 return
 
             # Validate identifier (security check)
             if not validate_filename(identifier):
                 await emit_file_browser_error(
-                    sio, "Invalid decoded filename or foldername", "delete-decoded", logger
+                    sio, "Invalid decoded filename or foldername", "delete-decoded", logger,
                 )
                 return
 
@@ -1148,7 +1148,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not deleted:
                 await emit_file_browser_error(
-                    sio, f"Decoded {item_type} not found", "delete-decoded", logger
+                    sio, f"Decoded {item_type} not found", "delete-decoded", logger,
                 )
                 return
 
@@ -1171,7 +1171,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not audio_filename:
                 await emit_file_browser_error(
-                    sio, "Audio filename not provided", "delete-audio", logger
+                    sio, "Audio filename not provided", "delete-audio", logger,
                 )
                 return
 
@@ -1203,14 +1203,14 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not transcription_filename:
                 await emit_file_browser_error(
-                    sio, "Transcription filename not provided", "delete-transcription", logger
+                    sio, "Transcription filename not provided", "delete-transcription", logger,
                 )
                 return
 
             # Validate filename (security check)
             if not validate_filename(transcription_filename):
                 await emit_file_browser_error(
-                    sio, "Invalid transcription filename", "delete-transcription", logger
+                    sio, "Invalid transcription filename", "delete-transcription", logger,
                 )
                 return
 
@@ -1218,7 +1218,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not deleted:
                 await emit_file_browser_error(
-                    sio, "Transcription file not found", "delete-transcription", logger
+                    sio, "Transcription file not found", "delete-transcription", logger,
                 )
                 return
 
@@ -1239,7 +1239,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
             if not items or not isinstance(items, list):
                 await emit_file_browser_error(
-                    sio, "No items provided for batch delete", "delete-batch", logger
+                    sio, "No items provided for batch delete", "delete-batch", logger,
                 )
                 return
 
@@ -1268,7 +1268,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "recording",
                                 "name": recording_name,
                                 "error": "Invalid filename",
-                            }
+                            },
                         )
                         continue
 
@@ -1279,7 +1279,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                         total_files_deleted.extend(deleted_files)
                     else:
                         failed_items.append(
-                            {"type": "recording", "name": recording_name, "error": "Not found"}
+                            {"type": "recording", "name": recording_name, "error": "Not found"},
                         )
 
                 elif item_type == "snapshot":
@@ -1295,7 +1295,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "snapshot",
                                 "filename": snapshot_filename,
                                 "error": "Invalid filename",
-                            }
+                            },
                         )
                         continue
 
@@ -1305,7 +1305,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "snapshot",
                                 "filename": snapshot_filename,
                                 "error": "Not a PNG file",
-                            }
+                            },
                         )
                         continue
 
@@ -1320,7 +1320,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "snapshot",
                                 "filename": snapshot_filename,
                                 "error": "Not found",
-                            }
+                            },
                         )
 
                 elif item_type == "decoded" or item_type == "decoded_folder":
@@ -1332,7 +1332,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
 
                     if not identifier:
                         failed_items.append(
-                            {"type": item_type, "error": "Missing filename/foldername"}
+                            {"type": item_type, "error": "Missing filename/foldername"},
                         )
                         continue
 
@@ -1344,7 +1344,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "filename": decoded_filename,
                                 "foldername": decoded_foldername,
                                 "error": "Invalid filename/foldername",
-                            }
+                            },
                         )
                         continue
 
@@ -1364,7 +1364,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "filename": decoded_filename,
                                 "foldername": decoded_foldername,
                                 "error": "Not found",
-                            }
+                            },
                         )
 
                 elif item_type == "audio":
@@ -1380,7 +1380,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "audio",
                                 "filename": audio_filename,
                                 "error": "Invalid filename",
-                            }
+                            },
                         )
                         continue
 
@@ -1395,7 +1395,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "audio",
                                 "filename": audio_filename,
                                 "error": "Not found",
-                            }
+                            },
                         )
 
                 elif item_type == "transcription":
@@ -1411,13 +1411,13 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "transcription",
                                 "filename": transcription_filename,
                                 "error": "Invalid filename",
-                            }
+                            },
                         )
                         continue
 
                     # Delete transcription file
                     deleted = delete_transcription_file(
-                        transcriptions_dir, transcription_filename, logger
+                        transcriptions_dir, transcription_filename, logger,
                     )
                     if deleted:
                         deleted_transcriptions.append(transcription_filename)
@@ -1428,7 +1428,7 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
                                 "type": "transcription",
                                 "filename": transcription_filename,
                                 "error": "Not found",
-                            }
+                            },
                         )
                 else:
                     failed_items.append({"type": item_type, "error": "Unknown type"})
@@ -1484,6 +1484,6 @@ async def filebrowser_request_routing(sio, cmd, data, logger, sid):
             await emit_file_browser_error(sio, f"Unknown command: {cmd}", cmd, logger)
 
     except Exception as e:
-        logger.error(f"Error handling file browser command '{cmd}': {str(e)}")
+        logger.error(f"Error handling file browser command '{cmd}': {e!s}")
         logger.exception(e)
         await emit_file_browser_error(sio, str(e), cmd, logger)

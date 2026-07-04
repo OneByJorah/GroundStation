@@ -15,7 +15,7 @@
 
 
 from dataclasses import dataclass
-from typing import List, Optional, Type
+from typing import Optional
 
 # Import decoder classes
 from demodulators.afskdecoder import AFSKDecoder
@@ -33,13 +33,13 @@ class DecoderCapabilities:
     """Capabilities and requirements for a decoder"""
 
     name: str
-    decoder_class: Type
+    decoder_class: type
     needs_raw_iq: bool  # True = subscribes directly to IQ broadcaster, False = needs audio
-    required_demodulator: Optional[str]  # Name of demodulator needed (None if needs_raw_iq=True)
-    demodulator_mode: Optional[str]  # Specific mode for demodulator (e.g., "cw" for Morse)
+    required_demodulator: str | None  # Name of demodulator needed (None if needs_raw_iq=True)
+    demodulator_mode: str | None  # Specific mode for demodulator (e.g., "cw" for Morse)
     default_bandwidth: int  # Default bandwidth in Hz
     supports_transmitter_config: bool  # True = can use locked transmitter settings
-    restart_on_params: List[
+    restart_on_params: list[
         str
     ]  # List of DecoderConfig parameter names that trigger decoder restart
     description: str
@@ -167,11 +167,11 @@ class DecoderRegistry:
 
         self._initialized = True
 
-    def get_capabilities(self, decoder_name: str) -> Optional[DecoderCapabilities]:
+    def get_capabilities(self, decoder_name: str) -> DecoderCapabilities | None:
         """Get capabilities for a decoder by name"""
         return self._decoders.get(decoder_name)
 
-    def get_decoder_class(self, decoder_name: str) -> Optional[Type]:
+    def get_decoder_class(self, decoder_name: str) -> type | None:
         """Get decoder class by name"""
         caps = self.get_capabilities(decoder_name)
         return caps.decoder_class if caps else None
@@ -186,12 +186,12 @@ class DecoderRegistry:
         caps = self.get_capabilities(decoder_name)
         return caps.needs_internal_demod if caps else False
 
-    def get_required_demodulator(self, decoder_name: str) -> Optional[str]:
+    def get_required_demodulator(self, decoder_name: str) -> str | None:
         """Get the required demodulator name for this decoder"""
         caps = self.get_capabilities(decoder_name)
         return caps.required_demodulator if caps else None
 
-    def get_demodulator_mode(self, decoder_name: str) -> Optional[str]:
+    def get_demodulator_mode(self, decoder_name: str) -> str | None:
         """Get the required demodulator mode for this decoder"""
         caps = self.get_capabilities(decoder_name)
         return caps.demodulator_mode if caps else None
@@ -201,7 +201,7 @@ class DecoderRegistry:
         caps = self.get_capabilities(decoder_name)
         return caps.supports_transmitter_config if caps else False
 
-    def list_decoders(self) -> List[str]:
+    def list_decoders(self) -> list[str]:
         """List all available decoder names"""
         return list(self._decoders.keys())
 
@@ -213,7 +213,7 @@ class DecoderRegistry:
         """Check if a decoder exists in the registry"""
         return decoder_name in self._decoders
 
-    def get_restart_params(self, decoder_name: str) -> List[str]:
+    def get_restart_params(self, decoder_name: str) -> list[str]:
         """Get list of parameter names that trigger decoder restart"""
         caps = self.get_capabilities(decoder_name)
         return caps.restart_on_params if caps else []

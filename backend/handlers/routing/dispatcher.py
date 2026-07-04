@@ -20,17 +20,17 @@ This module provides a unified dispatch mechanism that routes commands
 to their registered handlers via the handler registry.
 """
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 
 async def dispatch_request(
     sio: Any,
     cmd: str,
-    data: Optional[Dict],
+    data: dict | None,
     logger: Any,
     sid: str,
     registry: Any,
-) -> Dict[str, Union[bool, None, dict, list, str]]:
+) -> dict[str, bool | None | dict | list | str]:
     """
     Generic request dispatcher using registry.
 
@@ -52,11 +52,11 @@ async def dispatch_request(
         return {"success": False, "error": f"Unknown command: {cmd}"}
 
     try:
-        result: Dict[str, Union[bool, None, dict, list, str]] = await route.handler(
-            sio, data, logger, sid
+        result: dict[str, bool | None | dict | list | str] = await route.handler(
+            sio, data, logger, sid,
         )
         return result
     except Exception as e:
-        logger.error(f"Error handling command '{cmd}': {str(e)}")
+        logger.error(f"Error handling command '{cmd}': {e!s}")
         logger.exception(e)
         return {"success": False, "error": str(e)}

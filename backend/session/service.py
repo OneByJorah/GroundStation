@@ -9,17 +9,17 @@ active_sdr_clients as the backing store for configuration.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from vfos.state import VFOManager
 
 logger = logging.getLogger("session-service")
 
 # Store active SDR clients and client sessions, keyed by client ID and session ID, respectively.
-active_sdr_clients: Dict[str, Dict[str, Any]] = {}
+active_sdr_clients: dict[str, dict[str, Any]] = {}
 
 
-def add_sdr_session(sid: str, sdr_config: Dict) -> Dict[str, Any]:
+def add_sdr_session(sid: str, sdr_config: dict) -> dict[str, Any]:
     """
     Add a new SDR session configuration to the active sessions dictionary.
     """
@@ -27,7 +27,7 @@ def add_sdr_session(sid: str, sdr_config: Dict) -> Dict[str, Any]:
     return active_sdr_clients[sid]
 
 
-def get_sdr_session(sid: str) -> Optional[Dict]:
+def get_sdr_session(sid: str) -> dict | None:
     """
     Return the SDR session configuration for a given session ID.
     """
@@ -75,20 +75,20 @@ class SessionService:
     """
 
     # -------------------- Query helpers --------------------
-    def get_session_config(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def get_session_config(self, session_id: str) -> dict[str, Any] | None:
         # get_sdr_session is dynamically typed; cast to our declared return type
-        return cast(Optional[Dict[str, Any]], get_sdr_session(session_id))
+        return cast(dict[str, Any] | None, get_sdr_session(session_id))
 
     def session_exists(self, session_id: str) -> bool:
         return session_id in active_sdr_clients
 
-    def list_active_session_ids(self) -> List[str]:
+    def list_active_session_ids(self) -> list[str]:
         # Keys are session IDs (str), but the dict is dynamically typed
-        return cast(List[str], list(active_sdr_clients.keys()))
+        return cast(list[str], list(active_sdr_clients.keys()))
 
     # -------------------- Lifecycle (write) APIs --------------------
     async def configure_sdr(
-        self, session_id: str, sdr_device: Dict[str, Any], sdr_config: Dict[str, Any]
+        self, session_id: str, sdr_device: dict[str, Any], sdr_config: dict[str, Any],
     ) -> None:
         """
         Register/update session configuration and tracker bindings.
@@ -104,7 +104,7 @@ class SessionService:
 
             session_tracker.register_session_streaming(session_id, sdr_id)
 
-    async def start_streaming(self, session_id: str, sdr_device: Dict[str, Any]) -> Optional[str]:
+    async def start_streaming(self, session_id: str, sdr_device: dict[str, Any]) -> str | None:
         """Start or join the SDR worker process for the configured session."""
         cfg = self.get_session_config(session_id)
         if not cfg:
@@ -114,7 +114,7 @@ class SessionService:
 
         # ProcessManager API may be untyped; cast result to Optional[str]
         started_id = cast(
-            Optional[str], await process_manager.start_sdr_process(sdr_device, cfg, session_id)
+            str | None, await process_manager.start_sdr_process(sdr_device, cfg, session_id),
         )
         # Ensure tracker binding is set
         if sdr_id:
@@ -123,7 +123,7 @@ class SessionService:
             session_tracker.register_session_streaming(session_id, sdr_id)
         return started_id
 
-    async def stop_streaming(self, session_id: str, sdr_id: Optional[str]) -> None:
+    async def stop_streaming(self, session_id: str, sdr_id: str | None) -> None:
         """Stop/leave the SDR worker process for the session (if any)."""
         if not sdr_id:
             cfg = self.get_session_config(session_id)
@@ -137,7 +137,7 @@ class SessionService:
 
             session_tracker.unregister_session_streaming(session_id)
 
-    async def select_vfo(self, session_id: str, vfo_number: Optional[int]) -> None:
+    async def select_vfo(self, session_id: str, vfo_number: int | None) -> None:
         """Update the selected VFO in SessionTracker (normalized Optional[int])."""
         from session.tracker import session_tracker
 
@@ -168,22 +168,22 @@ class SessionService:
         await cleanup_sdr_session(session_id)
 
     # -------------------- Read-only views --------------------
-    def get_runtime_snapshot(self) -> Dict[str, dict]:
+    def get_runtime_snapshot(self) -> dict[str, dict]:
         from pipeline.orchestration.processmanager import process_manager
         from session.tracker import session_tracker
 
         # Tracker returns a mapping structure; cast to declared type for mypy
-        return cast(Dict[str, dict], session_tracker.get_runtime_snapshot(process_manager))
+        return cast(dict[str, dict], session_tracker.get_runtime_snapshot(process_manager))
 
     # -------------------- Internal observation support --------------------
     async def register_internal_observation(
         self,
         observation_id: str,
-        sdr_device: Dict[str, Any],
-        sdr_config: Dict[str, Any],
+        sdr_device: dict[str, Any],
+        sdr_config: dict[str, Any],
         vfo_number: int,
-        metadata: Optional[Dict[str, Any]] = None,
-        session_key: Optional[str] = None,
+        metadata: dict[str, Any] | None = None,
+        session_key: str | None = None,
     ) -> str:
         """
         Register and start an internal observation session.
@@ -206,7 +206,7 @@ class SessionService:
         from session.tracker import session_tracker
 
         session_tracker.register_internal_session(
-            observation_id, sdr_config["sdr_id"], vfo_number, metadata, session_key=session_key
+            observation_id, sdr_config["sdr_id"], vfo_number, metadata, session_key=session_key,
         )
 
         # Configure SDR
@@ -218,7 +218,7 @@ class SessionService:
         return str(session_id)
 
     async def cleanup_internal_observation(
-        self, observation_id: str, session_key: Optional[str] = None
+        self, observation_id: str, session_key: str | None = None,
     ) -> None:
         """
         Cleanup internal observation session.
