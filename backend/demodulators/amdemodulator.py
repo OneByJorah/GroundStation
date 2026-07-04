@@ -19,11 +19,10 @@ import logging
 import queue
 import threading
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy import signal
-
 from vfos.state import VFOManager
 
 logger = logging.getLogger("am-demodulator")
@@ -78,12 +77,12 @@ class AMDemodulator(threading.Thread):
         self.current_bandwidth = None
 
         # Filters (will be initialized when we know sample rates)
-        self.decimation_filter: Optional[Tuple[np.ndarray, int]] = None
-        self.audio_filter: Optional[np.ndarray] = None
-        self.dc_blocker: Optional[Tuple[np.ndarray, np.ndarray]] = None
+        self.decimation_filter: tuple[np.ndarray, int] | None = None
+        self.audio_filter: np.ndarray | None = None
+        self.dc_blocker: tuple[np.ndarray, np.ndarray] | None = None
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "iq_samples_in": 0,
             "audio_chunks_out": 0,
@@ -256,7 +255,7 @@ class AMDemodulator(threading.Thread):
         return demodulated
 
     def _is_vfo_in_sdr_bandwidth(
-        self, vfo_center: float, sdr_center: float, sdr_sample_rate: float
+        self, vfo_center: float, sdr_center: float, sdr_sample_rate: float,
     ):
         """
         Check if VFO center frequency is within SDR bandwidth (with small edge margin).
@@ -336,13 +335,13 @@ class AMDemodulator(threading.Thread):
 
                     # Design filters
                     iir_coeffs, decimation = self._design_decimation_filter(
-                        sdr_sample_rate, vfo_state.bandwidth
+                        sdr_sample_rate, vfo_state.bandwidth,
                     )
                     self.decimation_filter = (iir_coeffs, decimation)
 
                     intermediate_rate = sdr_sample_rate / decimation
                     self.audio_filter = self._design_audio_filter(
-                        intermediate_rate, vfo_state.bandwidth
+                        intermediate_rate, vfo_state.bandwidth,
                     )
                     self.dc_blocker = self._design_dc_blocker(intermediate_rate)
 
@@ -350,17 +349,17 @@ class AMDemodulator(threading.Thread):
                     initial_value = samples[0] if len(samples) > 0 else 0
                     b, a = iir_coeffs
                     decimation_state = self._resize_filter_state(
-                        decimation_state, b, initial_value, a
+                        decimation_state, b, initial_value, a,
                     )
                     audio_filter_state = self._resize_filter_state(
-                        audio_filter_state, self.audio_filter, 0
+                        audio_filter_state, self.audio_filter, 0,
                     )
                     b_dc, a_dc = self.dc_blocker  # type: ignore[misc]
                     dc_blocker_state = self._resize_filter_state(dc_blocker_state, b_dc, 0, a_dc)
 
                     logger.info(
                         f"Filters initialized: SDR rate={sdr_sample_rate/1e6:.2f} MHz, "
-                        f"decimation={decimation}, intermediate={intermediate_rate/1e3:.1f} kHz"
+                        f"decimation={decimation}, intermediate={intermediate_rate/1e3:.1f} kHz",
                     )
 
                 # Step 1: Frequency translation (tune to VFO frequency)
@@ -370,7 +369,7 @@ class AMDemodulator(threading.Thread):
 
                 # Validate VFO center is within SDR bandwidth (with edge margin)
                 is_in_band, vfo_offset, margin = self._is_vfo_in_sdr_bandwidth(
-                    vfo_state.center_freq, sdr_center_freq, sdr_sample_rate
+                    vfo_state.center_freq, sdr_center_freq, sdr_sample_rate,
                 )
 
                 if not is_in_band:
@@ -396,7 +395,7 @@ class AMDemodulator(threading.Thread):
                         self.stats["is_sleeping"] = False
                     logger.info(
                         f"VFO back in SDR bandwidth, resuming AM demodulation: VFO={vfo_state.center_freq/1e6:.3f}MHz, "
-                        f"SDR={sdr_center_freq/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz"
+                        f"SDR={sdr_center_freq/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz",
                     )
 
                 offset_freq = vfo_state.center_freq - sdr_center_freq
@@ -446,7 +445,7 @@ class AMDemodulator(threading.Thread):
                     dc_blocker_state = signal.lfilter_zi(b, a) * demodulated[0]
 
                 dc_blocked, dc_blocker_state = signal.lfilter(
-                    b, a, demodulated, zi=dc_blocker_state
+                    b, a, demodulated, zi=dc_blocker_state,
                 )
 
                 # Step 5: Audio filtering
@@ -455,12 +454,12 @@ class AMDemodulator(threading.Thread):
                     audio_filter_state = signal.lfilter_zi(self.audio_filter, 1) * dc_blocked[0]
 
                 audio_filtered, audio_filter_state = signal.lfilter(
-                    self.audio_filter, 1, dc_blocked, zi=audio_filter_state
+                    self.audio_filter, 1, dc_blocked, zi=audio_filter_state,
                 )
 
                 # Step 6: Resample to audio rate (44.1 kHz)
                 num_output_samples = int(
-                    len(audio_filtered) * self.audio_sample_rate / intermediate_rate
+                    len(audio_filtered) * self.audio_sample_rate / intermediate_rate,
                 )
                 if num_output_samples > 0:
                     audio = signal.resample(audio_filtered, num_output_samples)
@@ -507,7 +506,7 @@ class AMDemodulator(threading.Thread):
                         self.audio_buffer = self.audio_buffer[-max_buffer_samples:]
                         logger.warning(
                             f"Audio buffer overflow ({len(self.audio_buffer)} samples), "
-                            f"dropping old audio to prevent lag buildup"
+                            f"dropping old audio to prevent lag buildup",
                         )
 
                     # Send chunks of target size when buffer is full enough
@@ -526,7 +525,7 @@ class AMDemodulator(threading.Thread):
                                     "audio": chunk,
                                     "vfo_number": self.vfo_number,  # Tag audio with VFO number
                                     "rf_power_db": self.last_rf_power_db,  # Include latest power measurement
-                                }
+                                },
                             )
                             # Update stats
                             with self.stats_lock:
@@ -535,16 +534,16 @@ class AMDemodulator(threading.Thread):
                         except queue.Full:
                             # Queue is full - drop this chunk to prevent lag accumulation
                             logger.debug(
-                                f"Audio queue full, dropping chunk for session {self.session_id}"
+                                f"Audio queue full, dropping chunk for session {self.session_id}",
                             )
                             break  # Exit while loop to process next IQ samples
                         except Exception as e:
-                            logger.warning(f"Could not queue audio: {str(e)}")
+                            logger.warning(f"Could not queue audio: {e!s}")
                             break
 
             except Exception as e:
                 if self.running:
-                    logger.error(f"Error in AM demodulator: {str(e)}")
+                    logger.error(f"Error in AM demodulator: {e!s}")
                     logger.exception(e)
                     with self.stats_lock:
                         self.stats["errors"] += 1

@@ -23,11 +23,12 @@ database schema.
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import crud
 from common.constants import TrackingStateNames
 from db import AsyncSessionLocal
+
 from tracker.ipc import (
     TRACKER_MSG_COMMAND,
     TRACKER_MSG_SET_HARDWARE,
@@ -53,20 +54,20 @@ class TrackerManager:
 
     def __init__(self, queue_to_tracker=None):
         self.queue_to_tracker = queue_to_tracker
-        self.current_tracking_state: Optional[Dict[str, Any]] = None
+        self.current_tracking_state: dict[str, Any] | None = None
 
-    def _send_to_tracker(self, msg_type: str, payload: Dict[str, Any]) -> None:
+    def _send_to_tracker(self, msg_type: str, payload: dict[str, Any]) -> None:
         if not self.queue_to_tracker:
             logger.warning("Tracker queue not initialized; skipping IPC send")
             return
         self.queue_to_tracker.put(build_tracker_message(msg_type, payload))
 
-    async def _ensure_tracking_state(self) -> Optional[Dict[str, Any]]:
+    async def _ensure_tracking_state(self) -> dict[str, Any] | None:
         if self.current_tracking_state:
             return self.current_tracking_state
         async with AsyncSessionLocal() as dbsession:
             current_state_reply = await crud.trackingstate.get_tracking_state(
-                dbsession, name=TrackingStateNames.SATELLITE_TRACKING
+                dbsession, name=TrackingStateNames.SATELLITE_TRACKING,
             )
         if not current_state_reply.get("success"):
             logger.error(f"Failed to get tracking state: {current_state_reply}")
@@ -77,7 +78,7 @@ class TrackerManager:
         self.current_tracking_state = dict(current_value)
         return self.current_tracking_state
 
-    async def update_tracking_state(self, **kwargs) -> Dict[str, Any]:
+    async def update_tracking_state(self, **kwargs) -> dict[str, Any]:
         """
         Update any fields in the satellite tracking state.
 
@@ -121,7 +122,7 @@ class TrackerManager:
         async with AsyncSessionLocal() as dbsession:
             # Get current tracking state
             current_state_reply = await crud.trackingstate.get_tracking_state(
-                dbsession, name=TrackingStateNames.SATELLITE_TRACKING
+                dbsession, name=TrackingStateNames.SATELLITE_TRACKING,
             )
 
             if not current_state_reply.get("success"):
@@ -145,7 +146,7 @@ class TrackerManager:
             if result.get("success"):
                 self.current_tracking_state = dict(updated_value)
                 logger.info(
-                    f"Updated tracking state: {', '.join(f'{k}={v}' for k, v in kwargs.items())}"
+                    f"Updated tracking state: {', '.join(f'{k}={v}' for k, v in kwargs.items())}",
                 )
             else:
                 logger.error(f"Failed to update tracking state: {result}")
@@ -155,7 +156,7 @@ class TrackerManager:
 
             return dict(result)
 
-    async def get_tracking_state(self) -> Optional[Dict[str, Any]]:
+    async def get_tracking_state(self) -> dict[str, Any] | None:
         """
         Get the current satellite tracking state from the database.
 
@@ -177,7 +178,7 @@ class TrackerManager:
         """
         async with AsyncSessionLocal() as dbsession:
             result = await crud.trackingstate.get_tracking_state(
-                dbsession, name=TrackingStateNames.SATELLITE_TRACKING
+                dbsession, name=TrackingStateNames.SATELLITE_TRACKING,
             )
 
             if result.get("success") and result.get("data"):
@@ -188,7 +189,7 @@ class TrackerManager:
             logger.warning(f"Failed to get tracking state: {result}")
             return None
 
-    async def stop_tracking(self) -> Dict[str, Any]:
+    async def stop_tracking(self) -> dict[str, Any]:
         """
         Stop all tracking and disconnect hardware.
 
@@ -233,7 +234,7 @@ class TrackerManager:
             try:
                 transmitters = await asyncio.wait_for(
                     crud.transmitters.fetch_transmitters_for_satellite(
-                        dbsession, norad_id=norad_id
+                        dbsession, norad_id=norad_id,
                     ),
                     timeout=5.0,
                 )
@@ -261,7 +262,7 @@ class TrackerManager:
                 norad_id,
             )
             self._send_to_tracker(
-                TRACKER_MSG_SET_TRANSMITTERS, {"items": transmitters.get("data", [])}
+                TRACKER_MSG_SET_TRANSMITTERS, {"items": transmitters.get("data", [])},
             )
         else:
             logger.debug(
@@ -271,7 +272,7 @@ class TrackerManager:
             )
 
     def notify_transmitters_changed_with_items(
-        self, norad_id: int, transmitters: list[dict]
+        self, norad_id: int, transmitters: list[dict],
     ) -> None:
         if not norad_id:
             return
@@ -315,7 +316,7 @@ class TrackerManager:
                 )
             except asyncio.TimeoutError:
                 logger.error(
-                    "notify_tle_updated: fetch_satellites timed out (norad_id=%s)", norad_id
+                    "notify_tle_updated: fetch_satellites timed out (norad_id=%s)", norad_id,
                 )
                 return
         if not satellites.get("success") or not satellites.get("data"):
@@ -356,13 +357,13 @@ class TrackerManager:
                 )
                 transmitters = await asyncio.wait_for(
                     crud.transmitters.fetch_transmitters_for_satellite(
-                        dbsession, norad_id=norad_id
+                        dbsession, norad_id=norad_id,
                     ),
                     timeout=5.0,
                 )
             except asyncio.TimeoutError:
                 logger.error(
-                    "notify_tracking_inputs_from_db: fetch timed out (norad_id=%s)", norad_id
+                    "notify_tracking_inputs_from_db: fetch timed out (norad_id=%s)", norad_id,
                 )
                 return
         if satellites.get("success") and satellites.get("data"):
@@ -385,7 +386,7 @@ class TrackerManager:
     async def sync_tracking_state_from_db(self) -> None:
         async with AsyncSessionLocal() as dbsession:
             current_state_reply = await crud.trackingstate.get_tracking_state(
-                dbsession, name=TrackingStateNames.SATELLITE_TRACKING
+                dbsession, name=TrackingStateNames.SATELLITE_TRACKING,
             )
         if not current_state_reply.get("success"):
             logger.error(f"Failed to get tracking state: {current_state_reply}")
@@ -402,16 +403,16 @@ class TrackerManager:
         if locations.get("success") and locations.get("data"):
             self._send_to_tracker(TRACKER_MSG_SET_LOCATION, locations["data"][0])
 
-    def notify_map_settings_changed(self, map_settings: Dict[str, Any]) -> None:
+    def notify_map_settings_changed(self, map_settings: dict[str, Any]) -> None:
         if map_settings:
             self._send_to_tracker(TRACKER_MSG_SET_MAP_SETTINGS, dict(map_settings))
 
     async def notify_hardware_changed(
-        self, rig_id: Optional[str] = None, rotator_id: Optional[str] = None
+        self, rig_id: str | None = None, rotator_id: str | None = None,
     ) -> None:
         if not self.current_tracking_state:
             return
-        payload: Dict[str, Any] = {}
+        payload: dict[str, Any] = {}
         async with AsyncSessionLocal() as dbsession:
             if rig_id:
                 if self.current_tracking_state.get("rig_id") != rig_id:
@@ -437,7 +438,7 @@ class TrackerManager:
         if payload:
             self._send_to_tracker(TRACKER_MSG_SET_HARDWARE, payload)
 
-    async def _sync_tracker_context(self, tracking_state: Dict[str, Any]) -> None:
+    async def _sync_tracker_context(self, tracking_state: dict[str, Any]) -> None:
         """Push a snapshot of inputs the tracker normally reads from the DB."""
         self._send_to_tracker(TRACKER_MSG_SET_TRACKING_STATE, dict(tracking_state))
 
@@ -447,7 +448,7 @@ class TrackerManager:
                 self._send_to_tracker(TRACKER_MSG_SET_LOCATION, locations["data"][0])
 
             map_settings_reply = await crud.preferences.get_map_settings(
-                dbsession, "target-map-settings"
+                dbsession, "target-map-settings",
             )
             map_settings = (map_settings_reply.get("data") or {}).get("value", {})
             self._send_to_tracker(TRACKER_MSG_SET_MAP_SETTINGS, map_settings)
@@ -468,7 +469,7 @@ class TrackerManager:
                     )
 
                 transmitters = await crud.transmitters.fetch_transmitters_for_satellite(
-                    dbsession, norad_id=norad_id
+                    dbsession, norad_id=norad_id,
                 )
                 if transmitters.get("success"):
                     self._send_to_tracker(
@@ -498,5 +499,5 @@ class TrackerManager:
                 if rotators.get("success") and rotators.get("data"):
                     self._send_to_tracker(TRACKER_MSG_SET_HARDWARE, {"rotator": rotators["data"]})
 
-    def send_command(self, command: str, data: Optional[Dict[str, Any]] = None) -> None:
+    def send_command(self, command: str, data: dict[str, Any] | None = None) -> None:
         self._send_to_tracker(TRACKER_MSG_COMMAND, {"command": command, "data": data})

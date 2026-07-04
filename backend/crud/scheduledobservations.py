@@ -16,14 +16,12 @@
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional
-
-from sqlalchemy import delete, insert, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from db.models import ScheduledObservations
 from observations.constants import STATUS_SCHEDULED
+from sqlalchemy import delete, insert, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def _transform_to_db_format(data: dict) -> dict:
@@ -154,7 +152,7 @@ def _transform_from_db_format(db_obj: dict) -> dict:
 
 
 async def fetch_scheduled_observations(
-    session: AsyncSession, observation_id: Optional[str] = None
+    session: AsyncSession, observation_id: str | None = None,
 ) -> dict:
     """
     Fetch a single observation by ID or all observations if ID is not provided.
@@ -182,7 +180,7 @@ async def fetch_scheduled_observations(
 
 
 async def fetch_observations_by_time_range(
-    session: AsyncSession, start_time: datetime, end_time: datetime
+    session: AsyncSession, start_time: datetime, end_time: datetime,
 ) -> dict:
     """
     Fetch observations within a specific time range.
@@ -315,7 +313,7 @@ async def edit_scheduled_observation(session: AsyncSession, data: dict) -> dict:
 
 
 async def toggle_scheduled_observation_enabled(
-    session: AsyncSession, observation_id: str, enabled: bool
+    session: AsyncSession, observation_id: str, enabled: bool,
 ) -> dict:
     """
     Toggle the enabled status of a scheduled observation.
@@ -345,7 +343,7 @@ async def toggle_scheduled_observation_enabled(
 
 
 async def update_scheduled_observation_status(
-    session: AsyncSession, observation_id: str, status: str, error_message: Optional[str] = None
+    session: AsyncSession, observation_id: str, status: str, error_message: str | None = None,
 ) -> dict:
     """
     Update only the status of a scheduled observation (used by executor).
@@ -367,7 +365,7 @@ async def update_scheduled_observation_status(
 
             # Increment error count
             stmt = select(ScheduledObservations.error_count).where(
-                ScheduledObservations.id == observation_id
+                ScheduledObservations.id == observation_id,
             )
             result = await session.execute(stmt)
             current_count = result.scalar() or 0
@@ -411,7 +409,7 @@ async def log_observation_event(
     try:
         # Fetch current execution log
         stmt = select(ScheduledObservations.execution_log).where(
-            ScheduledObservations.id == observation_id
+            ScheduledObservations.id == observation_id,
         )
         result = await session.execute(stmt)
         current_log = result.scalar() or []
@@ -422,7 +420,7 @@ async def log_observation_event(
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "level": level,
                 "event": event,
-            }
+            },
         )
 
         # Update execution log
@@ -443,7 +441,7 @@ async def log_observation_event(
         return {"success": False, "error": str(e)}
 
 
-async def delete_scheduled_observations(session: AsyncSession, ids: List[str]) -> dict:
+async def delete_scheduled_observations(session: AsyncSession, ids: list[str]) -> dict:
     """
     Delete one or more scheduled observation records.
     """

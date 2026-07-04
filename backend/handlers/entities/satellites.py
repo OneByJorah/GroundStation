@@ -15,7 +15,7 @@
 
 """Satellite data handlers."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
@@ -24,8 +24,8 @@ from tracker.runner import get_tracker_manager
 
 
 async def get_satellites(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get list of satellites.
 
@@ -45,8 +45,8 @@ async def get_satellites(
 
 
 async def get_satellite(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, dict]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict]:
     """
     Get single satellite with complete details (position, coverage, etc.).
 
@@ -70,8 +70,8 @@ async def get_satellite(
 
 
 async def get_satellites_for_group_id(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get satellites for a specific group ID with their transmitters.
 
@@ -92,7 +92,7 @@ async def get_satellites_for_group_id(
         if satellites:
             for satellite in satellites.get("data", []):
                 transmitters = await crud.transmitters.fetch_transmitters_for_satellite(
-                    dbsession, satellite["norad_id"]
+                    dbsession, satellite["norad_id"],
                 )
                 satellite["transmitters"] = transmitters["data"]
         else:
@@ -102,8 +102,8 @@ async def get_satellites_for_group_id(
 
 
 async def search_satellites(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Search satellites by keyword with their transmitters.
 
@@ -124,7 +124,7 @@ async def search_satellites(
         if satellites:
             for satellite in satellites.get("data", []):
                 transmitters = await crud.transmitters.fetch_transmitters_for_satellite(
-                    dbsession, satellite["norad_id"]
+                    dbsession, satellite["norad_id"],
                 )
                 satellite["transmitters"] = transmitters["data"]
         else:
@@ -134,8 +134,8 @@ async def search_satellites(
 
 
 async def delete_satellite(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Delete a satellite.
 
@@ -160,8 +160,8 @@ async def delete_satellite(
 
 
 async def submit_satellite(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Add a new satellite.
 
@@ -190,8 +190,8 @@ async def submit_satellite(
 
 
 async def edit_satellite(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Edit an existing satellite.
 
@@ -211,7 +211,7 @@ async def edit_satellite(
 
         update_data = {key: value for key, value in data.items() if key != "norad_id"}
         edit_reply = await crud.satellites.edit_satellite(
-            dbsession, data["norad_id"], **update_data
+            dbsession, data["norad_id"], **update_data,
         )
 
         satellites = await crud.satellites.fetch_satellites(dbsession, None)
@@ -225,8 +225,8 @@ async def edit_satellite(
 
 
 async def sync_satellite_data(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, None, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | None | str]:
     """
     Synchronize satellite data with known TLE sources as a background task.
 
@@ -259,7 +259,7 @@ async def sync_satellite_data(
 
         # Start as background task
         task_id = await background_task_manager.start_task(
-            func=tle_sync_task, args=(), kwargs={}, name="Manual TLE Sync", task_id=None
+            func=tle_sync_task, args=(), kwargs={}, name="Manual TLE Sync", task_id=None,
         )
 
         logger.info(f"Manual TLE sync started as background task: {task_id}")
@@ -287,5 +287,5 @@ def register_handlers(registry):
             "edit-satellite": (edit_satellite, "data_submission"),
             "delete-satellite": (delete_satellite, "data_submission"),
             "sync-satellite-data": (sync_satellite_data, "data_request"),
-        }
+        },
     )

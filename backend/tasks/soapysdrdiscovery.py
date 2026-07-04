@@ -10,7 +10,6 @@ import logging
 import multiprocessing
 import signal
 from multiprocessing import Queue
-from typing import Optional
 
 try:
     import setproctitle
@@ -42,7 +41,7 @@ class GracefulKiller:
 
 
 def soapysdr_discovery_task(
-    mode: str = "single", refresh_interval: int = 120, _progress_queue: Optional[Queue] = None
+    mode: str = "single", refresh_interval: int = 120, _progress_queue: Queue | None = None,
 ):
     """
     Discover SoapySDR servers and their connected devices.
@@ -70,14 +69,14 @@ def soapysdr_discovery_task(
                     "output": "Starting SoapySDR server discovery...",
                     "stream": "stdout",
                     "progress": 0,
-                }
+                },
             )
             _progress_queue.put(
                 {
                     "type": "output",
                     "output": f"Mode: {mode}",
                     "stream": "stdout",
-                }
+                },
             )
             if mode == "monitor":
                 _progress_queue.put(
@@ -85,7 +84,7 @@ def soapysdr_discovery_task(
                         "type": "output",
                         "output": f"Refresh interval: {refresh_interval} seconds",
                         "stream": "stdout",
-                    }
+                    },
                 )
 
         # Run the async discovery in a new event loop (since we're in a separate process)
@@ -101,7 +100,7 @@ def soapysdr_discovery_task(
                         "output": "Performing initial mDNS discovery...",
                         "stream": "stdout",
                         "progress": 10,
-                    }
+                    },
                 )
 
             loop.run_until_complete(discover_soapy_servers())
@@ -113,7 +112,7 @@ def soapysdr_discovery_task(
                             "type": "output",
                             "output": "Discovery interrupted by user",
                             "stream": "stdout",
-                        }
+                        },
                     )
                 return {"status": "interrupted", "servers": {}}
 
@@ -151,7 +150,7 @@ def soapysdr_discovery_task(
                         ),
                         "stream": "stdout",
                         "progress": 50,
-                    }
+                    },
                 )
 
                 # Send discovery data to main process
@@ -162,7 +161,7 @@ def soapysdr_discovery_task(
                         "server_count": server_count,
                         "active_count": active_count,
                         "sdr_count": active_sdr_count,
-                    }
+                    },
                 )
 
                 # Report details for each server
@@ -178,7 +177,7 @@ def soapysdr_discovery_task(
                         status_line += f" - {sdr_count} SDR(s) connected"
 
                     _progress_queue.put(
-                        {"type": "output", "output": status_line, "stream": "stdout"}
+                        {"type": "output", "output": status_line, "stream": "stdout"},
                     )
 
                     # Report individual SDRs
@@ -192,7 +191,7 @@ def soapysdr_discovery_task(
                                     "type": "output",
                                     "output": f"    - {label} ({driver}) [Serial: {serial}]",
                                     "stream": "stdout",
-                                }
+                                },
                             )
 
             # If single mode, we're done
@@ -204,7 +203,7 @@ def soapysdr_discovery_task(
                             "output": "Single discovery completed",
                             "stream": "stdout",
                             "progress": 100,
-                        }
+                        },
                     )
 
                 # Serialize discovered servers for return
@@ -236,7 +235,7 @@ def soapysdr_discovery_task(
                             "output": f"Waiting {refresh_interval} seconds before next refresh...",
                             "stream": "stdout",
                             "progress": 60 + (refresh_count % 10) * 4,
-                        }
+                        },
                     )
 
                 # Sleep with interruption checking
@@ -255,7 +254,7 @@ def soapysdr_discovery_task(
                             "type": "output",
                             "output": f"Refresh #{refresh_count}: Updating connected SDRs...",
                             "stream": "stdout",
-                        }
+                        },
                     )
 
                 # Refresh SDR list
@@ -293,7 +292,7 @@ def soapysdr_discovery_task(
                                 f"{active_sdr_count} SDR(s) active"
                             ),
                             "stream": "stdout",
-                        }
+                        },
                     )
 
                     # Send discovery data to main process
@@ -305,7 +304,7 @@ def soapysdr_discovery_task(
                             "active_count": active_count,
                             "sdr_count": active_sdr_count,
                             "refresh_count": refresh_count,
-                        }
+                        },
                     )
 
             # Interrupted in monitor mode
@@ -315,7 +314,7 @@ def soapysdr_discovery_task(
                         "type": "output",
                         "output": f"Monitoring stopped after {refresh_count} refresh(es)",
                         "stream": "stdout",
-                    }
+                    },
                 )
 
             return {
@@ -330,14 +329,14 @@ def soapysdr_discovery_task(
             loop.close()
 
     except Exception as e:
-        error_msg = f"Error during SoapySDR discovery: {str(e)}"
+        error_msg = f"Error during SoapySDR discovery: {e!s}"
         logger.error(error_msg)
         if _progress_queue:
             _progress_queue.put({"type": "error", "error": error_msg, "stream": "stderr"})
         raise
 
 
-def soapysdr_quick_refresh_task(_progress_queue: Optional[Queue] = None):
+def soapysdr_quick_refresh_task(_progress_queue: Queue | None = None):
     """
     Quick refresh of already-discovered SoapySDR servers.
 
@@ -363,7 +362,7 @@ def soapysdr_quick_refresh_task(_progress_queue: Optional[Queue] = None):
                     "output": "Refreshing connected SDRs on known servers...",
                     "stream": "stdout",
                     "progress": 0,
-                }
+                },
             )
 
         if not discovered_servers:
@@ -374,7 +373,7 @@ def soapysdr_quick_refresh_task(_progress_queue: Optional[Queue] = None):
                         "output": "No servers known yet. Run full discovery first.",
                         "stream": "stdout",
                         "progress": 100,
-                    }
+                    },
                 )
             return {"status": "completed", "message": "No servers to refresh"}
 
@@ -409,7 +408,7 @@ def soapysdr_quick_refresh_task(_progress_queue: Optional[Queue] = None):
                         "output": f"Refresh complete: {active_count} active server(s) with SDRs",
                         "stream": "stdout",
                         "progress": 100,
-                    }
+                    },
                 )
 
                 # Send discovery data to main process
@@ -419,7 +418,7 @@ def soapysdr_quick_refresh_task(_progress_queue: Optional[Queue] = None):
                         "servers": serialized_servers,
                         "server_count": len(discovered_servers),
                         "active_count": active_count,
-                    }
+                    },
                 )
 
             return {
@@ -431,7 +430,7 @@ def soapysdr_quick_refresh_task(_progress_queue: Optional[Queue] = None):
             loop.close()
 
     except Exception as e:
-        error_msg = f"Error during SDR refresh: {str(e)}"
+        error_msg = f"Error during SDR refresh: {e!s}"
         logger.error(error_msg)
         if _progress_queue:
             _progress_queue.put({"type": "error", "error": error_msg, "stream": "stderr"})

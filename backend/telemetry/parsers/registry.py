@@ -10,7 +10,8 @@ added without modifying TelemetryParser internals.
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterable, Tuple, Type
+from collections.abc import Iterable
+from typing import Any
 
 from .colibri_s import ColibriSGeoscanAx25Parser
 from .rs52s import RS52SGeoscanAx25Parser
@@ -18,7 +19,7 @@ from .rs52s import RS52SGeoscanAx25Parser
 logger = logging.getLogger("telemetry.parsers.registry")
 
 
-def _iter_builtin_ax25_parsers() -> Iterable[Tuple[str, Type[Any]]]:
+def _iter_builtin_ax25_parsers() -> Iterable[tuple[str, type[Any]]]:
     """
     Yield built-in AX.25 callsign-keyed payload parser bindings.
 

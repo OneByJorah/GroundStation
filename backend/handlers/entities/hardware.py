@@ -21,7 +21,7 @@ import logging
 import math
 import sys
 from bisect import bisect_left
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
@@ -33,7 +33,7 @@ from workers.common import window_functions
 logger = logging.getLogger("hardware-handler")
 
 # Create a cache dictionary to store SDR parameters by SDR ID
-sdr_parameters_cache: Dict[str, Dict] = {}
+sdr_parameters_cache: dict[str, dict] = {}
 
 
 def _nearest_rate(sorted_rates: list[float], target: float) -> float:
@@ -84,7 +84,7 @@ def _select_neat_sample_rates(rates: list[float]) -> list[float]:
     return sorted(selected)
 
 
-def _strip_sample_rate_ranges(capabilities: Dict[str, Any]) -> Dict[str, Any]:
+def _strip_sample_rate_ranges(capabilities: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(capabilities, dict):
         return capabilities
     sanitized = dict(capabilities)
@@ -95,7 +95,7 @@ def _strip_sample_rate_ranges(capabilities: Dict[str, Any]) -> Dict[str, Any]:
 async def get_local_soapy_sdr_devices():
     """Retrieve a list of local SoapySDR devices with frequency range information"""
 
-    reply: Dict[str, Union[bool, dict, list, str, None]] = {
+    reply: dict[str, bool | dict | list | str | None] = {
         "success": None,
         "data": None,
         "error": None,
@@ -143,7 +143,7 @@ async def get_local_soapy_sdr_devices():
 async def get_local_rtl_sdr_devices():
     """Retrieve a list of local RTL-SDR devices"""
 
-    reply: Dict[str, Union[bool, dict, list, str, None]] = {
+    reply: dict[str, bool | dict | list | str | None] = {
         "success": None,
         "data": None,
         "error": None,
@@ -192,7 +192,7 @@ async def get_local_rtl_sdr_devices():
 async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
     """Retrieve SDR parameters from the SDR process manager with caching"""
 
-    reply: Dict[str, Union[bool, None, dict, list, str]] = {
+    reply: dict[str, bool | None | dict | list | str] = {
         "success": None,
         "data": None,
         "error": None,
@@ -315,7 +315,7 @@ async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
                 except asyncio.TimeoutError:
                     probe_process.kill()
                     raise TimeoutError(
-                        "Timed out while getting SDR parameters from SoapySDR server"
+                        "Timed out while getting SDR parameters from SoapySDR server",
                     )
             else:
                 logger.info("Getting SDR parameters from local SoapySDR for SDR: %s", sdr)
@@ -333,7 +333,7 @@ async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
                 except asyncio.TimeoutError:
                     probe_process.kill()
                     raise TimeoutError(
-                        "Timed out while getting SDR parameters from SoapySDR server"
+                        "Timed out while getting SDR parameters from SoapySDR server",
                     )
 
             sdr_params_reply = eval(stdout.decode().strip())
@@ -392,7 +392,7 @@ async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
 
             try:
                 stdout, stderr = await asyncio.wait_for(
-                    probe_process.communicate(), timeout=timeout
+                    probe_process.communicate(), timeout=timeout,
                 )
 
                 if probe_process.returncode != 0:
@@ -478,7 +478,7 @@ async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
 
             try:
                 stdout, stderr = await asyncio.wait_for(
-                    probe_process.communicate(), timeout=timeout
+                    probe_process.communicate(), timeout=timeout,
                 )
 
                 if probe_process.returncode != 0:
@@ -530,7 +530,7 @@ async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
         logger.error(error_msg)
         if sdr_id in sdr_parameters_cache and sdr_id != "sigmf-playback":
             logger.warning(
-                "Returning cached SDR parameters for %s after timeout: %s", sdr_id, error_msg
+                "Returning cached SDR parameters for %s after timeout: %s", sdr_id, error_msg,
             )
             reply["success"] = True
             reply["data"] = sdr_parameters_cache[sdr_id]
@@ -545,7 +545,7 @@ async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
         logger.error(error_msg)
         if sdr_id in sdr_parameters_cache and sdr_id != "sigmf-playback":
             logger.warning(
-                "Returning cached SDR parameters for %s after error: %s", sdr_id, error_msg
+                "Returning cached SDR parameters for %s after error: %s", sdr_id, error_msg,
             )
             reply["success"] = True
             reply["data"] = sdr_parameters_cache[sdr_id]
@@ -563,8 +563,8 @@ async def _fetch_sdr_parameters(dbsession, sdr_id, timeout=30.0):
 
 
 async def get_rigs(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Get all radio rigs."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Getting radio rigs, data: {data}")
@@ -573,8 +573,8 @@ async def get_rigs(
 
 
 async def submit_rig(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Add a new rig."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Adding rig, data: {data}")
@@ -591,8 +591,8 @@ async def submit_rig(
 
 
 async def edit_rig(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Edit an existing rig."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Editing rig, data: {data}")
@@ -609,8 +609,8 @@ async def edit_rig(
 
 
 async def delete_rig(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Delete a rig."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Delete rig, data: {data}")
@@ -636,8 +636,8 @@ async def delete_rig(
 
 
 async def get_rotators(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Get all antenna rotators."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Getting antenna rotators, data: {data}")
@@ -646,8 +646,8 @@ async def get_rotators(
 
 
 async def submit_rotator(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Add a new rotator."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Adding rotator, data: {data}")
@@ -664,8 +664,8 @@ async def submit_rotator(
 
 
 async def edit_rotator(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Edit an existing rotator."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Editing rotator, data: {data}")
@@ -684,8 +684,8 @@ async def edit_rotator(
 
 
 async def delete_rotator(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Delete rotators."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Delete rotator, data: {data}")
@@ -706,8 +706,8 @@ async def delete_rotator(
 
 
 async def nudge_rotator(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, None]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | None]:
     """Nudge rotator position."""
     logger.info(f"Nudging rotator, data: {data}")
     cmd = data.get("cmd", None) if data else None
@@ -722,8 +722,8 @@ async def nudge_rotator(
 
 
 async def get_cameras(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Get all cameras."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Getting cameras, data: {data}")
@@ -732,8 +732,8 @@ async def get_cameras(
 
 
 async def submit_camera(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Add a new camera."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Adding camera, data: {data}")
@@ -747,8 +747,8 @@ async def submit_camera(
 
 
 async def edit_camera(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Edit an existing camera."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Editing camera, data: {data}")
@@ -764,8 +764,8 @@ async def edit_camera(
 
 
 async def delete_camera(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Delete cameras."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Delete camera, data: {data}")
@@ -784,8 +784,8 @@ async def delete_camera(
 
 
 async def get_sdrs(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Get all SDRs."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Getting SDRs, data: {data}")
@@ -810,8 +810,8 @@ async def get_sdrs(
 
 
 async def submit_sdr(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Add a new SDR."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Adding SDR, data: {data}")
@@ -830,8 +830,8 @@ async def submit_sdr(
 
 
 async def edit_sdr(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Edit an existing SDR."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Editing SDR, data: {data}")
@@ -850,8 +850,8 @@ async def edit_sdr(
 
 
 async def delete_sdr(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """Delete SDRs."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Delete SDR, data: {data}")
@@ -872,16 +872,16 @@ async def delete_sdr(
 
 
 async def get_soapy_servers(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """Get discovered SoapySDR servers."""
     logger.debug("Getting discovered SoapySDR servers")
     return {"success": True, "data": discovered_servers}
 
 
 async def get_sdr_parameters(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """Get SDR parameters."""
     async with AsyncSessionLocal() as dbsession:
         logger.debug("Getting SDR parameters")
@@ -894,8 +894,8 @@ async def get_sdr_parameters(
 
 
 async def get_local_soapy_sdr_devices_handler(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """Get local SoapySDR devices."""
     logger.debug("Getting local SoapySDR devices")
     devices = await get_local_soapy_sdr_devices()
@@ -907,8 +907,8 @@ async def get_local_soapy_sdr_devices_handler(
 
 
 async def get_local_rtl_sdr_devices_handler(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """Get local RTL-SDR devices."""
     logger.debug("Getting local RTL-SDR devices")
     devices = await get_local_rtl_sdr_devices()
@@ -948,5 +948,5 @@ def register_handlers(registry):
             "get-sdr-parameters": (get_sdr_parameters, "data_request"),
             "get-local-soapy-sdr-devices": (get_local_soapy_sdr_devices_handler, "data_request"),
             "get-local-rtl-sdr-devices": (get_local_rtl_sdr_devices_handler, "data_request"),
-        }
+        },
     )

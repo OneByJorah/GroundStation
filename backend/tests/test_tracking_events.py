@@ -22,7 +22,6 @@ import json
 import multiprocessing
 
 import pytest
-
 from tracking.events import _generate_cache_key, _named_worker_init
 
 

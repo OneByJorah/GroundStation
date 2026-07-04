@@ -61,10 +61,10 @@ def start_audio_recording(
 
     # Validate VFO is active with a demodulator
     if not process_manager.demodulator_manager.get_active_demodulator(
-        sdr_id, client_id, vfo_number
+        sdr_id, client_id, vfo_number,
     ):
         raise Exception(
-            f"VFO {vfo_number} is not active with a demodulator. Activate VFO before recording."
+            f"VFO {vfo_number} is not active with a demodulator. Activate VFO before recording.",
         )
 
     # Check if already recording
@@ -132,7 +132,7 @@ def stop_audio_recording(sdr_id: str, client_id: str, vfo_number: int) -> dict:
     """
     # Get the active recorder
     recorder = process_manager.audio_recorder_manager.get_active_recorder(
-        sdr_id, client_id, vfo_number
+        sdr_id, client_id, vfo_number,
     )
 
     if not recorder:

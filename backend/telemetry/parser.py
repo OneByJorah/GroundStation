@@ -91,7 +91,7 @@ Notes and common expectations
 
 import logging
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from .ax25parser import AX25Parser
 from .ccsdsparser import CCSDSParser
@@ -126,7 +126,7 @@ class TelemetryParser:
         self.ax25_parser = AX25Parser()
         self.csp_parser = CSPParser()
         self.ccsds_parser = CCSDSParser()
-        self.payload_parsers: Dict[Any, Any] = {}  # protocol-aware registry
+        self.payload_parsers: dict[Any, Any] = {}  # protocol-aware registry
         register_builtin_payload_parsers(self)
         logger.debug("Telemetry parser initialized (protocol-agnostic)")
 
@@ -144,11 +144,11 @@ class TelemetryParser:
     def parse(
         self,
         packet_bytes: bytes,
-        protocol_hint: Optional[str] = None,
-        sat_hint: Optional[str] = None,
-        service_hint: Optional[int] = None,
-        parser_hint: Optional[Any] = None,
-    ) -> Dict[str, Any]:
+        protocol_hint: str | None = None,
+        sat_hint: str | None = None,
+        service_hint: int | None = None,
+        parser_hint: Any | None = None,
+    ) -> dict[str, Any]:
         """
         Parse telemetry packet with generic + pluggable approach
 
@@ -168,10 +168,10 @@ class TelemetryParser:
                 'raw': { original bytes }
             }
         """
-        result: Dict[str, Any] = {"parser": None, "success": False}
+        result: dict[str, Any] = {"parser": None, "success": False}
 
         # Helper: coerce a parser_hint frame_size into an int when possible
-        def _coerce_frame_size(hint: Optional[Any]) -> Optional[int]:
+        def _coerce_frame_size(hint: Any | None) -> int | None:
             try:
                 if isinstance(hint, dict):
                     val = hint.get("frame_size")
@@ -460,7 +460,7 @@ class TelemetryParser:
         }
         return result
 
-    def _select_payload_parser_ax25(self, source_callsign: str, hint: Optional[Any] = None):
+    def _select_payload_parser_ax25(self, source_callsign: str, hint: Any | None = None):
         """
         Select appropriate payload parser based on callsign or hint
 
@@ -508,12 +508,12 @@ class TelemetryParser:
     def _select_payload_parser_protocol(
         self,
         protocol: str,
-        sat_hint: Optional[str],
-        service_id: Optional[int],
-        legacy_hint: Optional[Any] = None,
+        sat_hint: str | None,
+        service_id: int | None,
+        legacy_hint: Any | None = None,
     ):
         # Highest specificity: (protocol, sat_hint, service_id)
-        key: Tuple[Any, Any, Any]
+        key: tuple[Any, Any, Any]
         if sat_hint is not None and service_id is not None:
             key = (protocol, sat_hint, service_id)
             if key in self.payload_parsers:

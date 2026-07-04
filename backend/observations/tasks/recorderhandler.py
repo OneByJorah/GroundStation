@@ -18,9 +18,7 @@
 import os
 import traceback
 from datetime import datetime
-from typing import Any, Dict, Optional
-
-from sqlalchemy import select
+from typing import Any
 
 from common.logger import logger
 from db import AsyncSessionLocal
@@ -30,6 +28,7 @@ from demodulators.audiorecorder import AudioRecorder
 from demodulators.fmdemodulator import FMDemodulator
 from demodulators.iqrecorder import IQRecorder
 from demodulators.ssbdemodulator import SSBDemodulator
+from sqlalchemy import select
 from vfos.state import VFOManager
 
 
@@ -50,10 +49,10 @@ class RecorderHandler:
         observation_id: str,
         session_id: str,
         sdr_id: str,
-        satellite: Dict[str, Any],
-        task_config: Optional[Dict[str, Any]] = None,
-        recorder_id: Optional[str] = None,
-    ) -> Optional[str]:
+        satellite: dict[str, Any],
+        task_config: dict[str, Any] | None = None,
+        recorder_id: str | None = None,
+    ) -> str | None:
         """
         Start an IQ recording task.
 
@@ -83,7 +82,7 @@ class RecorderHandler:
 
             # Build recording path (directory creation handled by IQRecorder)
             backend_dir = os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             )
             recordings_dir = os.path.join(backend_dir, "data", "recordings")
             recording_path = os.path.join(recordings_dir, recording_name)
@@ -107,7 +106,7 @@ class RecorderHandler:
                 recorder_kwargs["enable_frequency_shift"] = True
                 recorder_kwargs["target_center_freq"] = float(target_center_freq)
                 logger.info(
-                    f"IQ recording will use frequency shift: target={target_center_freq/1e6:.3f} MHz"
+                    f"IQ recording will use frequency shift: target={target_center_freq/1e6:.3f} MHz",
                 )
             if decimation_factor and int(decimation_factor) > 1:
                 logger.info(f"IQ recording will use decimation: {decimation_factor}x")
@@ -123,7 +122,7 @@ class RecorderHandler:
 
             if success:
                 logger.info(
-                    f"Started IQ recording for observation {observation_id}: {recording_path}"
+                    f"Started IQ recording for observation {observation_id}: {recording_path}",
                 )
                 return recording_path
 
@@ -140,9 +139,9 @@ class RecorderHandler:
         observation_id: str,
         session_id: str,
         sdr_id: str,
-        sdr_config: Dict[str, Any],
-        satellite: Dict[str, Any],
-        task_config: Dict[str, Any],
+        sdr_config: dict[str, Any],
+        satellite: dict[str, Any],
+        task_config: dict[str, Any],
     ) -> bool:
         """
         Start an audio recording task.
@@ -166,7 +165,7 @@ class RecorderHandler:
             vfo_frequency = task_config.get("frequency", sdr_config["center_freq"])
             # Map frontend 'demodulator' field to backend 'demodulator_type'
             demodulator_type = task_config.get(
-                "demodulator", task_config.get("demodulator_type", "FM")
+                "demodulator", task_config.get("demodulator_type", "FM"),
             )
             bandwidth = task_config.get("bandwidth", 40000)
             # Get transmitter ID for doppler correction (if available)
@@ -175,7 +174,7 @@ class RecorderHandler:
             # Fetch transmitter frequency if transmitter is specified
             if audio_transmitter_id and audio_transmitter_id != "none":
                 vfo_frequency = await self._fetch_transmitter_frequency(
-                    audio_transmitter_id, vfo_frequency, task_config
+                    audio_transmitter_id, vfo_frequency, task_config,
                 )
 
             # 1. Configure VFO for audio recording
@@ -192,22 +191,22 @@ class RecorderHandler:
             )
 
             logger.info(
-                f"Configured VFO {audio_vfo_number} for audio recording at {vfo_frequency/1e6:.3f} MHz"
+                f"Configured VFO {audio_vfo_number} for audio recording at {vfo_frequency/1e6:.3f} MHz",
             )
 
             # 2. Start demodulator for this VFO
             demod_started = self._start_demodulator(
-                sdr_id, session_id, demodulator_type, audio_vfo_number
+                sdr_id, session_id, demodulator_type, audio_vfo_number,
             )
 
             if not demod_started:
                 logger.error(
-                    f"Failed to start demodulator for audio recording VFO {audio_vfo_number}"
+                    f"Failed to start demodulator for audio recording VFO {audio_vfo_number}",
                 )
                 return False
 
             logger.info(
-                f"Started {demodulator_type} demodulator for audio recording VFO {audio_vfo_number}"
+                f"Started {demodulator_type} demodulator for audio recording VFO {audio_vfo_number}",
             )
 
             # 3. Generate recording path
@@ -220,7 +219,7 @@ class RecorderHandler:
 
             # Create audio recordings directory
             backend_dir = os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             )
             audio_dir = os.path.join(backend_dir, "data", "audio")
             os.makedirs(audio_dir, exist_ok=True)
@@ -244,7 +243,7 @@ class RecorderHandler:
 
             if success:
                 logger.info(
-                    f"Started audio recording for observation {observation_id} VFO {audio_vfo_number}: {recording_path}"
+                    f"Started audio recording for observation {observation_id} VFO {audio_vfo_number}: {recording_path}",
                 )
                 return True
             else:
@@ -257,7 +256,7 @@ class RecorderHandler:
             return False
 
     def stop_iq_recording_task(
-        self, sdr_id: str, session_id: str, skip_auto_waterfall: bool = False
+        self, sdr_id: str, session_id: str, skip_auto_waterfall: bool = False,
     ) -> bool:
         """
         Stop an IQ recording task.
@@ -271,7 +270,7 @@ class RecorderHandler:
         """
         try:
             self.process_manager.stop_recorder(
-                sdr_id, session_id, skip_auto_waterfall=skip_auto_waterfall
+                sdr_id, session_id, skip_auto_waterfall=skip_auto_waterfall,
             )
             logger.info(f"Stopped IQ recorder for session {session_id}")
             return True
@@ -294,7 +293,7 @@ class RecorderHandler:
         try:
             # Stop audio recorder first
             self.process_manager.audio_recorder_manager.stop_audio_recorder(
-                sdr_id, session_id, vfo_number
+                sdr_id, session_id, vfo_number,
             )
             logger.info(f"Stopped audio recorder for session {session_id} VFO {vfo_number}")
 
@@ -307,7 +306,7 @@ class RecorderHandler:
             return False
 
     def _start_demodulator(
-        self, sdr_id: str, session_id: str, demodulator_type: str, vfo_number: int
+        self, sdr_id: str, session_id: str, demodulator_type: str, vfo_number: int,
     ) -> bool:
         """
         Start a demodulator for audio recording or transcription.
@@ -325,7 +324,7 @@ class RecorderHandler:
 
         if demod_type_lower == "fm":
             result: bool = self.process_manager.start_demodulator(
-                sdr_id, session_id, FMDemodulator, None, vfo_number=vfo_number
+                sdr_id, session_id, FMDemodulator, None, vfo_number=vfo_number,
             )
             return result
         elif demod_type_lower in ["usb", "lsb", "cw"]:
@@ -340,7 +339,7 @@ class RecorderHandler:
             return result
         elif demod_type_lower == "am":
             result = self.process_manager.start_demodulator(
-                sdr_id, session_id, AMDemodulator, None, vfo_number=vfo_number
+                sdr_id, session_id, AMDemodulator, None, vfo_number=vfo_number,
             )
             return result
         else:
@@ -348,7 +347,7 @@ class RecorderHandler:
             return False
 
     async def _fetch_transmitter_frequency(
-        self, transmitter_id: str, default_frequency: float, task_config: Dict[str, Any]
+        self, transmitter_id: str, default_frequency: float, task_config: dict[str, Any],
     ) -> float:
         """
         Fetch transmitter frequency from database.
@@ -364,15 +363,15 @@ class RecorderHandler:
         try:
             async with AsyncSessionLocal() as db_session:
                 result = await db_session.execute(
-                    select(Transmitters).where(Transmitters.id == transmitter_id)
+                    select(Transmitters).where(Transmitters.id == transmitter_id),
                 )
                 transmitter_record = result.scalar_one_or_none()
                 if transmitter_record:
                     frequency: float = float(
-                        task_config.get("frequency", transmitter_record.downlink_low)
+                        task_config.get("frequency", transmitter_record.downlink_low),
                     )
                     logger.info(
-                        f"Loaded transmitter {transmitter_record.description} at {frequency/1e6:.3f} MHz"
+                        f"Loaded transmitter {transmitter_record.description} at {frequency/1e6:.3f} MHz",
                     )
                     return frequency
         except Exception as e:

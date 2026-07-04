@@ -6,17 +6,16 @@ Create Date: 2026-03-12 16:35:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a91f8c3d4e2b"
-down_revision: Union[str, None] = "e7a1b3f4c9d2"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "e7a1b3f4c9d2"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _normalize_to_null(column_name: str) -> None:
@@ -27,8 +26,8 @@ def _normalize_to_null(column_name: str) -> None:
             SET {column_name} = NULL
             WHERE {column_name} IS NOT NULL
               AND LOWER(TRIM(CAST({column_name} AS TEXT))) IN ('', '-', 'null', 'none')
-            """
-        )
+            """,
+        ),
     )
 
 
@@ -39,8 +38,8 @@ def _normalize_to_bool(column_name: str) -> None:
             UPDATE transmitters
             SET {column_name} = 1
             WHERE LOWER(TRIM(CAST({column_name} AS TEXT))) IN ('true', 'yes', 'on')
-            """
-        )
+            """,
+        ),
     )
     op.execute(
         sa.text(
@@ -48,8 +47,8 @@ def _normalize_to_bool(column_name: str) -> None:
             UPDATE transmitters
             SET {column_name} = 0
             WHERE LOWER(TRIM(CAST({column_name} AS TEXT))) IN ('false', 'no', 'off')
-            """
-        )
+            """,
+        ),
     )
 
 

@@ -64,7 +64,7 @@ class AudioRecorderManager(ConsumerManager):
         audio_broadcaster = demod_entry.get("audio_broadcaster")
         if not audio_broadcaster:
             self.logger.error(
-                f"No audio broadcaster found for session {session_id} VFO {vfo_number}"
+                f"No audio broadcaster found for session {session_id} VFO {vfo_number}",
             )
             return False
 
@@ -79,7 +79,7 @@ class AudioRecorderManager(ConsumerManager):
         # Check if recorder already exists for this VFO
         if vfo_number in audio_recorders:
             self.logger.warning(
-                f"Audio recorder already running for session {session_id} VFO {vfo_number}"
+                f"Audio recorder already running for session {session_id} VFO {vfo_number}",
             )
             return False
 
@@ -107,7 +107,7 @@ class AudioRecorderManager(ConsumerManager):
             return True
 
         except Exception as e:
-            self.logger.error(f"Error starting audio recorder: {str(e)}")
+            self.logger.error(f"Error starting audio recorder: {e!s}")
             self.logger.exception(e)
             return False
 
@@ -131,7 +131,7 @@ class AudioRecorderManager(ConsumerManager):
 
         if vfo_number not in audio_recorders:
             self.logger.warning(
-                f"No audio recorder found for session {session_id} VFO {vfo_number}"
+                f"No audio recorder found for session {session_id} VFO {vfo_number}",
             )
             return False
 
@@ -166,7 +166,7 @@ class AudioRecorderManager(ConsumerManager):
             return True
 
         except Exception as e:
-            self.logger.error(f"Error stopping audio recorder: {str(e)}")
+            self.logger.error(f"Error stopping audio recorder: {e!s}")
             self.logger.exception(e)
             return False
 

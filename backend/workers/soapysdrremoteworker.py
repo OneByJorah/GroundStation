@@ -16,7 +16,7 @@
 
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import psutil
@@ -33,8 +33,8 @@ def _normalize_setting_value(value: Any) -> str:
     return str(value)
 
 
-def _get_bias_setting_keys(sdr: SoapySDR.Device) -> List[str]:
-    keys: List[str] = []
+def _get_bias_setting_keys(sdr: SoapySDR.Device) -> list[str]:
+    keys: list[str] = []
     if not hasattr(sdr, "getSettingInfo"):
         return keys
     try:
@@ -50,9 +50,9 @@ def _get_bias_setting_keys(sdr: SoapySDR.Device) -> List[str]:
 def _apply_soapy_settings(
     sdr: SoapySDR.Device,
     channel: int,
-    sdr_settings: Dict[str, Any],
+    sdr_settings: dict[str, Any],
     bias_t: Any,
-    bias_setting_keys: List[str],
+    bias_setting_keys: list[str],
     soapy_agc: bool,
 ) -> None:
     if not isinstance(sdr_settings, dict):
@@ -116,7 +116,7 @@ TARGET_BLOCKS_PER_SEC = 15
 
 
 def soapysdr_remote_worker_process(
-    config_queue, data_queue, stop_event, iq_queue_fft=None, iq_queue_demod=None
+    config_queue, data_queue, stop_event, iq_queue_fft=None, iq_queue_demod=None,
 ):
     """
     Worker process for SoapySDR operations.
@@ -189,7 +189,7 @@ def soapysdr_remote_worker_process(
         logger.info(f"Connecting to SoapySDR device with args: {device_args}")
 
         # Create the device instance
-        bias_setting_keys: List[str] = []
+        bias_setting_keys: list[str] = []
         try:
             # Attempt to connect to the specified device
             sdr = SoapySDR.Device(device_args)
@@ -207,7 +207,7 @@ def soapysdr_remote_worker_process(
             logger.debug(f"Supported sample rate ranges: {supported_rates}")
 
             # Add some extra sample rates to the list
-            extra_sample_rates: List[float] = []
+            extra_sample_rates: list[float] = []
             usable_rates = []
 
             for rate in extra_sample_rates:
@@ -225,7 +225,7 @@ def soapysdr_remote_worker_process(
                 # Find the closest supported rate
                 closest_rate = min(usable_rates, key=lambda x: abs(x - sample_rate))
                 logger.info(
-                    f"Requested sample rate {sample_rate/1e6} MHz is not supported. Using closest rate: {closest_rate/1e6} MHz"
+                    f"Requested sample rate {sample_rate/1e6} MHz is not supported. Using closest rate: {closest_rate/1e6} MHz",
                 )
                 sample_rate = closest_rate
 
@@ -238,7 +238,7 @@ def soapysdr_remote_worker_process(
             num_samples = calculate_samples_per_scan(actual_sample_rate, fft_size)
 
         except Exception as e:
-            error_msg = f"Error connecting to SoapySDR device: {str(e)}"
+            error_msg = f"Error connecting to SoapySDR device: {e!s}"
             logger.error(error_msg)
             logger.exception(e)
             raise
@@ -327,11 +327,11 @@ def soapysdr_remote_worker_process(
                 "client_id": client_id,
                 "message": None,
                 "timestamp": time.time(),
-            }
+            },
         )
 
         # Performance monitoring stats
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             "samples_read": 0,  # Total IQ samples read from SDR
             "iq_chunks_out": 0,  # IQ chunks sent to queues
             "read_errors": 0,  # Read errors (timeouts, overflows, etc.)
@@ -381,7 +381,7 @@ def soapysdr_remote_worker_process(
                         "sdr_id": sdr_id,
                         "stats": stats.copy(),
                         "timestamp": current_time,
-                    }
+                    },
                 )
                 last_stats_send = current_time
 
@@ -417,7 +417,7 @@ def soapysdr_remote_worker_process(
 
                             # Set the new frequency
                             sdr.setFrequency(
-                                SOAPY_SDR_RX, channel, new_config["center_freq"] + offset_freq
+                                SOAPY_SDR_RX, channel, new_config["center_freq"] + offset_freq,
                             )
                             actual_freq = sdr.getFrequency(SOAPY_SDR_RX, channel)
 
@@ -481,7 +481,7 @@ def soapysdr_remote_worker_process(
 
                             offset_freq = int(new_config["offset_freq"])
                             sdr.setFrequency(
-                                SOAPY_SDR_RX, channel, new_config["center_freq"] + offset_freq
+                                SOAPY_SDR_RX, channel, new_config["center_freq"] + offset_freq,
                             )
                             actual_freq = sdr.getFrequency(SOAPY_SDR_RX, channel)
 
@@ -502,7 +502,7 @@ def soapysdr_remote_worker_process(
 
                     if "bias_t" in new_config or "sdr_settings" in new_config:
                         if old_config.get("bias_t") != new_config.get("bias_t") or old_config.get(
-                            "sdr_settings"
+                            "sdr_settings",
                         ) != new_config.get("sdr_settings"):
                             _apply_soapy_settings(
                                 sdr,
@@ -516,7 +516,7 @@ def soapysdr_remote_worker_process(
                     old_config = new_config
 
             except Exception as e:
-                error_msg = f"Error processing configuration: {str(e)}"
+                error_msg = f"Error processing configuration: {e!s}"
                 logger.error(error_msg)
                 logger.exception(e)
 
@@ -528,7 +528,7 @@ def soapysdr_remote_worker_process(
                             "client_id": client_id,
                             "message": error_msg,
                             "timestamp": time.time(),
-                        }
+                        },
                     )
 
             try:
@@ -617,7 +617,7 @@ def soapysdr_remote_worker_process(
                         elif sr.ret == -4:  # SOAPY_SDR_OVERFLOW
                             # Overflow error - the internal ring buffer filled up because we didn't read fast enough
                             logger.warning(
-                                "Buffer overflow detected (SOAPY_SDR_OVERFLOW), samples may have been lost"
+                                "Buffer overflow detected (SOAPY_SDR_OVERFLOW), samples may have been lost",
                             )
 
                             # Short sleep to allow the internal buffers to clear
@@ -647,7 +647,7 @@ def soapysdr_remote_worker_process(
                 # Check if we have enough samples for processing
                 if buffer_position < num_samples:
                     logger.warning(
-                        f"Not enough samples accumulated: {buffer_position}/{num_samples}"
+                        f"Not enough samples accumulated: {buffer_position}/{num_samples}",
                     )
                     time.sleep(0.005)
                     continue
@@ -704,10 +704,10 @@ def soapysdr_remote_worker_process(
                                 stats["queue_drops"] += 1
 
                     except Exception as e:
-                        logger.debug(f"Could not queue IQ data: {str(e)}")
+                        logger.debug(f"Could not queue IQ data: {e!s}")
 
             except Exception as e:
-                logger.error(f"Error processing SDR data: {str(e)}")
+                logger.error(f"Error processing SDR data: {e!s}")
                 logger.exception(e)
                 stats["errors"] += 1
 
@@ -718,7 +718,7 @@ def soapysdr_remote_worker_process(
                         "client_id": client_id,
                         "message": str(e),
                         "timestamp": time.time(),
-                    }
+                    },
                 )
 
                 # Pause before retrying
@@ -727,7 +727,7 @@ def soapysdr_remote_worker_process(
     except ConnectionRefusedError as e:
         hostname = config.get("host", "unknown")
         port = config.get("port", "unknown")
-        error_msg = f"Connection refused to SoapySDR remote server at {hostname}:{port}: {str(e)}"
+        error_msg = f"Connection refused to SoapySDR remote server at {hostname}:{port}: {e!s}"
         logger.error(error_msg)
         logger.exception(e)
 
@@ -738,11 +738,11 @@ def soapysdr_remote_worker_process(
                 "client_id": client_id,
                 "message": error_msg,
                 "timestamp": time.time(),
-            }
+            },
         )
 
     except Exception as e:
-        error_msg = f"Error in SoapySDR worker process: {str(e)}"
+        error_msg = f"Error in SoapySDR worker process: {e!s}"
         logger.error(error_msg)
         logger.exception(e)
 
@@ -753,7 +753,7 @@ def soapysdr_remote_worker_process(
                 "client_id": client_id,
                 "message": error_msg,
                 "timestamp": time.time(),
-            }
+            },
         )
 
     finally:
@@ -768,7 +768,7 @@ def soapysdr_remote_worker_process(
                 sdr.closeStream(rx_stream)
                 logger.info("SoapySDR stream closed")
             except Exception as e:
-                logger.error(f"Error closing SoapySDR stream: {str(e)}")
+                logger.error(f"Error closing SoapySDR stream: {e!s}")
 
         # Send termination signal
         data_queue.put(
@@ -777,7 +777,7 @@ def soapysdr_remote_worker_process(
                 "client_id": client_id,
                 "sdr_id": sdr_id,
                 "timestamp": time.time(),
-            }
+            },
         )
 
         logger.info("SoapySDR worker process terminated")

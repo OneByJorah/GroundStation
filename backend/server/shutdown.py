@@ -1,6 +1,5 @@
 import asyncio
 import os
-from typing import Optional
 
 import tracker.runner
 from audio.audiobroadcaster import AudioBroadcaster
@@ -10,8 +9,8 @@ from observations.events import observation_sync
 from session.service import active_sdr_clients
 
 # Globals used by audio threads
-audio_consumer: Optional[WebAudioStreamer] = None
-audio_broadcaster: Optional[AudioBroadcaster] = None
+audio_consumer: WebAudioStreamer | None = None
+audio_broadcaster: AudioBroadcaster | None = None
 
 
 def cleanup_everything():
@@ -41,7 +40,7 @@ def cleanup_everything():
                         asyncio.create_task(observation_sync.executor.stop_observation(obs_id))
                     else:
                         event_loop.run_until_complete(
-                            observation_sync.executor.stop_observation(obs_id)
+                            observation_sync.executor.stop_observation(obs_id),
                         )
                     logger.info(f"Stopped observation: {obs_id}")
                 except Exception as e:

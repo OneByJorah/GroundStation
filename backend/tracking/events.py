@@ -5,15 +5,14 @@ import logging
 import multiprocessing
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Union
-
-import numpy as np
-import setproctitle
-from skyfield.api import EarthSatellite, Loader, Topos
+from typing import Any
 
 import crud
+import numpy as np
+import setproctitle
 from common.common import ModelEncoder
 from db import AsyncSessionLocal
+from skyfield.api import EarthSatellite, Loader, Topos
 
 from .passes import calculate_next_events
 
@@ -21,7 +20,7 @@ from .passes import calculate_next_events
 logger = logging.getLogger("passes-worker")
 
 # Create a simple in-memory cache (no multiprocessing needed since cache is only accessed from main process)
-_cache: Dict[str, tuple] = {}
+_cache: dict[str, tuple] = {}
 
 # Create a persistent worker pool (reused across all calculations to avoid repeated pool creation/destruction)
 _worker_pool = None
@@ -65,7 +64,7 @@ def _named_worker_init():
 
 
 def _calculate_elevation_curve(
-    satellite_data, home_location, event_start, event_end, extend_start_minutes=0
+    satellite_data, home_location, event_start, event_end, extend_start_minutes=0,
 ):
     """
     Calculate elevation curve for a single satellite pass with adaptive sampling.
@@ -140,11 +139,11 @@ def _calculate_elevation_curve(
                     "elevation": round(float(alt.degrees), 2),
                     "azimuth": round(float(az.degrees), 2),
                     "distance": round(float(distance.km), 2),
-                }
+                },
             )
 
         # Filter to only include points above horizon, plus interpolate 0° crossing points
-        filtered_points: List[Dict[str, Any]] = []
+        filtered_points: list[dict[str, Any]] = []
 
         for i, point in enumerate(all_points):
             if point["elevation"] >= 0:
@@ -176,7 +175,7 @@ def _calculate_elevation_curve(
                                     + ratio * (point["distance"] - prev_point["distance"]),
                                     2,
                                 ),
-                            }
+                            },
                         )
 
                 # Add the positive elevation point
@@ -210,7 +209,7 @@ def _calculate_elevation_curve(
                                     + ratio * (next_point["distance"] - point["distance"]),
                                     2,
                                 ),
-                            }
+                            },
                         )
                         break  # Stop after adding the last 0° point
 
@@ -223,7 +222,7 @@ def _calculate_elevation_curve(
 
 
 def run_events_calculation(
-    satellite_data, homelat, homelon, hours, above_el, step_minutes, use_cache=False
+    satellite_data, homelat, homelon, hours, above_el, step_minutes, use_cache=False,
 ):
     """
     Calculate satellite pass events. This function runs in a worker process.
@@ -256,7 +255,7 @@ def run_events_calculation(
 
 
 async def fetch_next_events_for_group(
-    group_id: str, hours: float = 2.0, above_el=0, step_minutes=1, force_recalculate: bool = False
+    group_id: str, hours: float = 2.0, above_el=0, step_minutes=1, force_recalculate: bool = False,
 ):
     """
     Fetches the next satellite events for a given group of satellites within a specified
@@ -284,7 +283,7 @@ async def fetch_next_events_for_group(
     assert group_id, f"Group id is required ({group_id}, {type(group_id)})"
 
     start_time = time.time()
-    reply: Dict[str, Union[bool, None, list, Dict, str]] = {
+    reply: dict[str, bool | None | list | dict | str] = {
         "success": None,
         "data": None,
         "parameters": None,
@@ -293,7 +292,7 @@ async def fetch_next_events_for_group(
 
     logger.info(
         f"Calculating events for group_id={group_id}, hours={hours}, "
-        f"above_el={above_el}, step_minutes={step_minutes} (fetch_next_events_for_group)"
+        f"above_el={above_el}, step_minutes={step_minutes} (fetch_next_events_for_group)",
     )
 
     async with AsyncSessionLocal() as dbsession:
@@ -316,7 +315,7 @@ async def fetch_next_events_for_group(
                 [sat["norad_id"], sat["tle1"], sat["tle2"]] for sat in satellites
             ]
             cache_key = _generate_cache_key(
-                tle_groups_for_cache, homelat, homelon, hours, above_el, step_minutes
+                tle_groups_for_cache, homelat, homelon, hours, above_el, step_minutes,
             )
 
             # Check cache BEFORE spawning worker process (main process only, no IPC)
@@ -341,7 +340,7 @@ async def fetch_next_events_for_group(
                             }
                 except Exception as cache_error:
                     logger.error(
-                        f"Cache error for group_id={group_id}: {cache_error} (fetch_next_events_for_group)"
+                        f"Cache error for group_id={group_id}: {cache_error} (fetch_next_events_for_group)",
                     )
             else:
                 logger.info(f"Force recalculate requested, skipping cache for group_id={group_id}")
@@ -383,7 +382,7 @@ async def fetch_next_events_for_group(
                         del _cache[k]
                 except Exception as cache_store_error:
                     logger.error(
-                        f"Cache store error: {cache_store_error} (fetch_next_events_for_group)"
+                        f"Cache store error: {cache_store_error} (fetch_next_events_for_group)",
                     )
 
             if result and result.get("success", False):
@@ -436,7 +435,7 @@ async def fetch_next_events_for_group(
                 elapsed_ms = (time.time() - start_time) * 1000
                 logger.info(
                     f"Returned {len(events)} events for group_id={group_id}, "
-                    f"cached={result.get('cached', False)}, elapsed={elapsed_ms:.1f}ms (fetch_next_events_for_group)"
+                    f"cached={result.get('cached', False)}, elapsed={elapsed_ms:.1f}ms (fetch_next_events_for_group)",
                 )
 
             else:
@@ -455,7 +454,7 @@ async def fetch_next_events_for_group(
 
 
 async def fetch_next_events_for_satellite(
-    norad_id: int, hours: float = 2.0, above_el=0, step_minutes=1, force_recalculate: bool = False
+    norad_id: int, hours: float = 2.0, above_el=0, step_minutes=1, force_recalculate: bool = False,
 ):
     """
     This function fetches the next satellite events for a specified satellite within a specified
@@ -483,7 +482,7 @@ async def fetch_next_events_for_satellite(
     assert norad_id, f"NORAD ID is required ({norad_id}, {type(norad_id)})"
 
     start_time = time.time()
-    reply: Dict[str, Union[bool, None, list, Dict]] = {
+    reply: dict[str, bool | None | list | dict] = {
         "success": None,
         "data": None,
         "parameters": None,
@@ -493,7 +492,7 @@ async def fetch_next_events_for_satellite(
 
     logger.info(
         f"Calculating events for norad_id={norad_id}, hours={hours}, "
-        f"above_el={above_el}, step_minutes={step_minutes} (fetch_next_events_for_satellite)"
+        f"above_el={above_el}, step_minutes={step_minutes} (fetch_next_events_for_satellite)",
     )
     async with AsyncSessionLocal() as dbsession:
         try:
@@ -513,7 +512,7 @@ async def fetch_next_events_for_satellite(
             # Generate cache key for this request
             tle_groups_for_cache = [[satellite["norad_id"], satellite["tle1"], satellite["tle2"]]]
             cache_key = _generate_cache_key(
-                tle_groups_for_cache, homelat, homelon, hours, above_el, step_minutes
+                tle_groups_for_cache, homelat, homelon, hours, above_el, step_minutes,
             )
 
             # Check cache BEFORE spawning worker process (main process only, no IPC)
@@ -535,7 +534,7 @@ async def fetch_next_events_for_satellite(
                             }
                 except Exception as cache_error:
                     logger.error(
-                        f"Cache error for norad_id={norad_id}: {cache_error} (fetch_next_events_for_satellite)"
+                        f"Cache error for norad_id={norad_id}: {cache_error} (fetch_next_events_for_satellite)",
                     )
             else:
                 logger.info(f"Force recalculate requested, skipping cache for norad_id={norad_id}")
@@ -568,7 +567,7 @@ async def fetch_next_events_for_satellite(
                         del _cache[k]
                 except Exception as cache_store_error:
                     logger.error(
-                        f"Cache store error: {cache_store_error} (fetch_next_events_for_satellite)"
+                        f"Cache store error: {cache_store_error} (fetch_next_events_for_satellite)",
                     )
 
             if result and result.get("success", False):
@@ -598,7 +597,7 @@ async def fetch_next_events_for_satellite(
                 elapsed_ms = (time.time() - start_time) * 1000
                 logger.info(
                     f"Returned {len(events)} events for norad_id={norad_id}, "
-                    f"cached={result.get('cached', False)}, elapsed={elapsed_ms:.1f}ms (fetch_next_events_for_satellite)"
+                    f"cached={result.get('cached', False)}, elapsed={elapsed_ms:.1f}ms (fetch_next_events_for_satellite)",
                 )
 
             else:

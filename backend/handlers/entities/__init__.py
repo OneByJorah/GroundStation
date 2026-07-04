@@ -20,7 +20,6 @@ This package exposes each entity module so callers can import them via
 run as expected.
 """
 
-from . import tlesources  # noqa: F401
 from . import (
     filebrowser,
     groups,
@@ -31,6 +30,7 @@ from . import (
     sdr,
     sessions,
     systeminfo,
+    tlesources,  # noqa: F401
     tracking,
     transmitters,
     vfo,

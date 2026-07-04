@@ -18,7 +18,6 @@ import asyncio
 import logging
 import multiprocessing
 from multiprocessing import Queue
-from typing import Optional
 
 import setproctitle
 
@@ -34,7 +33,7 @@ queue_from_tracker: Queue = multiprocessing.Queue()
 tracker_stop_event = multiprocessing.Event()
 
 # Singleton TrackerManager instance
-_tracker_manager: Optional[TrackerManager] = None
+_tracker_manager: TrackerManager | None = None
 
 
 def start_tracker_process():
@@ -75,14 +74,14 @@ def start_tracker_process():
 
     # Create and start the process
     tracker_process = multiprocessing.Process(
-        target=run_tracking_task, name="Ground Station - SatelliteTracker"
+        target=run_tracking_task, name="Ground Station - SatelliteTracker",
     )
 
     # Start the process (not daemon - we want proper cleanup)
     tracker_process.start()
 
     logger.info(
-        f"Started satellite tracker process 'SatelliteTracker' with PID {tracker_process.pid}"
+        f"Started satellite tracker process 'SatelliteTracker' with PID {tracker_process.pid}",
     )
 
     # Initialize the tracker manager singleton

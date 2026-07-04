@@ -7,7 +7,6 @@ registers an asyncio.Task into the provided `background_tasks` set.
 """
 
 import asyncio
-from typing import Set
 
 from common.logger import logger
 from pipeline.orchestration.processmanager import process_manager
@@ -15,7 +14,7 @@ from session.service import session_service
 from session.tracker import session_tracker
 
 
-def start_session_runtime_emitter(sio, background_tasks: Set[asyncio.Task]) -> asyncio.Task:
+def start_session_runtime_emitter(sio, background_tasks: set[asyncio.Task]) -> asyncio.Task:
     """Start the session runtime snapshot emitter loop and register it in background_tasks.
 
     Emits 'session-runtime-snapshot' every 1 second to all connected clients.

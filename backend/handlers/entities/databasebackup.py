@@ -16,18 +16,17 @@
 
 import html
 import re
-from typing import Any, Dict, List
-
-from sqlalchemy import text
+from typing import Any
 
 from db import AsyncSessionLocal
 from db.models import Base
+from sqlalchemy import text
 
 
-def _split_sql_statements(sql_content: str) -> List[str]:
+def _split_sql_statements(sql_content: str) -> list[str]:
     """Split SQL content into statements while respecting quoted string literals."""
-    statements: List[str] = []
-    current: List[str] = []
+    statements: list[str] = []
+    current: list[str] = []
     in_single_quote = False
     i = 0
 
@@ -64,7 +63,7 @@ def _split_sql_statements(sql_content: str) -> List[str]:
     return statements
 
 
-async def list_tables() -> Dict[str, Any]:
+async def list_tables() -> dict[str, Any]:
     """List all database tables with their row counts."""
     try:
         async with AsyncSessionLocal() as session:
@@ -83,7 +82,7 @@ async def list_tables() -> Dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 
-async def backup_table(table_name: str) -> Dict[str, Any]:
+async def backup_table(table_name: str) -> dict[str, Any]:
     """Generate SQL INSERT statements for a specific table."""
     try:
         # Validate table name to prevent SQL injection
@@ -140,7 +139,7 @@ async def backup_table(table_name: str) -> Dict[str, Any]:
 
                 values_str = ", ".join(values)
                 sql_statements.append(
-                    f"INSERT INTO {table_name} ({columns_str}) VALUES ({values_str});"
+                    f"INSERT INTO {table_name} ({columns_str}) VALUES ({values_str});",
                 )
 
             sql = "\n".join(sql_statements)
@@ -149,7 +148,7 @@ async def backup_table(table_name: str) -> Dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 
-async def restore_table(table_name: str, sql: str, delete_first: bool = True) -> Dict[str, Any]:
+async def restore_table(table_name: str, sql: str, delete_first: bool = True) -> dict[str, Any]:
     """Restore table from SQL INSERT statements."""
     try:
         # Validate table name
@@ -172,7 +171,7 @@ async def restore_table(table_name: str, sql: str, delete_first: bool = True) ->
         # Check that all statements are INSERT statements for the correct table
         for line in sql_lines:
             if not re.match(
-                rf"^INSERT\s+INTO\s+{table_name}\s+\(.*\)\s+VALUES\s+\(.*\);$", line, re.IGNORECASE
+                rf"^INSERT\s+INTO\s+{table_name}\s+\(.*\)\s+VALUES\s+\(.*\);$", line, re.IGNORECASE,
             ):
                 return {
                     "success": False,
@@ -201,7 +200,7 @@ async def restore_table(table_name: str, sql: str, delete_first: bool = True) ->
         return {"success": False, "error": str(e)}
 
 
-async def full_backup() -> Dict[str, Any]:
+async def full_backup() -> dict[str, Any]:
     """Generate a full database backup including schema and all data."""
     try:
         sql_statements = []
@@ -219,8 +218,8 @@ async def full_backup() -> Dict[str, Any]:
             # For SQLite, we can get schema from sqlite_master
             result = await session.execute(
                 text(
-                    "SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-                )
+                    "SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+                ),
             )
             schemas = result.fetchall()
 
@@ -251,7 +250,7 @@ async def full_backup() -> Dict[str, Any]:
                 sql_statements.append("")
             else:
                 sql_statements.append(
-                    f"\n-- Error backing up table {table_name}: {result['error']}"
+                    f"\n-- Error backing up table {table_name}: {result['error']}",
                 )
 
         sql = "\n".join(sql_statements)
@@ -260,7 +259,7 @@ async def full_backup() -> Dict[str, Any]:
         return {"success": False, "error": str(e)}
 
 
-async def full_restore(sql: str, drop_tables: bool = True) -> Dict[str, Any]:
+async def full_restore(sql: str, drop_tables: bool = True) -> dict[str, Any]:
     """
     Restore full database from SQL backup file.
 
@@ -338,8 +337,8 @@ async def full_restore(sql: str, drop_tables: bool = True) -> Dict[str, Any]:
                     # Get all existing table names from database (including alembic_version)
                     result = await session.execute(
                         text(
-                            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-                        )
+                            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+                        ),
                     )
                     existing_tables = [row[0] for row in result.fetchall()]
 

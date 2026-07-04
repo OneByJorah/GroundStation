@@ -18,18 +18,16 @@ import random
 import string
 import traceback
 import uuid
-from typing import List, Optional, Union
-
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from common.utils import convert_strings_to_uuids
 from db.models import Groups, Satellites, TLESources, Transmitters
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def fetch_satellite_tle_source(
-    session: AsyncSession, satellite_tle_source_id: Optional[Union[uuid.UUID, str]] = None
+    session: AsyncSession, satellite_tle_source_id: uuid.UUID | str | None = None,
 ) -> dict:
     """
     Retrieve satellite TLE source records.
@@ -49,7 +47,7 @@ async def fetch_satellite_tle_source(
                 satellite_tle_source_id = uuid.UUID(satellite_tle_source_id)
 
             result = await session.execute(
-                select(TLESources).filter(TLESources.id == satellite_tle_source_id)
+                select(TLESources).filter(TLESources.id == satellite_tle_source_id),
             )
             source = result.scalars().first()
             if source:
@@ -96,7 +94,7 @@ async def add_satellite_tle_source(session: AsyncSession, payload: dict) -> dict
 
 
 async def edit_satellite_tle_source(
-    session: AsyncSession, satellite_tle_source_id: str, payload: dict
+    session: AsyncSession, satellite_tle_source_id: str, payload: dict,
 ) -> dict:
     """
     Update an existing satellite TLE source record with new values provided in payload.
@@ -130,7 +128,7 @@ async def edit_satellite_tle_source(
 
 
 async def delete_satellite_tle_sources(
-    session: AsyncSession, satellite_tle_source_ids: Union[List[str], dict]
+    session: AsyncSession, satellite_tle_source_ids: list[str] | dict,
 ) -> dict:
     """
     Deletes multiple satellite TLE source records using their IDs.
@@ -144,7 +142,7 @@ async def delete_satellite_tle_sources(
 
         # Fetch sources that match the provided IDs
         result = await session.execute(
-            select(TLESources).filter(TLESources.id.in_(satellite_tle_source_ids))
+            select(TLESources).filter(TLESources.id.in_(satellite_tle_source_ids)),
         )
         sources = result.scalars().all()
 
@@ -163,7 +161,7 @@ async def delete_satellite_tle_sources(
 
             # Find the corresponding satellite group by identifier
             group_result = await session.execute(
-                select(Groups).filter(Groups.identifier == source_identifier)
+                select(Groups).filter(Groups.identifier == source_identifier),
             )
             satellite_group = group_result.scalar_one_or_none()
 
@@ -180,8 +178,8 @@ async def delete_satellite_tle_sources(
                     # to avoid foreign key constraint violations
                     transmitters_result = await session.execute(
                         select(Transmitters).filter(
-                            Transmitters.norad_cat_id.in_(satellite_norad_ids)
-                        )
+                            Transmitters.norad_cat_id.in_(satellite_norad_ids),
+                        ),
                     )
                     transmitters_to_delete = transmitters_result.scalars().all()
 
@@ -191,7 +189,7 @@ async def delete_satellite_tle_sources(
 
                     # Now delete all satellites that came from this TLE source
                     satellites_result = await session.execute(
-                        select(Satellites).filter(Satellites.norad_id.in_(satellite_norad_ids))
+                        select(Satellites).filter(Satellites.norad_id.in_(satellite_norad_ids)),
                     )
                     satellites_to_delete = satellites_result.scalars().all()
 
@@ -214,7 +212,7 @@ async def delete_satellite_tle_sources(
                     "transmitters_deleted": transmitters_deleted,
                     "satellites_deleted": satellites_deleted,
                     "group_deleted": group_deleted,
-                }
+                },
             )
 
         # Commit the changes

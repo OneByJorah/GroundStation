@@ -69,7 +69,7 @@ class SharedMemoryMonitor:
             self.thread.join(timeout=5)
         logger.info(
             f"Stopped shared memory monitor (peak: {self._peak_segment_count} segments, "
-            f"cleaned: {self._orphaned_segments_cleaned} orphaned)"
+            f"cleaned: {self._orphaned_segments_cleaned} orphaned)",
         )
 
     def _monitor_loop(self):
@@ -89,7 +89,7 @@ class SharedMemoryMonitor:
                     if orphaned_count > 0:
                         logger.warning(
                             f"Shared memory: {segment_count} segments "
-                            f"({orphaned_count} orphaned, peak: {self._peak_segment_count})"
+                            f"({orphaned_count} orphaned, peak: {self._peak_segment_count})",
                         )
                         # Optionally clean up orphaned segments if using shmget
                         cleaned = self._cleanup_orphaned_segments()
@@ -98,7 +98,7 @@ class SharedMemoryMonitor:
                             logger.info(f"Cleaned {cleaned} orphaned segments")
                     else:
                         logger.info(
-                            f"Shared memory: {segment_count} segments (peak: {self._peak_segment_count})"
+                            f"Shared memory: {segment_count} segments (peak: {self._peak_segment_count})",
                         )
                     self._last_segment_count = segment_count
 

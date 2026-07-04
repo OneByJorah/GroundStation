@@ -15,7 +15,7 @@
 
 
 from dataclasses import dataclass
-from typing import List, Optional, Type
+from typing import Optional
 
 from demodulators.amdemodulator import AMDemodulator
 from demodulators.fmdemodulator import FMDemodulator
@@ -28,9 +28,9 @@ class DemodulatorCapabilities:
     """Capabilities and requirements for a demodulator"""
 
     name: str
-    demodulator_class: Type
+    demodulator_class: type
     default_bandwidth: int  # Default bandwidth in Hz
-    modes: List[str]  # Supported modes (e.g., ["usb", "lsb", "cw"] for SSB)
+    modes: list[str]  # Supported modes (e.g., ["usb", "lsb", "cw"] for SSB)
     description: str
 
     def supports_mode(self, mode: str) -> bool:
@@ -95,16 +95,16 @@ class DemodulatorRegistry:
 
         self._initialized = True
 
-    def get_capabilities(self, demod_name: str) -> Optional[DemodulatorCapabilities]:
+    def get_capabilities(self, demod_name: str) -> DemodulatorCapabilities | None:
         """Get capabilities for a demodulator by name"""
         return self._demodulators.get(demod_name)
 
-    def get_demodulator_class(self, demod_name: str) -> Optional[Type]:
+    def get_demodulator_class(self, demod_name: str) -> type | None:
         """Get demodulator class by name"""
         caps = self.get_capabilities(demod_name)
         return caps.demodulator_class if caps else None
 
-    def get_default_bandwidth(self, demod_name: str) -> Optional[int]:
+    def get_default_bandwidth(self, demod_name: str) -> int | None:
         """Get default bandwidth for a demodulator"""
         caps = self.get_capabilities(demod_name)
         return caps.default_bandwidth if caps else None
@@ -114,7 +114,7 @@ class DemodulatorRegistry:
         caps = self.get_capabilities(demod_name)
         return caps.supports_mode(mode) if caps else False
 
-    def list_demodulators(self) -> List[str]:
+    def list_demodulators(self) -> list[str]:
         """List all available demodulator names"""
         return list(self._demodulators.keys())
 

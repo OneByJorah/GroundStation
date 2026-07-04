@@ -23,10 +23,9 @@ import os
 import queue
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
-
 from constants import get_modulation_display, payload_protocol_from_framing
 
 logger = logging.getLogger("basedecoder")
@@ -41,7 +40,7 @@ def _load_callsign_lookup():
     if _CALLSIGN_LOOKUP is None:
         try:
             lookup_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "satellite-norad-lookup.json"
+                os.path.dirname(os.path.dirname(__file__)), "satellite-norad-lookup.json",
             )
             with open(lookup_path, "r") as f:
                 data = json.load(f)
@@ -98,30 +97,30 @@ class BaseDecoder:
     # Type hints for attributes that must be defined by subclasses
     packet_count: int
     stats_lock: threading.Lock
-    stats: Dict[str, Any]
+    stats: dict[str, Any]
     telemetry_parser: Any  # TelemetryParser
     output_dir: str
     session_id: str
     baudrate: int
-    vfo: Optional[int]
-    satellite: Dict
-    transmitter: Dict
-    norad_id: Optional[int]
+    vfo: int | None
+    satellite: dict
+    transmitter: dict
+    norad_id: int | None
     satellite_name: str
     transmitter_description: str
     transmitter_mode: str
-    transmitter_downlink_freq: Optional[float]
+    transmitter_downlink_freq: float | None
     config_source: str
     framing: str
     data_queue: Any  # queue.Queue
-    sdr_center_freq: Optional[float]
-    sample_rate: Optional[float]
-    sdr_sample_rate: Optional[float]
+    sdr_center_freq: float | None
+    sample_rate: float | None
+    sdr_sample_rate: float | None
 
     # Signal power measurement (optional - initialized by subclass if needed)
     power_measurements: list = []
     max_power_history: int = 100
-    current_power_dbfs: Optional[float] = None
+    current_power_dbfs: float | None = None
 
     def _measure_signal_power(self, samples):
         """
@@ -194,7 +193,7 @@ class BaseDecoder:
         return stats
 
     def _on_packet_decoded(
-        self, payload: bytes, callsigns: Optional[Dict[str, str]] = None
+        self, payload: bytes, callsigns: dict[str, str] | None = None,
     ) -> None:
         """
         Shared packet processing logic for all decoders.
@@ -240,20 +239,20 @@ class BaseDecoder:
 
                     # If not found and callsign ends with -1 (or other single digit SSID), try without it
                     if not identified_norad_id and from_callsign.endswith(
-                        ("-0", "-1", "-2", "-3", "-4", "-5", "-6", "-7", "-8", "-9")
+                        ("-0", "-1", "-2", "-3", "-4", "-5", "-6", "-7", "-8", "-9"),
                     ):
                         base_callsign = from_callsign[:-2]  # Remove last 2 chars (-X)
                         identified_norad_id = lookup_table.get(base_callsign)
                         if identified_norad_id:
                             identified_satellite = base_callsign
                             logger.info(
-                                f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id}) from callsign {from_callsign}"
+                                f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id}) from callsign {from_callsign}",
                             )
 
                     if identified_norad_id and not identified_satellite:
                         identified_satellite = from_callsign
                         logger.info(
-                            f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id})"
+                            f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id})",
                         )
                     elif not identified_norad_id:
                         logger.debug(f"  Callsign '{from_callsign}' not found in lookup table")
@@ -320,24 +319,24 @@ class BaseDecoder:
 
                         # If not found and callsign ends with -X, try base callsign
                         if not identified_norad_id and backfill_from_callsign.endswith(
-                            ("-0", "-1", "-2", "-3", "-4", "-5", "-6", "-7", "-8", "-9")
+                            ("-0", "-1", "-2", "-3", "-4", "-5", "-6", "-7", "-8", "-9"),
                         ):
                             base_callsign = backfill_from_callsign[:-2]
                             identified_norad_id = lookup_table.get(base_callsign)
                             if identified_norad_id:
                                 identified_satellite = base_callsign
                                 logger.info(
-                                    f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id}) from callsign {backfill_from_callsign}"
+                                    f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id}) from callsign {backfill_from_callsign}",
                                 )
 
                         if identified_norad_id and not identified_satellite:
                             identified_satellite = backfill_from_callsign
                             logger.info(
-                                f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id})"
+                                f"  Identified satellite: {identified_satellite} (NORAD {identified_norad_id})",
                             )
                         elif not identified_norad_id:
                             logger.debug(
-                                f"  Callsign '{backfill_from_callsign}' not found in lookup table"
+                                f"  Callsign '{backfill_from_callsign}' not found in lookup table",
                             )
             except Exception:
                 # Non-fatal – continue without backfilled callsigns
@@ -391,7 +390,7 @@ class BaseDecoder:
             with self.stats_lock:
                 self.stats["errors"] += 1
 
-    def _should_accept_packet(self, payload: bytes, callsigns: Optional[Dict[str, str]]) -> bool:
+    def _should_accept_packet(self, payload: bytes, callsigns: dict[str, str] | None) -> bool:
         """
         Determine if packet should be processed.
 
@@ -448,11 +447,11 @@ class BaseDecoder:
         timestamp: float,
         filename: str,
         filepath: str,
-        callsigns: Optional[Dict[str, str]],
-        telemetry_result: Dict[str, Any],
-        identified_norad_id: Optional[int] = None,
-        identified_satellite: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        callsigns: dict[str, str] | None,
+        telemetry_result: dict[str, Any],
+        identified_norad_id: int | None = None,
+        identified_satellite: str | None = None,
+    ) -> dict[str, Any]:
         """
         Build comprehensive metadata dictionary.
 
@@ -508,14 +507,14 @@ class BaseDecoder:
 
         return metadata
 
-    def _get_decoder_metadata(self) -> Dict[str, Any]:
+    def _get_decoder_metadata(self) -> dict[str, Any]:
         """
         Get decoder-specific metadata.
 
         Returns:
             dict: Decoder metadata including type, session, baudrate, and specific params
         """
-        base: Dict[str, Any] = {
+        base: dict[str, Any] = {
             "type": self._get_decoder_type(),
             "session_id": self.session_id,
             "baudrate": self.baudrate,
@@ -523,7 +522,7 @@ class BaseDecoder:
         base.update(self._get_decoder_specific_metadata())
         return base
 
-    def _get_signal_metadata(self, vfo_state: Any) -> Dict[str, Any]:
+    def _get_signal_metadata(self, vfo_state: Any) -> dict[str, Any]:
         """
         Get signal metadata including power measurements.
 
@@ -548,7 +547,7 @@ class BaseDecoder:
 
         return metadata
 
-    def _get_vfo_metadata(self, vfo_state: Any) -> Dict[str, Any]:
+    def _get_vfo_metadata(self, vfo_state: Any) -> dict[str, Any]:
         """
         Get VFO metadata.
 
@@ -567,7 +566,7 @@ class BaseDecoder:
             "active": vfo_state.active if vfo_state else None,
         }
 
-    def _get_satellite_metadata(self) -> Dict[str, Any]:
+    def _get_satellite_metadata(self) -> dict[str, Any]:
         """
         Get satellite metadata.
 
@@ -581,7 +580,7 @@ class BaseDecoder:
             }
         return {}
 
-    def _get_transmitter_metadata(self) -> Dict[str, Any]:
+    def _get_transmitter_metadata(self) -> dict[str, Any]:
         """
         Get transmitter metadata.
 
@@ -594,7 +593,7 @@ class BaseDecoder:
             "downlink_freq_hz": self.transmitter_downlink_freq,
         }
 
-    def _get_decoder_config_metadata(self) -> Dict[str, Any]:
+    def _get_decoder_config_metadata(self) -> dict[str, Any]:
         """
         Get decoder config metadata.
 
@@ -630,10 +629,10 @@ class BaseDecoder:
         filepath: str,
         metadata_filename: str,
         metadata_filepath: str,
-        callsigns: Optional[Dict[str, str]],
-        telemetry_result: Dict[str, Any],
-        identified_norad_id: Optional[int] = None,
-        identified_satellite: Optional[str] = None,
+        callsigns: dict[str, str] | None,
+        telemetry_result: dict[str, Any],
+        identified_norad_id: int | None = None,
+        identified_satellite: str | None = None,
     ) -> None:
         """
         Send decoded packet to UI via data queue.
@@ -653,7 +652,7 @@ class BaseDecoder:
         packet_base64 = base64.b64encode(payload).decode()
         decoder_type = self._get_decoder_type()
 
-        output_data: Dict[str, Any] = {
+        output_data: dict[str, Any] = {
             "format": "application/octet-stream",
             "filename": filename,
             "filepath": filepath,
@@ -695,7 +694,7 @@ class BaseDecoder:
         vfo_state = self._get_vfo_state()
         output_data["signal"] = self._get_signal_metadata(vfo_state)
 
-        msg: Dict[str, Any] = {
+        msg: dict[str, Any] = {
             "type": "decoder-output",
             "decoder_type": decoder_type,
             "session_id": self.session_id,
@@ -724,7 +723,7 @@ class BaseDecoder:
         """
         raise NotImplementedError("Subclass must implement _get_decoder_type()")
 
-    def _get_decoder_specific_metadata(self) -> Dict[str, Any]:
+    def _get_decoder_specific_metadata(self) -> dict[str, Any]:
         """
         Return dict with decoder-specific metadata.
 
@@ -757,7 +756,7 @@ class BaseDecoder:
         """
         raise NotImplementedError("Subclass must implement _get_parameters_string()")
 
-    def _get_demodulator_params_metadata(self) -> Dict[str, Any]:
+    def _get_demodulator_params_metadata(self) -> dict[str, Any]:
         """
         Return demodulator parameters metadata.
 

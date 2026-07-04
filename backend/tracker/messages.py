@@ -17,15 +17,16 @@
 
 import asyncio
 import logging
-from typing import Any, Dict
+from typing import Any
+
+from vfos.updates import handle_vfo_updates_for_tracking
 
 from tracker.runner import queue_from_tracker
-from vfos.updates import handle_vfo_updates_for_tracking
 
 logger = logging.getLogger(__name__)
 
 # Global storage for tracker stats (accessed by performance monitor)
-tracker_stats: Dict[str, Any] = {}
+tracker_stats: dict[str, Any] = {}
 
 
 async def handle_tracker_messages(sockio):

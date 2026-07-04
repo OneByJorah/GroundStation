@@ -5,17 +5,16 @@ Revises: fc7f37f92b40
 Create Date: 2026-02-01 12:00:00.000000
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "9b7c2f8d3e1a"
-down_revision: Union[str, None] = "fc7f37f92b40"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "fc7f37f92b40"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _migrate_sessions(connection, table_name: str) -> None:

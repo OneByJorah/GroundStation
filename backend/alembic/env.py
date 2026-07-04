@@ -5,12 +5,11 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
+from alembic import context
+from db.models import AwareDateTime, Base, JsonField
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
-from alembic import context
-from db.models import AwareDateTime, Base, JsonField
 
 # Add the backend directory to the Python path
 backend_dir = Path(__file__).parent.parent

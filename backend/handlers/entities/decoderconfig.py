@@ -15,14 +15,14 @@
 
 """Decoder configuration handlers."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from pipeline.config.decoderconfigservice import decoder_config_service
 
 
 async def get_decoder_config(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Get decoder configuration for a satellite/transmitter combination.
 
@@ -119,7 +119,7 @@ async def get_decoder_config(
         logger.info(
             f"Resolved {decoder_type.upper()} config from {config.config_source}: "
             f"baudrate={config.baudrate}, framing={config.framing}, "
-            f"deviation={config.deviation}, source={config.config_source}"
+            f"deviation={config.deviation}, source={config.config_source}",
         )
 
         return {
@@ -131,13 +131,13 @@ async def get_decoder_config(
         logger.error(f"Failed to get decoder config: {e}", exc_info=True)
         return {
             "success": False,
-            "error": f"Failed to resolve decoder configuration: {str(e)}",
+            "error": f"Failed to resolve decoder configuration: {e!s}",
         }
 
 
 async def get_decoder_configs_batch(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | str]:
     """
     Get decoder configurations for multiple satellite/transmitter combinations.
 
@@ -215,8 +215,8 @@ async def get_decoder_configs_batch(
                 results.append(
                     {
                         "success": False,
-                        "error": f"Request {i} failed: {str(e)}",
-                    }
+                        "error": f"Request {i} failed: {e!s}",
+                    },
                 )
 
         logger.info(f"Processed {len(results)} decoder config requests")
@@ -230,7 +230,7 @@ async def get_decoder_configs_batch(
         logger.error(f"Failed to process batch decoder config request: {e}", exc_info=True)
         return {
             "success": False,
-            "error": f"Batch request failed: {str(e)}",
+            "error": f"Batch request failed: {e!s}",
         }
 
 
@@ -240,5 +240,5 @@ def register_handlers(registry):
         {
             "get-decoder-config": (get_decoder_config, "data_request"),
             "get-decoder-configs-batch": (get_decoder_configs_batch, "data_request"),
-        }
+        },
     )

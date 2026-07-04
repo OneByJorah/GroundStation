@@ -20,8 +20,8 @@ This module provides a registry pattern for organizing Socket.IO command handler
 allowing for clean separation of concerns and easier testing.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Dict, Optional
 
 
 @dataclass
@@ -36,7 +36,7 @@ class HandlerRegistry:
     """Registry for Socket.IO command handlers."""
 
     def __init__(self):
-        self._routes: Dict[str, HandlerRoute] = {}
+        self._routes: dict[str, HandlerRoute] = {}
 
     def register(self, command: str, handler: Callable, event_type: str):
         """
@@ -49,7 +49,7 @@ class HandlerRegistry:
         """
         self._routes[command] = HandlerRoute(handler, event_type)
 
-    def get_handler(self, command: str) -> Optional[HandlerRoute]:
+    def get_handler(self, command: str) -> HandlerRoute | None:
         """
         Get handler for a command.
 
@@ -61,7 +61,7 @@ class HandlerRegistry:
         """
         return self._routes.get(command)
 
-    def register_batch(self, routes: Dict[str, tuple]):
+    def register_batch(self, routes: dict[str, tuple]):
         """
         Register multiple routes at once.
 

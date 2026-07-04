@@ -20,18 +20,18 @@ import multiprocessing
 import os
 
 import numpy as np
-
 from common.constants import DictKeys, QueueMessageTypes, SocketEvents
 from common.sdrconfig import SDRConfig
 from fft.processor import fft_processor_process
 from handlers.entities.filebrowser import emit_file_browser_state
-from pipeline.streaming.iqbroadcaster import IQBroadcaster
 from vfos.state import VFOManager
 from workers.rtlsdrworker import rtlsdr_worker_process
 from workers.sigmfplaybackworker import sigmf_playback_worker_process
 from workers.soapysdrlocalworker import soapysdr_local_worker_process
 from workers.soapysdrremoteworker import soapysdr_remote_worker_process
 from workers.uhdworker import uhd_worker_process
+
+from pipeline.streaming.iqbroadcaster import IQBroadcaster
 
 # Add setproctitle import for process naming
 try:
@@ -145,18 +145,18 @@ class ProcessLifecycleManager:
                         return response["center_freq"]
                     else:
                         self.logger.error(
-                            f"Invalid response format from SDR process for device {sdr_id}"
+                            f"Invalid response format from SDR process for device {sdr_id}",
                         )
                         return None
                 await asyncio.sleep(0.1)
 
             self.logger.warning(
-                f"Timeout waiting for center frequency from SDR process for device {sdr_id}"
+                f"Timeout waiting for center frequency from SDR process for device {sdr_id}",
             )
             return None
         except Exception as e:
             self.logger.error(
-                f"Error getting center frequency from SDR process for device {sdr_id}: {str(e)}"
+                f"Error getting center frequency from SDR process for device {sdr_id}: {e!s}",
             )
             return None
 
@@ -254,14 +254,14 @@ class ProcessLifecycleManager:
         # Check if a process for this device already exists
         if sdr_id in self.processes and self.processes[sdr_id]["process"].is_alive():
             self.logger.info(
-                f"SDR process for device {sdr_id} already running, adding client {client_id} to room"
+                f"SDR process for device {sdr_id} already running, adding client {client_id} to room",
             )
 
             # Add the client to the existing process
             self.processes[sdr_id]["clients"].add(client_id)
 
             self.logger.info(
-                f"Active clients for SDR {sdr_id}: {self.processes[sdr_id]['clients']}"
+                f"Active clients for SDR {sdr_id}: {self.processes[sdr_id]['clients']}",
             )
 
             # Update the configuration if needed
@@ -309,7 +309,7 @@ class ProcessLifecycleManager:
                 for other_client in other_clients:
                     await self.sio.emit("sdr-config", notification_config, room=other_client)
                 self.logger.info(
-                    f"Notified {len(other_clients)} client(s) about SDR config change for {sdr_id}"
+                    f"Notified {len(other_clients)} client(s) about SDR config change for {sdr_id}",
                 )
 
             # Add this client to the room (skip for internal observation sessions)
@@ -379,7 +379,7 @@ class ProcessLifecycleManager:
             process.start()
 
             self.logger.info(
-                f"Started SDR process '{process_name}' for device {sdr_id} (PID: {process.pid})"
+                f"Started SDR process '{process_name}' for device {sdr_id} (PID: {process.pid})",
             )
 
             # Create and start FFT processor process
@@ -394,7 +394,7 @@ class ProcessLifecycleManager:
             fft_process.start()
 
             self.logger.info(
-                f"Started FFT processor '{fft_process_name}' for device {sdr_id} (PID: {fft_process.pid})"
+                f"Started FFT processor '{fft_process_name}' for device {sdr_id} (PID: {fft_process.pid})",
             )
 
             # Create and start IQ broadcaster for demodulators
@@ -470,10 +470,10 @@ class ProcessLifecycleManager:
                     audio_recorders = process_info.get("audio_recorders", {}).get(client_id, {})
                     for vfo_number in list(audio_recorders.keys()):
                         self.logger.info(
-                            f"Stopping audio recorder for VFO {vfo_number}, session {client_id}"
+                            f"Stopping audio recorder for VFO {vfo_number}, session {client_id}",
                         )
                         self.audio_recorder_manager.stop_audio_recorder(
-                            sdr_id, client_id, vfo_number
+                            sdr_id, client_id, vfo_number,
                         )
 
                 # Stop any active decoder for this client
@@ -528,7 +528,7 @@ class ProcessLifecycleManager:
             # If still alive, send SIGKILL
             if process_info["fft_process"].is_alive():
                 self.logger.warning(
-                    f"FFT processor {sdr_id} still alive after terminate, sending SIGKILL"
+                    f"FFT processor {sdr_id} still alive after terminate, sending SIGKILL",
                 )
                 process_info["fft_process"].kill()
 
@@ -558,7 +558,7 @@ class ProcessLifecycleManager:
             # If still alive, send SIGKILL
             if process_info["process"].is_alive():
                 self.logger.warning(
-                    f"SDR worker {sdr_id} still alive after terminate, sending SIGKILL"
+                    f"SDR worker {sdr_id} still alive after terminate, sending SIGKILL",
                 )
                 process_info["process"].kill()
 
@@ -607,21 +607,21 @@ class ProcessLifecycleManager:
                 if old_sample_rate is not None and new_sample_rate is not None:
                     self.logger.info(
                         f"Sample rate changing from {old_sample_rate/1e6:.2f} MHz to {new_sample_rate/1e6:.2f} MHz, "
-                        f"flushing all queues"
+                        f"flushing all queues",
                     )
                 else:
                     self.logger.info(
-                        f"Sample rate changing from {old_sample_rate} to {new_sample_rate}, flushing all queues"
+                        f"Sample rate changing from {old_sample_rate} to {new_sample_rate}, flushing all queues",
                     )
             if new_center_freq != old_center_freq:
                 if old_center_freq is not None and new_center_freq is not None:
                     self.logger.info(
                         f"Center frequency changing from {old_center_freq/1e6:.3f} MHz to {new_center_freq/1e6:.3f} MHz, "
-                        f"flushing all queues"
+                        f"flushing all queues",
                     )
                 else:
                     self.logger.info(
-                        f"Center frequency changing from {old_center_freq} to {new_center_freq}, flushing all queues"
+                        f"Center frequency changing from {old_center_freq} to {new_center_freq}, flushing all queues",
                     )
             # Flush demodulator queues
             self.demodulator_manager.flush_all_demodulator_queues(sdr_id)
@@ -648,7 +648,7 @@ class ProcessLifecycleManager:
                             "sample_rate": new_sample_rate,
                             "timestamp": 0,
                             "config": {"reset_averager": True},
-                        }
+                        },
                     )
                     self.logger.info("Sent reset command to FFT processor")
                 except Exception:
@@ -705,7 +705,7 @@ class ProcessLifecycleManager:
                 for idx, (session_id, vfo_number, decoder_entry) in enumerate(restart_list):
                     try:
                         self.logger.info(
-                            f"Restarting decoder due to SDR config change: {session_id} VFO{vfo_number} | {reason}"
+                            f"Restarting decoder due to SDR config change: {session_id} VFO{vfo_number} | {reason}",
                         )
                         # Use async helper to avoid blocking the event loop; add tiny stagger
                         asyncio.create_task(
@@ -716,19 +716,19 @@ class ProcessLifecycleManager:
                                 reason,
                                 decoder_entry,
                                 delay_ms=50 * idx,
-                            )
+                            ),
                         )
                     except Exception as e:
                         self.logger.error(
-                            f"Error scheduling decoder restarts for session {session_id} on SDR {sdr_id}: {e}"
+                            f"Error scheduling decoder restarts for session {session_id} on SDR {sdr_id}: {e}",
                         )
             except Exception as e:
                 self.logger.error(
-                    f"Failed to enumerate decoders for restart on SDR {sdr_id} after config change: {e}"
+                    f"Failed to enumerate decoders for restart on SDR {sdr_id} after config change: {e}",
                 )
 
     async def _restart_decoder_async(
-        self, sdr_id, session_id, vfo_number, reason, decoder_entry=None, delay_ms=0
+        self, sdr_id, session_id, vfo_number, reason, decoder_entry=None, delay_ms=0,
     ):
         """
         Asynchronously restart a decoder that requested restart.
@@ -741,7 +741,7 @@ class ProcessLifecycleManager:
         """
         try:
             self.logger.info(
-                f"Handling decoder restart request for {session_id} VFO{vfo_number}: {reason}"
+                f"Handling decoder restart request for {session_id} VFO{vfo_number}: {reason}",
             )
             # Debug tracing removed for production cleanliness
 
@@ -762,7 +762,7 @@ class ProcessLifecycleManager:
                 decoder_entry = decoders.get(session_id, {}).get(vfo_number)
                 if decoder_entry is None:
                     self.logger.warning(
-                        f"Decoder entry not found in live map for {session_id} VFO{vfo_number}; aborting restart"
+                        f"Decoder entry not found in live map for {session_id} VFO{vfo_number}; aborting restart",
                     )
                     return
             # Removed verbose pre-kill snapshot debug logging
@@ -874,7 +874,7 @@ class ProcessLifecycleManager:
                         elif data_type == QueueMessageTypes.STREAMING_START:
                             # Send streaming status to all clients connected to this SDR
                             await self.sio.emit(
-                                SocketEvents.SDR_STATUS, {"streaming": True}, room=sdr_id
+                                SocketEvents.SDR_STATUS, {"streaming": True}, room=sdr_id,
                             )
 
                         elif data_type == QueueMessageTypes.CONFIG_ERROR:
@@ -885,7 +885,7 @@ class ProcessLifecycleManager:
                                 room=sdr_id,
                             )
                             self.logger.error(
-                                f"Config error from SDR process: {data[DictKeys.MESSAGE]}"
+                                f"Config error from SDR process: {data[DictKeys.MESSAGE]}",
                             )
 
                         elif data_type == QueueMessageTypes.ERROR:
@@ -904,7 +904,7 @@ class ProcessLifecycleManager:
                             # Notify all clients
                             for client_id in process_info["clients"]:
                                 await self.sio.emit(
-                                    SocketEvents.SDR_STATUS, {"streaming": False}, room=sdr_id
+                                    SocketEvents.SDR_STATUS, {"streaming": False}, room=sdr_id,
                                 )
 
                             # Don't delete process info here - let the finally block handle cleanup
@@ -924,7 +924,7 @@ class ProcessLifecycleManager:
                             if session_id and vfo_number is not None:
                                 self.logger.warning(
                                     f"Decoder {session_id} VFO{vfo_number} requests restart: {reason} "
-                                    f"(SHM segments: {shm_count})"
+                                    f"(SHM segments: {shm_count})",
                                 )
 
                                 # Mark restart-in-progress to avoid duplicate restart triggers
@@ -943,12 +943,12 @@ class ProcessLifecycleManager:
                                 # Restart the decoder asynchronously without blocking the queue monitor
                                 asyncio.create_task(
                                     self._restart_decoder_async(
-                                        sdr_id, session_id, vfo_number, reason
-                                    )
+                                        sdr_id, session_id, vfo_number, reason,
+                                    ),
                                 )
                             else:
                                 self.logger.error(
-                                    f"Decoder restart request missing session_id or vfo: {data}"
+                                    f"Decoder restart request missing session_id or vfo: {data}",
                                 )
 
                         elif data_type in [
@@ -989,7 +989,7 @@ class ProcessLifecycleManager:
                                 else:
                                     # Send to specific session only (user sessions)
                                     await self.sio.emit(
-                                        SocketEvents.DECODER_DATA, data, room=session_id
+                                        SocketEvents.DECODER_DATA, data, room=session_id,
                                     )
 
                                 # If decoder output was saved, emit file browser state update
@@ -1008,18 +1008,18 @@ class ProcessLifecycleManager:
                                         )
                             else:
                                 self.logger.warning(
-                                    f"Decoder message missing session_id: {data_type}"
+                                    f"Decoder message missing session_id: {data_type}",
                                 )
 
                     except Exception as e:
-                        self.logger.error(f"Error processing data from SDR process: {str(e)}")
+                        self.logger.error(f"Error processing data from SDR process: {e!s}")
                         self.logger.exception(e)
                 else:
                     # Short sleep to avoid CPU hogging
                     await asyncio.sleep(0.05)
 
         except Exception as e:
-            self.logger.error(f"Error monitoring data queue for device {sdr_id}: {str(e)}")
+            self.logger.error(f"Error monitoring data queue for device {sdr_id}: {e!s}")
 
         finally:
             self.logger.info(f"Stopped monitoring data queue for device {sdr_id}")

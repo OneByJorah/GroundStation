@@ -16,17 +16,15 @@
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional, Union
-
-from sqlalchemy import delete, insert, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from db.models import Cameras, Rigs, Rotators, SDRs
+from sqlalchemy import delete, insert, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def fetch_rotators(
-    session: AsyncSession, rotator_id: Optional[Union[uuid.UUID, str]] = None
+    session: AsyncSession, rotator_id: uuid.UUID | str | None = None,
 ) -> dict:
     """
     Fetch a single rotator by its UUID or all rotators if UUID is not provided.
@@ -133,7 +131,7 @@ async def edit_rotator(session: AsyncSession, data: dict) -> dict:
 
 
 async def delete_rotators(
-    session: AsyncSession, rotator_ids: Union[List[Union[str, uuid.UUID]], dict]
+    session: AsyncSession, rotator_ids: list[str | uuid.UUID] | dict,
 ) -> dict:
     """
     Delete multiple rotator records by their UUIDs or string representations of UUIDs.
@@ -160,7 +158,7 @@ async def delete_rotators(
 
 
 async def fetch_rigs(
-    session: AsyncSession, rig_id: Optional[Union[uuid.UUID, str, None]] = None
+    session: AsyncSession, rig_id: uuid.UUID | str | None | None = None,
 ) -> dict:
     """
     Fetch a single rig by its UUID or all rigs if UUID is not provided.
@@ -319,7 +317,7 @@ async def edit_rig(session: AsyncSession, data: dict) -> dict:
 
 
 async def delete_rig(
-    session: AsyncSession, rig_ids: Union[List[uuid.UUID], List[str], dict]
+    session: AsyncSession, rig_ids: list[uuid.UUID] | list[str] | dict,
 ) -> dict:
     """
     Delete multiple rig records by their UUIDs or string representations of UUIDs.
@@ -345,7 +343,7 @@ async def delete_rig(
 
 
 async def fetch_cameras(
-    session: AsyncSession, camera_id: Optional[Union[uuid.UUID, str]] = None
+    session: AsyncSession, camera_id: uuid.UUID | str | None = None,
 ) -> dict:
     """
     Fetch a single camera by its UUID or all cameras if UUID is not provided.
@@ -444,7 +442,7 @@ async def edit_camera(session: AsyncSession, data: dict) -> dict:
 
 
 async def delete_cameras(
-    session: AsyncSession, camera_ids: Union[List[Union[str, uuid.UUID]], dict]
+    session: AsyncSession, camera_ids: list[str | uuid.UUID] | dict,
 ) -> dict:
     """
     Delete multiple camera records by their UUIDs or string representations of UUIDs.
@@ -498,7 +496,7 @@ async def fetch_sdrs(session: AsyncSession) -> dict:
         return {"success": False, "error": str(e)}
 
 
-async def fetch_sdr(session: AsyncSession, sdr_id: Optional[Union[uuid.UUID, str]] = None) -> dict:
+async def fetch_sdr(session: AsyncSession, sdr_id: uuid.UUID | str | None = None) -> dict:
     """
     Fetches an SDR record from the database by its unique identifier
     and serializes it into a dictionary format. If the `sdr_id` is provided
@@ -650,7 +648,7 @@ async def edit_sdr(session: AsyncSession, data: dict) -> dict:
         return {"success": False, "error": str(e)}
 
 
-async def delete_sdrs(session: AsyncSession, sdr_ids: List[Union[str, uuid.UUID]]) -> dict:
+async def delete_sdrs(session: AsyncSession, sdr_ids: list[str | uuid.UUID]) -> dict:
     """
     Deletes SDRs (Signal Detection Records) from the database based on the provided IDs.
 

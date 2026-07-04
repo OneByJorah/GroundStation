@@ -59,9 +59,10 @@ import asyncio
 import multiprocessing as mp
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 from common.logger import logger
 from tlesync.state import sync_state_manager
@@ -92,21 +93,21 @@ class TaskInfo:
     task_id: str
     name: str
     func_name: str
-    args: Tuple[Any, ...]
-    kwargs: Dict[str, Any]
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
     status: TaskStatus
-    process: Optional[mp.Process] = None
-    pid: Optional[int] = None
+    process: mp.Process | None = None
+    pid: int | None = None
     start_time: float = field(default_factory=time.time)
-    end_time: Optional[float] = None
-    return_code: Optional[int] = None
-    output_lines: List[str] = field(default_factory=list)
-    error_lines: List[str] = field(default_factory=list)
-    queue: Optional[mp.Queue] = None
+    end_time: float | None = None
+    return_code: int | None = None
+    output_lines: list[str] = field(default_factory=list)
+    error_lines: list[str] = field(default_factory=list)
+    queue: mp.Queue | None = None
     tracker_notified: bool = False
 
 
-def _task_wrapper(func: Callable, args: Tuple, kwargs: Dict, queue: mp.Queue):
+def _task_wrapper(func: Callable, args: tuple, kwargs: dict, queue: mp.Queue):
     """
     Wrapper function that runs in the child process.
 
@@ -127,7 +128,7 @@ def _task_wrapper(func: Callable, args: Tuple, kwargs: Dict, queue: mp.Queue):
                 "error": str(e),
                 "exception_type": type(e).__name__,
                 "timestamp": time.time(),
-            }
+            },
         )
 
 
@@ -152,17 +153,17 @@ class BackgroundTaskManager:
             socketio: Socket.IO server instance for emitting events
         """
         self.sio = socketio
-        self.tasks: Dict[str, TaskInfo] = {}
-        self._monitor_tasks: Dict[str, asyncio.Task] = {}
+        self.tasks: dict[str, TaskInfo] = {}
+        self._monitor_tasks: dict[str, asyncio.Task] = {}
         logger.info("BackgroundTaskManager (multiprocessing) initialized")
 
     async def start_task(
         self,
         func: Callable,
-        args: Tuple[Any, ...] = (),
-        kwargs: Optional[Dict[str, Any]] = None,
-        name: Optional[str] = None,
-        task_id: Optional[str] = None,
+        args: tuple[Any, ...] = (),
+        kwargs: dict[str, Any] | None = None,
+        name: str | None = None,
+        task_id: str | None = None,
     ) -> str:
         """
         Start a new background task.
@@ -219,7 +220,7 @@ class BackgroundTaskManager:
 
             # Create process
             process = mp.Process(
-                target=_task_wrapper, args=(func, args, kwargs, queue), name=f"BGTask-{name}"
+                target=_task_wrapper, args=(func, args, kwargs, queue), name=f"BGTask-{name}",
             )
             process.start()
 
@@ -318,7 +319,7 @@ class BackgroundTaskManager:
                 else:
                     task_info.status = TaskStatus.FAILED
                     logger.warning(
-                        f"Background task '{task_info.name}' failed with exit code {return_code}"
+                        f"Background task '{task_info.name}' failed with exit code {return_code}",
                     )
 
             # Emit completion event
@@ -386,7 +387,7 @@ class BackgroundTaskManager:
             if queue:
                 queue.close()
 
-    async def _handle_message(self, task_id: str, message: Dict):
+    async def _handle_message(self, task_id: str, message: dict):
         """
         Handle a message from the task process.
 
@@ -459,7 +460,7 @@ class BackgroundTaskManager:
             refresh_count = message.get("refresh_count")
 
             logger.info(
-                f"Received discovery update: {server_count} server(s), {active_count} active"
+                f"Received discovery update: {server_count} server(s), {active_count} active",
             )
 
             # Update the main process's discovered_servers
@@ -542,7 +543,7 @@ class BackgroundTaskManager:
                         {
                             sat.get("norad_id")
                             for sat in (state.get("newly_added", {}) or {}).get("satellites", [])
-                        }
+                        },
                     )
                     satellite_norad_ids = {nid for nid in satellite_norad_ids if nid}
 
@@ -554,13 +555,13 @@ class BackgroundTaskManager:
                         {
                             tx.get("norad_id")
                             for tx in (state.get("newly_added", {}) or {}).get("transmitters", [])
-                        }
+                        },
                     )
                     transmitter_norad_ids.update(
                         {
                             tx.get("norad_id")
                             for tx in (state.get("removed", {}) or {}).get("transmitters", [])
-                        }
+                        },
                     )
                     transmitter_norad_ids = {nid for nid in transmitter_norad_ids if nid}
 
@@ -614,7 +615,7 @@ class BackgroundTaskManager:
             if process.is_alive():
                 # Force kill if still running
                 logger.warning(
-                    f"Task '{task_info.name}' did not terminate gracefully, sending SIGKILL"
+                    f"Task '{task_info.name}' did not terminate gracefully, sending SIGKILL",
                 )
                 process.kill()
                 process.join(timeout=1)
@@ -646,7 +647,7 @@ class BackgroundTaskManager:
             logger.error(f"Error stopping task '{task_info.name}': {e}")
             return False
 
-    def get_task(self, task_id: str) -> Optional[Dict]:
+    def get_task(self, task_id: str) -> dict | None:
         """
         Get information about a specific task.
 
@@ -674,7 +675,7 @@ class BackgroundTaskManager:
             "error_line_count": len(task_info.error_lines),
         }
 
-    def get_all_tasks(self) -> List[Dict]:
+    def get_all_tasks(self) -> list[dict]:
         """
         Get information about all tasks.
 
@@ -688,7 +689,7 @@ class BackgroundTaskManager:
                 result.append(task)
         return result
 
-    def get_running_tasks(self) -> List[Dict]:
+    def get_running_tasks(self) -> list[dict]:
         """
         Get information about currently running tasks.
 
@@ -721,7 +722,7 @@ class BackgroundTaskManager:
 
         for task_id in tasks_to_remove:
             logger.debug(f"Removing finished task {task_id} from memory")
-            removed_task: Optional[TaskInfo] = self.tasks.pop(task_id, None)
+            removed_task: TaskInfo | None = self.tasks.pop(task_id, None)
             # Close queue if still open
             if removed_task and removed_task.queue:
                 removed_task.queue.close()

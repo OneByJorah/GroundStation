@@ -15,7 +15,7 @@ Commands (data_request):
     Output: { success: bool, data?: { session_id, sdr_id, rig_id, vfo, config }, error?: str }
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pipeline.orchestration.processmanager import process_manager
 from session.service import session_service
@@ -23,8 +23,8 @@ from session.tracker import session_tracker
 
 
 async def fetch_runtime_snapshot(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Any]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, Any]:
     """
     Return a JSON-safe merged snapshot of current sessions and SDR runtime state.
 
@@ -34,12 +34,12 @@ async def fetch_runtime_snapshot(
       - sdr_id: return only that SDR entry in sdrs{} and sessions bound to it.
     """
     try:
-        session_filter: Optional[str] = (data or {}).get("session_id") if data else None
-        sdr_filter: Optional[str] = (data or {}).get("sdr_id") if data else None
+        session_filter: str | None = (data or {}).get("session_id") if data else None
+        sdr_filter: str | None = (data or {}).get("sdr_id") if data else None
 
         # Prefer going through the service (façade) if available
         try:
-            snapshot: Dict[str, Any] = session_service.get_runtime_snapshot()
+            snapshot: dict[str, Any] = session_service.get_runtime_snapshot()
         except Exception:
             # Fallback to tracker’s method using the live process_manager
             snapshot = session_tracker.get_runtime_snapshot(process_manager)
@@ -75,7 +75,7 @@ async def fetch_runtime_snapshot(
             sessions = {k: v for k, v in sessions.items() if k == session_filter}
 
             # Additionally, reduce sdrs to entries that reference this session
-            filtered_sdrs: Dict[str, Any] = {}
+            filtered_sdrs: dict[str, Any] = {}
             for sdr_id, entry in sdrs.items():
                 clients = set(entry.get("clients", []) or [])
                 has_in_clients = session_filter in clients
@@ -94,8 +94,8 @@ async def fetch_runtime_snapshot(
 
 
 async def fetch_session_view(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Any]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, Any]:
     """
     Return a merged view for a single session:
       { session_id, sdr_id, rig_id, vfo, config }
@@ -136,5 +136,5 @@ def register_handlers(registry):
         {
             "fetch_runtime_snapshot": (fetch_runtime_snapshot, "data_request"),
             "fetch_session_view": (fetch_session_view, "data_request"),
-        }
+        },
     )

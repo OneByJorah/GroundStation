@@ -21,10 +21,9 @@ import asyncio
 import base64
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
-
 from audio.transcriptionworker import TranscriptionWorker
 
 try:
@@ -68,8 +67,8 @@ class GeminiTranscriptionWorker(TranscriptionWorker):
         vfo_number: int,
         language: str = "auto",
         translate_to: str = "none",
-        satellite: Optional[Dict[str, Any]] = None,
-        transmitter: Optional[Dict[str, Any]] = None,
+        satellite: dict[str, Any] | None = None,
+        transmitter: dict[str, Any] | None = None,
     ):
         super().__init__(
             transcription_queue=transcription_queue,
@@ -183,7 +182,7 @@ class GeminiTranscriptionWorker(TranscriptionWorker):
             self.last_connection_attempt = 0  # Reset backoff
 
             logger.info(
-                f"Connected to Gemini Live API for session {self.session_id[:8]} VFO {self.vfo_number} using {model}"
+                f"Connected to Gemini Live API for session {self.session_id[:8]} VFO {self.vfo_number} using {model}",
             )
 
         except Exception as e:
@@ -259,7 +258,7 @@ class GeminiTranscriptionWorker(TranscriptionWorker):
                             input_transcription = server_content.input_transcription
                         elif isinstance(server_content, dict):
                             input_transcription = server_content.get(
-                                "input_transcription"
+                                "input_transcription",
                             ) or server_content.get("inputTranscription")
                     if input_transcription:
                         if isinstance(input_transcription, dict):
@@ -274,7 +273,7 @@ class GeminiTranscriptionWorker(TranscriptionWorker):
                             if not is_complete:
                                 if server_content:
                                     is_complete = getattr(
-                                        server_content, "turn_complete", False
+                                        server_content, "turn_complete", False,
                                     ) or (
                                         isinstance(server_content, dict)
                                         and server_content.get("turn_complete")
@@ -300,7 +299,7 @@ class GeminiTranscriptionWorker(TranscriptionWorker):
 
                             # Emit transcription
                             await self._emit_transcription(
-                                text=text, language=detected_language, is_final=is_complete
+                                text=text, language=detected_language, is_final=is_complete,
                             )
 
                 except Exception as e:

@@ -21,7 +21,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from scipy.signal import resample_poly
@@ -83,7 +83,7 @@ class IQRecorder(threading.Thread):
         )
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "iq_samples_in": 0,
             "samples_written": 0,
@@ -143,7 +143,7 @@ class IQRecorder(threading.Thread):
                         output_center_freq = self.target_center_freq
                         logger.info(
                             f"Frequency shift enabled: {center_freq/1e6:.3f} MHz -> {self.target_center_freq/1e6:.3f} MHz "
-                            f"(shift by {self.shift_hz/1e3:.1f} kHz)"
+                            f"(shift by {self.shift_hz/1e3:.1f} kHz)",
                         )
                     else:
                         self.shift_hz = 0
@@ -160,7 +160,7 @@ class IQRecorder(threading.Thread):
                             .replace(microsecond=0, tzinfo=None)
                             .isoformat()
                             + "Z",
-                        }
+                        },
                     )
 
                     self.current_center_freq = center_freq
@@ -173,7 +173,7 @@ class IQRecorder(threading.Thread):
                     logger.info(
                         f"New capture segment at sample {self.total_samples}: "
                         f"freq={output_center_freq/1e6:.3f} MHz, "
-                        f"rate={output_sample_rate/1e6:.2f} MS/s"
+                        f"rate={output_sample_rate/1e6:.2f} MS/s",
                     )
 
                 # Apply frequency shift if enabled
@@ -196,7 +196,7 @@ class IQRecorder(threading.Thread):
                 if self.decimation_factor > 1:
                     try:
                         samples = resample_poly(samples, up=1, down=self.decimation_factor).astype(
-                            np.complex64
+                            np.complex64,
                         )
                     except Exception as e:
                         logger.error(f"Failed to decimate IQ samples: {e}")
@@ -215,7 +215,7 @@ class IQRecorder(threading.Thread):
 
             except Exception as e:
                 if self.running:
-                    logger.error(f"Error in IQ recorder: {str(e)}")
+                    logger.error(f"Error in IQ recorder: {e!s}")
                     logger.exception(e)
                     with self.stats_lock:
                         self.stats["errors"] += 1
@@ -263,7 +263,7 @@ class IQRecorder(threading.Thread):
                 "core:freq_lower_edge": int(freq_lower),
                 "core:freq_upper_edge": int(freq_upper),
                 "core:comment": comment,
-            }
+            },
         )
 
     def stop(self):
@@ -314,7 +314,7 @@ class IQRecorder(threading.Thread):
                         f"Original center: {self.current_center_freq/1e6:.3f} MHz, "
                         f"Target center: {self.target_center_freq/1e6:.3f} MHz. "
                         f"Signal now centered at {self.target_center_freq/1e6:.3f} MHz.",
-                    }
+                    },
                 )
 
         # Add decimation metadata if applied
@@ -336,7 +336,7 @@ class IQRecorder(threading.Thread):
                         f"{self.decimation_factor}x "
                         f"(original {self.current_input_sample_rate/1e6:.3f} MS/s, "
                         f"recorded {self.current_sample_rate/1e6:.3f} MS/s).",
-                    }
+                    },
                 )
 
         metadata = {
@@ -350,5 +350,5 @@ class IQRecorder(threading.Thread):
 
         logger.info(
             f"Metadata written: {len(self.captures)} capture(s), "
-            f"{len(self.annotations)} annotation(s)"
+            f"{len(self.annotations)} annotation(s)",
         )

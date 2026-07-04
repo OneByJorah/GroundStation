@@ -33,7 +33,7 @@ class FFTAverager:
         elif self.current_fft_size != len(fft_data):
             # FFT size changed - clear accumulator and update size
             self.logger.debug(
-                f"FFT size changed from {self.current_fft_size} to {len(fft_data)}, clearing accumulator"
+                f"FFT size changed from {self.current_fft_size} to {len(fft_data)}, clearing accumulator",
             )
             self.accumulated_ffts = []
             self.current_fft_size = len(fft_data)
@@ -49,7 +49,7 @@ class FFTAverager:
             self.accumulated_ffts = []
 
             self.logger.debug(
-                f"Averaged {self.averaging_factor} FFTs, total processed: {self.fft_count}"
+                f"Averaged {self.averaging_factor} FFTs, total processed: {self.fft_count}",
             )
             return averaged_fft
         return None

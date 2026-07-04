@@ -20,16 +20,16 @@ import json
 import os
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from common.logger import logger
 
 # Cache for library versions to avoid repeated expensive operations
-_backend_library_versions_cache: Optional[Dict[str, Any]] = None
-_frontend_library_versions_cache: Optional[Dict[str, Any]] = None
+_backend_library_versions_cache: dict[str, Any] | None = None
+_frontend_library_versions_cache: dict[str, Any] | None = None
 
 
-def get_package_version(package_name: str) -> Optional[str]:
+def get_package_version(package_name: str) -> str | None:
     """
     Get the version of an installed Python package.
 
@@ -45,7 +45,7 @@ def get_package_version(package_name: str) -> Optional[str]:
         return None
 
 
-def get_system_library_version(command: List[str]) -> Optional[str]:
+def get_system_library_version(command: list[str]) -> str | None:
     """
     Get the version of a system library by running a command.
 
@@ -57,7 +57,7 @@ def get_system_library_version(command: List[str]) -> Optional[str]:
     """
     try:
         result = subprocess.run(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5,
         )
         output = result.stdout + result.stderr
         return output.strip() if output else None
@@ -70,7 +70,7 @@ def get_python_version() -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
 
-def get_library_versions(use_cache: bool = True) -> Dict[str, Any]:
+def get_library_versions(use_cache: bool = True) -> dict[str, Any]:
     """
     Get versions of all important libraries and dependencies.
 
@@ -89,7 +89,7 @@ def get_library_versions(use_cache: bool = True) -> Dict[str, Any]:
 
     logger.info("Fetching backend library versions (no cache)")
 
-    libraries: Dict[str, Dict[str, Any]] = {
+    libraries: dict[str, dict[str, Any]] = {
         "python": {
             "name": "Python",
             "version": get_python_version(),
@@ -224,7 +224,7 @@ def get_library_versions(use_cache: bool = True) -> Dict[str, Any]:
     }
 
     # Try to get system library versions
-    system_libraries: Dict[str, Dict[str, Any]] = {}
+    system_libraries: dict[str, dict[str, Any]] = {}
 
     # UHD (USRP Hardware Driver)
     # Try uhd_config_info --version first, then fall back to checking if any uhd command exists
@@ -454,15 +454,15 @@ def get_library_versions(use_cache: bool = True) -> Dict[str, Any]:
                     pass
 
     # Combine all libraries
-    all_libraries: Dict[str, Dict[str, Any]] = {**libraries, **system_libraries}
+    all_libraries: dict[str, dict[str, Any]] = {**libraries, **system_libraries}
 
     # Filter out libraries that are not installed (None version)
-    installed_libraries: Dict[str, Dict[str, Any]] = {
+    installed_libraries: dict[str, dict[str, Any]] = {
         key: value for key, value in all_libraries.items() if value["version"] is not None
     }
 
     # Categorize libraries
-    categorized: Dict[str, List[Dict[str, str]]] = {}
+    categorized: dict[str, list[dict[str, str]]] = {}
     for lib_key, lib_info in installed_libraries.items():
         category: str = lib_info["category"]
         if category not in categorized:
@@ -473,11 +473,11 @@ def get_library_versions(use_cache: bool = True) -> Dict[str, Any]:
                 "name": lib_info["name"],
                 "version": lib_info["version"],
                 "description": lib_info["description"],
-            }
+            },
         )
 
     # Sort categories and libraries within categories
-    result: Dict[str, List[Dict[str, str]]] = {}
+    result: dict[str, list[dict[str, str]]] = {}
     for category in sorted(categorized.keys()):
         result[category] = sorted(categorized[category], key=lambda x: x["name"])
 
@@ -491,7 +491,7 @@ def get_library_versions(use_cache: bool = True) -> Dict[str, Any]:
     return result_dict
 
 
-def get_frontend_library_versions(use_cache: bool = True) -> Dict[str, Any]:
+def get_frontend_library_versions(use_cache: bool = True) -> dict[str, Any]:
     """
     Get versions of frontend libraries from package.json.
 
@@ -512,7 +512,7 @@ def get_frontend_library_versions(use_cache: bool = True) -> Dict[str, Any]:
 
     # Path to frontend package.json relative to backend directory
     package_json_path = os.path.join(
-        os.path.dirname(__file__), "..", "..", "frontend", "package.json"
+        os.path.dirname(__file__), "..", "..", "frontend", "package.json",
     )
     package_json_path = os.path.abspath(package_json_path)
 
@@ -528,7 +528,7 @@ def get_frontend_library_versions(use_cache: bool = True) -> Dict[str, Any]:
         dev_dependencies = package_data.get("devDependencies", {})
 
         # Categorize frontend libraries
-        categorized: Dict[str, List[Dict[str, str]]] = {
+        categorized: dict[str, list[dict[str, str]]] = {
             "ui": [],
             "state": [],
             "routing": [],
@@ -617,7 +617,7 @@ def get_frontend_library_versions(use_cache: bool = True) -> Dict[str, Any]:
                     "name": package_name,
                     "version": clean_version,
                     "description": "Production dependency",
-                }
+                },
             )
 
         # Process dev dependencies
@@ -632,11 +632,11 @@ def get_frontend_library_versions(use_cache: bool = True) -> Dict[str, Any]:
                     "name": package_name,
                     "version": clean_version,
                     "description": "Development dependency",
-                }
+                },
             )
 
         # Remove empty categories and sort
-        result: Dict[str, List[Dict[str, str]]] = {}
+        result: dict[str, list[dict[str, str]]] = {}
         total_count = 0
         for category in sorted(categorized.keys()):
             if categorized[category]:

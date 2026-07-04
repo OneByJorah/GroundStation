@@ -15,7 +15,8 @@
 
 
 import logging
-from typing import Any, AsyncGenerator, Dict, Optional, Tuple
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from common.arguments import arguments as args
 from vfos.state import VFOManager
@@ -59,7 +60,7 @@ class SDRController:
 
     def __init__(
         self,
-        sdr_details: Optional[Dict[str, Any]] = None,
+        sdr_details: dict[str, Any] | None = None,
         verbose: bool = False,
         timeout: float = 3.0,
     ):
@@ -77,7 +78,7 @@ class SDRController:
         self.timeout: float = timeout
 
         # Setup init values from SDR details
-        self.sdr_details: Dict[str, Any] = sdr_details
+        self.sdr_details: dict[str, Any] = sdr_details
         self.sdr_id: Any = sdr_details["id"]
         self.sdr_name: Any = sdr_details["name"]
         self.sdr_type: Any = sdr_details["type"]
@@ -85,7 +86,7 @@ class SDRController:
         self.sdr_host: Any = sdr_details["host"]
         self.sdr_port: Any = sdr_details["port"]
         self.sdr_driver: Any = sdr_details["driver"]
-        self.frequency_range: Dict[str, Any] = {
+        self.frequency_range: dict[str, Any] = {
             "min": sdr_details["frequency_min"],
             "max": sdr_details["frequency_max"],
         }
@@ -192,8 +193,8 @@ class SDRController:
             raise RuntimeError(f"Error getting frequency: {e}")
 
     async def set_frequency(
-        self, target_freq: float, update_interval: float = 0.5, freq_tolerance: float = 10.0
-    ) -> AsyncGenerator[Tuple[float, bool], None]:
+        self, target_freq: float, update_interval: float = 0.5, freq_tolerance: float = 10.0,
+    ) -> AsyncGenerator[tuple[float, bool], None]:
         """Set the SDR frequency and yield updates until it reaches the target.
 
         Args:
@@ -222,7 +223,7 @@ class SDRController:
             self.logger.exception(e)
             raise RuntimeError(f"Error setting SDR frequency: {e}")
 
-    async def get_mode(self) -> Tuple[str, int]:
+    async def get_mode(self) -> tuple[str, int]:
         """Get the current mode and bandwidth.
 
         Returns:
@@ -273,7 +274,7 @@ class SDRController:
             # Just log a warning
             if hasattr(self, "logger"):
                 self.logger.warning(
-                    "Object SDRController being destroyed while still connected to SDR"
+                    "Object SDRController being destroyed while still connected to SDR",
                 )
 
     async def update_vfo_with_doppler(
@@ -284,8 +285,8 @@ class SDRController:
         downlink_observed_freq: float,
         doppler_shift: float,
         original_freq: float,
-        bandwidth: Optional[int] = None,
-        modulation: Optional[str] = None,
+        bandwidth: int | None = None,
+        modulation: str | None = None,
     ) -> None:
         """Update a specific VFO for a session with doppler-corrected frequency.
 
@@ -322,7 +323,7 @@ class SDRController:
 
             self.logger.debug(
                 f"Updated VFO {vfo_id} for session {session_id}: "
-                f"freq={downlink_observed_freq:.0f} Hz, doppler={doppler_shift:.0f} Hz"
+                f"freq={downlink_observed_freq:.0f} Hz, doppler={doppler_shift:.0f} Hz",
             )
 
         except Exception as e:

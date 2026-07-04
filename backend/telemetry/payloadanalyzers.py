@@ -7,14 +7,14 @@ Provides different views of raw payload data to help reverse engineer formats.
 """
 
 import struct
-from typing import Any, Dict, List
+from typing import Any
 
 
 class PayloadAnalyzer:
     """Analyze payload bytes with multiple interpretation strategies"""
 
     @staticmethod
-    def analyze(payload: bytes) -> Dict[str, Any]:
+    def analyze(payload: bytes) -> dict[str, Any]:
         """
         Analyze payload with multiple interpretations
 
@@ -36,7 +36,7 @@ class PayloadAnalyzer:
         }
 
     @staticmethod
-    def hex_dump(payload: bytes, bytes_per_line: int = 16) -> List[Dict]:
+    def hex_dump(payload: bytes, bytes_per_line: int = 16) -> list[dict]:
         """
         Generate hex dump with ASCII
 
@@ -52,7 +52,7 @@ class PayloadAnalyzer:
         return lines
 
     @staticmethod
-    def as_float32(payload: bytes) -> List[Dict]:
+    def as_float32(payload: bytes) -> list[dict]:
         """
         Interpret as little-endian float32 sequence
 
@@ -70,14 +70,14 @@ class PayloadAnalyzer:
                             "value": round(value, 4),
                             "hex": payload[i : i + 4].hex(),
                             "type": "float32_le",
-                        }
+                        },
                     )
             except Exception:
                 pass
         return floats
 
     @staticmethod
-    def as_uint16(payload: bytes) -> List[Dict]:
+    def as_uint16(payload: bytes) -> list[dict]:
         """Interpret as little-endian uint16 sequence"""
         values = []
         for i in range(0, len(payload) - 1, 2):
@@ -89,14 +89,14 @@ class PayloadAnalyzer:
                         "value": value,
                         "hex": payload[i : i + 2].hex(),
                         "type": "uint16_le",
-                    }
+                    },
                 )
             except Exception:
                 pass
         return values
 
     @staticmethod
-    def as_uint32(payload: bytes) -> List[Dict]:
+    def as_uint32(payload: bytes) -> list[dict]:
         """Interpret as little-endian uint32 sequence"""
         values = []
         for i in range(0, len(payload) - 3, 4):
@@ -108,14 +108,14 @@ class PayloadAnalyzer:
                         "value": value,
                         "hex": payload[i : i + 4].hex(),
                         "type": "uint32_le",
-                    }
+                    },
                 )
             except Exception:
                 pass
         return values
 
     @staticmethod
-    def detect_fields(payload: bytes) -> List[Dict]:
+    def detect_fields(payload: bytes) -> list[dict]:
         """
         Auto-detect probable field types based on value ranges
 
@@ -147,7 +147,7 @@ class PayloadAnalyzer:
                                 "value": round(value, 4),
                                 "type": field_type,
                                 "data_type": "float32_le",
-                            }
+                            },
                         )
             except Exception:
                 pass
@@ -164,7 +164,7 @@ class PayloadAnalyzer:
                             "value": value,
                             "type": "timestamp?",
                             "data_type": "uint32_le",
-                        }
+                        },
                     )
             except Exception:
                 pass
@@ -172,7 +172,7 @@ class PayloadAnalyzer:
         return probable
 
     @staticmethod
-    def as_strings(payload: bytes, min_length: int = 3) -> Dict[str, Any]:
+    def as_strings(payload: bytes, min_length: int = 3) -> dict[str, Any]:
         """
         Extract and analyze strings from payload with multiple encodings
 
@@ -189,7 +189,7 @@ class PayloadAnalyzer:
         encodings_to_try = ["ascii", "utf-8", "latin-1"]
 
         # 1. Extract contiguous printable ASCII sequences
-        current_string: List[int] = []
+        current_string: list[int] = []
         start_offset = 0
 
         for i, byte in enumerate(payload):
@@ -203,8 +203,8 @@ class PayloadAnalyzer:
                 if len(current_string) >= min_length:
                     strings.append(
                         PayloadAnalyzer._analyze_string_segment(
-                            bytes(current_string), start_offset, encodings_to_try
-                        )
+                            bytes(current_string), start_offset, encodings_to_try,
+                        ),
                     )
                 current_string = []
 
@@ -212,8 +212,8 @@ class PayloadAnalyzer:
         if len(current_string) >= min_length:
             strings.append(
                 PayloadAnalyzer._analyze_string_segment(
-                    bytes(current_string), start_offset, encodings_to_try
-                )
+                    bytes(current_string), start_offset, encodings_to_try,
+                ),
             )
 
         # 2. Look for null-terminated strings
@@ -246,7 +246,7 @@ class PayloadAnalyzer:
             "total_bytes": len(payload),
             "printable_ascii_count": total_printable,
             "printable_ascii_percent": round(
-                (total_printable / len(payload) * 100) if payload else 0, 1
+                (total_printable / len(payload) * 100) if payload else 0, 1,
             ),
             "null_bytes": total_null,
             "strings_found": len(strings),
@@ -256,8 +256,8 @@ class PayloadAnalyzer:
 
     @staticmethod
     def _analyze_string_segment(
-        segment: bytes, offset: int, encodings: List[str]
-    ) -> Dict[str, Any]:
+        segment: bytes, offset: int, encodings: list[str],
+    ) -> dict[str, Any]:
         """Analyze a string segment and determine best encoding and type"""
         result = {
             "offset": offset,
@@ -276,7 +276,7 @@ class PayloadAnalyzer:
 
         # Use ASCII as primary if available
         content: str = decoded_variants.get(
-            "ascii", decoded_variants.get("utf-8", decoded_variants.get("latin-1", ""))
+            "ascii", decoded_variants.get("utf-8", decoded_variants.get("latin-1", "")),
         )
         result["content"] = content
         result["encoding"] = "ascii" if "ascii" in decoded_variants else "utf-8"
@@ -362,7 +362,7 @@ class PayloadAnalyzer:
         return "medium"
 
     @staticmethod
-    def _find_null_terminated_strings(payload: bytes, min_length: int) -> List[Dict]:
+    def _find_null_terminated_strings(payload: bytes, min_length: int) -> list[dict]:
         """Find null-terminated C-style strings"""
         strings = []
         i = 0
@@ -388,11 +388,11 @@ class PayloadAnalyzer:
                                     "encoding": "ascii",
                                     "detected_type": PayloadAnalyzer._detect_string_type(content),
                                     "confidence": PayloadAnalyzer._string_confidence(
-                                        content, segment
+                                        content, segment,
                                     ),
                                     "format": "null-terminated",
                                     "hex": segment.hex(),
-                                }
+                                },
                             )
                         except Exception:
                             pass
@@ -401,7 +401,7 @@ class PayloadAnalyzer:
         return strings
 
     @staticmethod
-    def _find_length_prefixed_strings(payload: bytes, min_length: int) -> List[Dict]:
+    def _find_length_prefixed_strings(payload: bytes, min_length: int) -> list[dict]:
         """Find length-prefixed strings (1-byte length prefix)"""
         strings = []
 
@@ -426,7 +426,7 @@ class PayloadAnalyzer:
                                 "confidence": PayloadAnalyzer._string_confidence(content, segment),
                                 "format": "length-prefixed",
                                 "hex": segment.hex(),
-                            }
+                            },
                         )
                     except Exception:
                         pass

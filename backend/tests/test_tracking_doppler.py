@@ -19,7 +19,6 @@ Tests for tracking/doppler.py Doppler shift calculation functions.
 
 import pytest
 from skyfield.api import load
-
 from tracking.doppler import calculate_doppler_shift
 
 

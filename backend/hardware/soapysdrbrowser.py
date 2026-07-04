@@ -19,7 +19,7 @@ import json
 import logging
 import socket
 import threading
-from typing import Any, Dict, List, Union
+from typing import Any
 
 from zeroconf import ServiceStateChange
 from zeroconf.asyncio import AsyncServiceBrowser, AsyncZeroconf
@@ -28,7 +28,7 @@ from zeroconf.asyncio import AsyncServiceBrowser, AsyncZeroconf
 logger = logging.getLogger("soapysdr-browser")
 
 # Store discovered servers here with a dictionary for each server containing all properties
-discovered_servers: Dict[str, Dict[str, Union[str, List[Any], int, float]]] = {}
+discovered_servers: dict[str, dict[str, str | list[Any] | int | float]] = {}
 
 # Thread lock for safe access to discovered_servers from multiple threads/processes
 _servers_lock = threading.Lock()
@@ -56,7 +56,7 @@ class SoapySDREncoder(json.JSONEncoder):
 
 
 # Thread-safe helper functions for accessing discovered_servers
-def update_discovered_servers(servers_data: Dict[str, Dict[str, Any]]) -> None:
+def update_discovered_servers(servers_data: dict[str, dict[str, Any]]) -> None:
     """
     Thread-safe update of discovered_servers from background task data.
 
@@ -70,7 +70,7 @@ def update_discovered_servers(servers_data: Dict[str, Dict[str, Any]]) -> None:
         logger.debug(f"Updated discovered_servers with {len(servers_data)} server(s)")
 
 
-def get_discovered_servers() -> Dict[str, Dict[str, Any]]:
+def get_discovered_servers() -> dict[str, dict[str, Any]]:
     """
     Thread-safe retrieval of discovered_servers.
 
@@ -106,7 +106,7 @@ async def query_sdrs_with_python_module(ip, port, timeout=5):
         # Wrap with a timeout to prevent hanging on problematic servers
         loop = asyncio.get_event_loop()
         raw_results = await asyncio.wait_for(
-            loop.run_in_executor(None, _query_with_soapysdr_module, ip, port), timeout=timeout
+            loop.run_in_executor(None, _query_with_soapysdr_module, ip, port), timeout=timeout,
         )
 
         # Convert the results to serializable dictionaries
@@ -118,8 +118,8 @@ async def query_sdrs_with_python_module(ip, port, timeout=5):
         logger.error(f"Timeout querying server {ip}:{port}")
         return [], "timeout"
     except Exception as e:
-        logger.error(f"Error querying with Python module: {str(e)}")
-        return [], f"error: {str(e)}"
+        logger.error(f"Error querying with Python module: {e!s}")
+        return [], f"error: {e!s}"
 
 
 def _query_with_soapysdr_module(ip, port):
@@ -138,7 +138,7 @@ def _query_with_soapysdr_module(ip, port):
         logger.error("SoapySDR Python module not installed. Install with 'pip install soapysdr'")
         return []
     except Exception as e:
-        logger.error(f"SoapySDR module error: {str(e)}")
+        logger.error(f"SoapySDR module error: {e!s}")
         # Re-raise to be handled by the caller
         raise
 
@@ -155,7 +155,7 @@ async def try_simple_socket_connection(ip, port, timeout=2):
         await writer.wait_closed()
         return True
     except Exception as e:
-        logger.debug(f"Socket connection test to {ip}:{port} failed: {str(e)}")
+        logger.debug(f"Socket connection test to {ip}:{port} failed: {e!s}")
         return False
 
 
@@ -173,7 +173,7 @@ async def query_server_for_sdrs(ip, port):
         if results or status == "active":
             return results, status
     except Exception as e:
-        logger.error(f"Failed to query SDRs on {ip}:{port}: {str(e)}")
+        logger.error(f"Failed to query SDRs on {ip}:{port}: {e!s}")
 
     # If we reach here, add the server but mark it as having connection issues
     return [], "connection_issues"
@@ -191,7 +191,7 @@ async def on_service_state_change(zeroconf, service_type, name, state_change):
             port = info.port
             server_name = info.server.replace(".local.", "")  # Clean up server name
             logger.info(
-                f"Found SoapyRemote Server: {name} | Server: {server_name} | Addresses: {addresses} | Port: {port}"
+                f"Found SoapyRemote Server: {name} | Server: {server_name} | Addresses: {addresses} | Port: {port}",
             )
 
             # Find a suitable IP address
@@ -232,7 +232,7 @@ async def on_service_state_change(zeroconf, service_type, name, state_change):
                             sdr_info = json.dumps(sdr, cls=SoapySDREncoder, indent=2)
                             logger.debug(f"  SDR #{i+1}: {sdr_info}")
                         except Exception as e:
-                            logger.error(f"Error formatting SDR info: {str(e)}")
+                            logger.error(f"Error formatting SDR info: {e!s}")
                 else:
                     logger.warning(f"Server {name} is available but has status: {status}")
 
@@ -304,7 +304,7 @@ async def discover_soapy_servers():
                 sdr_count = len(sdrs) if isinstance(sdrs, list) else 0
                 logger.debug(
                     f"  Name: {name}, IP: {server_info['ip']}, Port: {server_info['port']}, "
-                    f"Status: {server_info['status']}, Connected SDRs: {sdr_count}"
+                    f"Status: {server_info['status']}, Connected SDRs: {sdr_count}",
                 )
 
                 if server_info["status"] == "active" and isinstance(sdrs, list) and sdrs:
@@ -315,7 +315,7 @@ async def discover_soapy_servers():
                             sdr_info = json.dumps(sdr, cls=SoapySDREncoder, indent=2)
                             logger.debug(f"    SDR #{i+1}:\n{sdr_info}")
                         except Exception as e:
-                            logger.error(f"Error formatting SDR info: {str(e)}")
+                            logger.error(f"Error formatting SDR info: {e!s}")
         else:
             logger.debug("No SoapyRemote servers advertising via mDNS found.")
 
@@ -340,7 +340,7 @@ def get_server_summary():
     for name, server_info in discovered_servers.items():
         summary.append(f"  Server: {name}")
         summary.append(
-            f"    IP: {server_info['ip']}, Port: {server_info['port']}, Status: {server_info['status']}"
+            f"    IP: {server_info['ip']}, Port: {server_info['port']}, Status: {server_info['status']}",
         )
 
         if server_info["status"] == "active":

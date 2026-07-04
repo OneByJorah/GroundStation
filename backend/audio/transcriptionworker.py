@@ -35,7 +35,7 @@ import time
 from abc import ABC, abstractmethod
 from asyncio import Task
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TextIO
+from typing import Any, TextIO
 
 import numpy as np
 from scipy import signal
@@ -63,8 +63,8 @@ class TranscriptionWorker(ABC, threading.Thread):
         language: str = "auto",
         translate_to: str = "none",
         provider_name: str = "unknown",
-        satellite: Optional[Dict[str, Any]] = None,
-        transmitter: Optional[Dict[str, Any]] = None,
+        satellite: dict[str, Any] | None = None,
+        transmitter: dict[str, Any] | None = None,
     ):
         """
         Initialize the transcription worker.
@@ -104,7 +104,7 @@ class TranscriptionWorker(ABC, threading.Thread):
         self.transmitter = transmitter
 
         # Audio buffer for this VFO (stores dicts with audio data and type)
-        self.audio_buffer: List[Dict[str, Any]] = []
+        self.audio_buffer: list[dict[str, Any]] = []
 
         # Streaming settings - configurable by subclasses
         self.chunk_duration = 3.0  # Send audio every 3 seconds for better context
@@ -114,14 +114,14 @@ class TranscriptionWorker(ABC, threading.Thread):
 
         # Connection state
         self.connected: bool = False
-        self.receiver_task: Optional[Task] = None
+        self.receiver_task: Task | None = None
 
         # Connection backoff to prevent quota exhaustion
         self.last_connection_attempt = 0.0
         self.connection_backoff_seconds = 60
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "audio_chunks_in": 0,
             "audio_samples_in": 0,
             "transcriptions_sent": 0,
@@ -139,12 +139,12 @@ class TranscriptionWorker(ABC, threading.Thread):
         self.stats_lock = threading.Lock()
 
         # File output for transcriptions (created on first transcription)
-        self.transcription_file: Optional[TextIO] = None
-        self.transcription_file_path: Optional[str] = None
+        self.transcription_file: TextIO | None = None
+        self.transcription_file_path: str | None = None
         self.transcription_file_created: bool = False
 
         # Word-level tracking for line building (matches UI logic)
-        self.word_buffer: List[Dict[str, Any]] = []  # List of {word: str, timestamp: float}
+        self.word_buffer: list[dict[str, Any]] = []  # List of {word: str, timestamp: float}
         self.word_buffer_lock = threading.Lock()
 
         # Track last written text to avoid duplicates from partial/final updates
@@ -171,7 +171,7 @@ class TranscriptionWorker(ABC, threading.Thread):
 
             # Open file for writing
             self.transcription_file = open(
-                self.transcription_file_path, "w", encoding="utf-8", buffering=1
+                self.transcription_file_path, "w", encoding="utf-8", buffering=1,
             )
 
             # Write header
@@ -213,7 +213,7 @@ class TranscriptionWorker(ABC, threading.Thread):
             self.transcription_file = None
             self.transcription_file_path = None
 
-    def _write_to_file(self, text: str, timestamp: Optional[float] = None, is_final: bool = True):
+    def _write_to_file(self, text: str, timestamp: float | None = None, is_final: bool = True):
         """
         Write transcription to file using UI-matching line building logic.
 
@@ -263,9 +263,9 @@ class TranscriptionWorker(ABC, threading.Thread):
                     self.word_buffer.append({"word": word, "timestamp": timestamp})
 
                 # Build lines from word buffer (matches UI logic)
-                lines_to_write: List[Dict[str, Any]] = []
-                current_line_words: List[str] = []
-                current_line_timestamp: Optional[float] = None
+                lines_to_write: list[dict[str, Any]] = []
+                current_line_words: list[str] = []
+                current_line_timestamp: float | None = None
                 last_timestamp = None
 
                 max_words_per_line = 20
@@ -287,7 +287,7 @@ class TranscriptionWorker(ABC, threading.Thread):
                             {
                                 "timestamp": current_line_timestamp,
                                 "text": " ".join(current_line_words),
-                            }
+                            },
                         )
                         # Start new line
                         current_line_words = [word]
@@ -327,7 +327,7 @@ class TranscriptionWorker(ABC, threading.Thread):
         """Main processing loop"""
         logger.info(
             f"{self.provider_name.capitalize()} transcription worker started for session {self.session_id[:8]} "
-            f"VFO {self.vfo_number} (language={self.language}, translate_to={self.translate_to})"
+            f"VFO {self.vfo_number} (language={self.language}, translate_to={self.translate_to})",
         )
 
         # Send initial status to UI
@@ -454,12 +454,12 @@ class TranscriptionWorker(ABC, threading.Thread):
                         f"Audio Rate={stats_copy['audio_chunks_per_sec']:.1f} chunks/s, "
                         f"Sent={stats_copy['transcriptions_sent']}, "
                         f"Received={stats_copy['transcriptions_received']}, "
-                        f"Errors={stats_copy['errors']}"
+                        f"Errors={stats_copy['errors']}",
                     )
 
                     # Emit status to frontend
                     self._send_status_to_ui(
-                        "transcribing" if stats_copy["is_connected"] else "idle"
+                        "transcribing" if stats_copy["is_connected"] else "idle",
                     )
 
                     last_status_print = now
@@ -512,7 +512,7 @@ class TranscriptionWorker(ABC, threading.Thread):
         )
 
     def _resample_audio(
-        self, audio_array: np.ndarray, target_rate: Optional[int] = None
+        self, audio_array: np.ndarray, target_rate: int | None = None,
     ) -> np.ndarray:
         """
         Resample audio from input_sample_rate to target_sample_rate.
@@ -600,7 +600,7 @@ class TranscriptionWorker(ABC, threading.Thread):
         )
 
     async def _emit_transcription(
-        self, text: str, language: str, is_final: bool, confidence: Optional[float] = None
+        self, text: str, language: str, is_final: bool, confidence: float | None = None,
     ):
         """
         Emit transcription result to UI.
@@ -655,7 +655,7 @@ class TranscriptionWorker(ABC, threading.Thread):
                             dt = datetime.fromtimestamp(first_timestamp)
                             time_str = dt.strftime("%H:%M:%S")
                             self.transcription_file.write(
-                                f"[{time_str}] {' '.join(remaining_words)}\n"
+                                f"[{time_str}] {' '.join(remaining_words)}\n",
                             )
                         self.word_buffer = []
 
@@ -719,7 +719,7 @@ class TranscriptionWorker(ABC, threading.Thread):
             # Check if API key is configured
             if not self.api_key:
                 logger.debug(
-                    f"No API key configured for {self.provider_name}, skipping transcription"
+                    f"No API key configured for {self.provider_name}, skipping transcription",
                 )
                 return
 

@@ -15,21 +15,22 @@
 
 
 import asyncio
-from typing import Any, Callable, Coroutine, List, Optional, Union
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 
 class StateTracker:
     def __init__(self, initial_state: Any = None):
         self.state = initial_state
-        self.sync_callbacks: List[Callable[[Any, Any], None]] = []
-        self.async_callbacks: List[Callable[[Any, Any], Coroutine[Any, Any, None]]] = []
+        self.sync_callbacks: list[Callable[[Any, Any], None]] = []
+        self.async_callbacks: list[Callable[[Any, Any], Coroutine[Any, Any, None]]] = []
 
     def register_callback(self, callback: Callable[[Any, Any], None]) -> None:
         """Register a synchronous callback function."""
         self.sync_callbacks.append(callback)
 
     def register_async_callback(
-        self, callback: Callable[[Any, Any], Coroutine[Any, Any, None]]
+        self, callback: Callable[[Any, Any], Coroutine[Any, Any, None]],
     ) -> None:
         """Register an asynchronous callback function."""
         self.async_callbacks.append(callback)

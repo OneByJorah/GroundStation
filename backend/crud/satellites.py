@@ -16,15 +16,13 @@
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import List, Union
 
+from common.common import logger, serialize_object
+from db.models import Groups, Satellites, Transmitters
 from pydantic.v1 import UUID4
 from sqlalchemy import String, delete, insert, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from common.common import logger, serialize_object
-from db.models import Groups, Satellites, Transmitters
 
 DATETIME_FIELDS = {"decayed", "launched", "deployed", "added", "updated"}
 
@@ -47,7 +45,7 @@ def _coerce_datetime(value):
     return value
 
 
-async def fetch_satellites_for_group_id(session: AsyncSession, group_id: Union[str, UUID4]) -> dict:
+async def fetch_satellites_for_group_id(session: AsyncSession, group_id: str | UUID4) -> dict:
     """
     Fetch satellite records for the given group id along with their transmitters
 
@@ -96,7 +94,7 @@ async def fetch_satellites_for_group_id(session: AsyncSession, group_id: Union[s
         return {"success": False, "error": str(e)}
 
 
-async def search_satellites(session: AsyncSession, keyword: Union[str, int, None]) -> dict:
+async def search_satellites(session: AsyncSession, keyword: str | int | None) -> dict:
     """
     Fetch satellite records.
 
@@ -114,7 +112,7 @@ async def search_satellites(session: AsyncSession, keyword: Union[str, int, None
                 Satellites.norad_id.cast(String).ilike(keyword)
                 | Satellites.name.ilike(keyword)
                 | Satellites.name_other.ilike(keyword)
-                | Satellites.alternative_name.ilike(keyword)
+                | Satellites.alternative_name.ilike(keyword),
             )
         result = await session.execute(stmt)
         satellites = result.scalars().all()
@@ -150,7 +148,7 @@ async def search_satellites(session: AsyncSession, keyword: Union[str, int, None
 
 
 async def fetch_satellites(
-    session: AsyncSession, norad_id: Union[str, int, List[int], None]
+    session: AsyncSession, norad_id: str | int | list[int] | None,
 ) -> dict:
     """
     Fetch satellite records.
@@ -271,7 +269,7 @@ async def edit_satellite(session: AsyncSession, satellite_id: uuid.UUID, **kwarg
         return {"success": False, "error": str(e)}
 
 
-async def delete_satellite(session: AsyncSession, satellite_id: Union[uuid.UUID, str]) -> dict:
+async def delete_satellite(session: AsyncSession, satellite_id: uuid.UUID | str) -> dict:
     """
     Delete a satellite record by its UUID.
     First deletes all associated transmitters due to foreign key constraint.

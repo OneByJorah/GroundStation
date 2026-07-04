@@ -59,7 +59,7 @@ async def first_time_initialization():
             await session.commit()
             logger.info(
                 "Initial data populated successfully with default TLE sources "
-                "(Cubesats and Amateur)."
+                "(Cubesats and Amateur).",
             )
 
         except Exception as e:
@@ -88,7 +88,7 @@ async def run_initial_sync(background_task_manager):
 
         # Start as background task
         task_id = await background_task_manager.start_task(
-            func=tle_sync_task, args=(), kwargs={}, name="Initial TLE Sync", task_id=None
+            func=tle_sync_task, args=(), kwargs={}, name="Initial TLE Sync", task_id=None,
         )
 
         logger.info(f"Initial TLE sync started as background task: {task_id}")

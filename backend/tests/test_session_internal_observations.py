@@ -22,9 +22,7 @@ management.
 """
 
 import pytest
-
 from session.tracker import session_tracker
-from vfos.state import VFOManager
 
 
 class TestInternalSessionTracking:
@@ -102,10 +100,10 @@ class TestInternalSessionTracking:
         obs_id_2 = "test-obs-list-2"
 
         session_id_1 = session_tracker.register_internal_session(
-            observation_id=obs_id_1, sdr_id="test-sdr-1", vfo_number=1
+            observation_id=obs_id_1, sdr_id="test-sdr-1", vfo_number=1,
         )
         session_id_2 = session_tracker.register_internal_session(
-            observation_id=obs_id_2, sdr_id="test-sdr-2", vfo_number=2
+            observation_id=obs_id_2, sdr_id="test-sdr-2", vfo_number=2,
         )
 
         internal_sessions = session_tracker.get_all_internal_sessions()
@@ -117,7 +115,7 @@ class TestInternalSessionTracking:
         obs_id = "test-obs-user-202"
 
         session_id = session_tracker.register_internal_session(
-            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1
+            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1,
         )
 
         user_sessions = session_tracker.get_all_user_sessions()
@@ -129,7 +127,7 @@ class TestInternalSessionTracking:
 
         obs_id = "test-obs-count-303"
         session_tracker.register_internal_session(
-            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1
+            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1,
         )
 
         new_count = session_tracker.get_internal_session_count()
@@ -140,7 +138,7 @@ class TestInternalSessionTracking:
         obs_id = "test-obs-unreg-404"
 
         session_id = session_tracker.register_internal_session(
-            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1
+            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1,
         )
 
         assert session_tracker.is_internal_session(session_id)
@@ -159,7 +157,7 @@ class TestInternalSessionTracking:
         obs_id = "test-obs-cleanup-505"
 
         session_id = session_tracker.register_internal_session(
-            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1
+            observation_id=obs_id, sdr_id="test-sdr-1", vfo_number=1,
         )
 
         # Verify session exists
@@ -200,7 +198,7 @@ class TestInternalSessionIsolation:
         # Create an internal session
         obs_id = "test-obs-isolation-606"
         internal_session_id = session_tracker.register_internal_session(
-            observation_id=obs_id, sdr_id="test-sdr-2", vfo_number=2
+            observation_id=obs_id, sdr_id="test-sdr-2", vfo_number=2,
         )
 
         # Verify separation
@@ -221,7 +219,7 @@ class TestInternalSessionIsolation:
 
         obs_id = "test-obs-snapshot-707"
         internal_session_id = session_tracker.register_internal_session(
-            observation_id=obs_id, sdr_id="test-sdr-2", vfo_number=1
+            observation_id=obs_id, sdr_id="test-sdr-2", vfo_number=1,
         )
 
         # Get runtime snapshot (requires ProcessManager mock, so we'll just test the flag method)

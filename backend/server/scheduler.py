@@ -1,12 +1,10 @@
 """Background task scheduler for the ground station."""
 
 import logging
-from typing import Optional
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
 
 import observations.events as obs_events
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from common.logger import logger
 from db import AsyncSessionLocal
 from observations.constants import DEFAULT_AUTO_GENERATE_INTERVAL_HOURS
@@ -16,7 +14,7 @@ from observations.generator import generate_observations_for_monitored_satellite
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 # Global scheduler instance
-scheduler: Optional[AsyncIOScheduler] = None
+scheduler: AsyncIOScheduler | None = None
 
 
 async def sync_satellite_data_job(background_task_manager):
@@ -38,7 +36,7 @@ async def sync_satellite_data_job(background_task_manager):
 
         # Start as background task
         task_id = await background_task_manager.start_task(
-            func=tle_sync_task, args=(), kwargs={}, name="Scheduled TLE Sync", task_id=None
+            func=tle_sync_task, args=(), kwargs={}, name="Scheduled TLE Sync", task_id=None,
         )
 
         logger.info(f"Scheduled TLE sync started as background task: {task_id}")
@@ -77,7 +75,7 @@ async def generate_observations_job():
                     f"{stats.get('generated', 0)} created, "
                     f"{stats.get('updated', 0)} updated, "
                     f"{stats.get('skipped', 0)} skipped, "
-                    f"{stats.get('satellites_processed', 0)} satellites processed"
+                    f"{stats.get('satellites_processed', 0)} satellites processed",
                 )
 
                 # Emit event to all clients if observations were changed
@@ -90,7 +88,7 @@ async def generate_observations_job():
                         if sync_result["success"]:
                             sync_stats = sync_result.get("stats", {})
                             logger.info(
-                                f"APScheduler sync complete: {sync_stats.get('scheduled', 0)} scheduled"
+                                f"APScheduler sync complete: {sync_stats.get('scheduled', 0)} scheduled",
                             )
             else:
                 logger.error(f"Automatic observation generation failed: {result.get('error')}")
@@ -114,7 +112,7 @@ async def run_initial_observation_generation():
                     f"{stats.get('generated', 0)} created, "
                     f"{stats.get('updated', 0)} updated, "
                     f"{stats.get('skipped', 0)} skipped, "
-                    f"{stats.get('satellites_processed', 0)} satellites processed"
+                    f"{stats.get('satellites_processed', 0)} satellites processed",
                 )
 
                 # Emit event to all clients if observations were changed
@@ -178,7 +176,7 @@ def start_scheduler(sio, process_manager, background_task_manager):
     jobs = scheduler.get_jobs()
     job_count = len(jobs)
     logger.info(
-        f"Background task scheduler started: {job_count} job{'s' if job_count != 1 else ''} scheduled"
+        f"Background task scheduler started: {job_count} job{'s' if job_count != 1 else ''} scheduled",
     )
     for job in jobs:
         # Format next run time without microseconds for cleaner display

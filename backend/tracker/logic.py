@@ -19,12 +19,12 @@ import logging
 import multiprocessing
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import psutil
-
 from common.arguments import arguments as args
 from common.constants import DictKeys, SocketEvents
+
 from tracker.data import compiled_satellite_data_from_inputs
 from tracker.ipc import (
     TRACKER_MSG_COMMAND,
@@ -49,12 +49,12 @@ class SatelliteTracker:
     """
 
     def __init__(
-        self, queue_out: multiprocessing.Queue, queue_in: multiprocessing.Queue, stop_event=None
+        self, queue_out: multiprocessing.Queue, queue_in: multiprocessing.Queue, stop_event=None,
     ):
         """Initialize the satellite tracker with queues and configuration."""
         # Store queue references
-        self.rotator_details: Dict[str, Any] = {}
-        self.rig_details: Dict[str, Any] = {}
+        self.rotator_details: dict[str, Any] = {}
+        self.rig_details: dict[str, Any] = {}
         self.queue_out = queue_out
         self.queue_in = queue_in
         self.stop_event = stop_event
@@ -133,9 +133,9 @@ class SatelliteTracker:
         }
 
         # Operational state
-        self.notified: Dict[str, bool] = {}
+        self.notified: dict[str, bool] = {}
         self.nudge_offset = {"az": 0, "el": 0}
-        self.rotator_command_state: Dict[str, Any] = {
+        self.rotator_command_state: dict[str, Any] = {
             "in_flight": False,
             "target_az": None,
             "target_el": None,
@@ -147,24 +147,24 @@ class SatelliteTracker:
         self.rotator_settle_hits_required = 2
 
         # Satellite data
-        self.satellite_data: Dict[str, Any] = {}
+        self.satellite_data: dict[str, Any] = {}
 
         # State change tracking (replacing StateTracker)
-        self.prev_norad_id: Optional[int] = None
-        self.prev_rotator_state: Optional[str] = None
-        self.prev_rotator_id: Optional[str] = None
-        self.prev_rig_state: Optional[str] = None
-        self.prev_transmitter_id: Optional[str] = None
-        self.prev_rig_id: Optional[str] = None
+        self.prev_norad_id: int | None = None
+        self.prev_rotator_state: str | None = None
+        self.prev_rotator_id: str | None = None
+        self.prev_rig_state: str | None = None
+        self.prev_transmitter_id: str | None = None
+        self.prev_rig_id: str | None = None
 
         # Events to send the UI
-        self.events: List[Dict[str, Any]] = []
+        self.events: list[dict[str, Any]] = []
 
         # Performance monitoring
-        self.start_loop_date: Optional[datetime] = None
+        self.start_loop_date: datetime | None = None
 
         # Stats tracking
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "updates_sent": 0,
             "commands_processed": 0,
             "db_queries": 0,
@@ -191,12 +191,12 @@ class SatelliteTracker:
         self.state_manager = StateManager(self)
 
         # Inputs provided by manager via IPC
-        self.input_tracking_state: Optional[Dict[str, Any]] = None
-        self.input_location: Optional[Dict[str, Any]] = None
-        self.input_transmitters: List[Dict[str, Any]] = []
-        self.input_satellite: Optional[Dict[str, Any]] = None
-        self.input_map_settings: Dict[str, Any] = {}
-        self.input_hardware: Dict[str, Any] = {}
+        self.input_tracking_state: dict[str, Any] | None = None
+        self.input_location: dict[str, Any] | None = None
+        self.input_transmitters: list[dict[str, Any]] = []
+        self.input_satellite: dict[str, Any] | None = None
+        self.input_map_settings: dict[str, Any] = {}
+        self.input_hardware: dict[str, Any] = {}
 
     def in_tracking_state(self) -> bool:
         """Check if rotator is currently in tracking state."""
@@ -211,7 +211,7 @@ class SatelliteTracker:
 
         interval_seconds = args.track_interval_ms / 1000.0
 
-        tracker: Dict[str, Any] = {}
+        tracker: dict[str, Any] = {}
 
         logger.info(
             "Tracker process started (pid=%s, interval=%ss)",
@@ -242,7 +242,7 @@ class SatelliteTracker:
                         "tracker_id": "satellite_tracker",
                         "stats": self.stats.copy(),
                         "timestamp": current_time,
-                    }
+                    },
                 )
                 self.last_stats_send = current_time
 
@@ -268,7 +268,7 @@ class SatelliteTracker:
 
                 if not tracking_state.get("norad_id"):
                     logger.warning(
-                        "No norad id found in satellite tracking state, skipping iteration"
+                        "No norad id found in satellite tracking state, skipping iteration",
                     )
                     continue
 
@@ -278,7 +278,7 @@ class SatelliteTracker:
                 location = self.input_location
 
                 if not self.input_satellite or self.input_satellite.get(
-                    "norad_id"
+                    "norad_id",
                 ) != tracking_state.get("norad_id"):
                     logger.warning("No matching satellite ephemeris provided, skipping iteration")
                     continue
@@ -418,7 +418,7 @@ class SatelliteTracker:
                     logger.warning(
                         f"Single tracking loop iteration took longer "
                         f"({loop_duration}) than the configured "
-                        f"interval ({interval_seconds})"
+                        f"interval ({interval_seconds})",
                     )
 
                 remaining_time_to_sleep = max((interval_seconds - loop_duration), 0)
@@ -433,7 +433,7 @@ class SatelliteTracker:
 
                 await asyncio.sleep(remaining_time_to_sleep)
 
-    def apply_input_message(self, message: Dict[str, Any]) -> None:
+    def apply_input_message(self, message: dict[str, Any]) -> None:
         """Apply IPC message payloads sent from the manager."""
         msg_type = message.get("type")
         payload = message.get("payload", {})
@@ -462,7 +462,7 @@ class SatelliteTracker:
 
 
 async def satellite_tracking_task(
-    queue_out: multiprocessing.Queue, queue_in: multiprocessing.Queue, stop_event=None
+    queue_out: multiprocessing.Queue, queue_in: multiprocessing.Queue, stop_event=None,
 ):
     """
     Wrapper function that creates and runs a SatelliteTracker instance.

@@ -16,8 +16,8 @@
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional, Tuple
 
 from common.arguments import arguments as args
 
@@ -25,7 +25,7 @@ from common.arguments import arguments as args
 class RotatorController:
     def __init__(
         self,
-        model: Optional[int] = None,  # Model no longer used directly
+        model: int | None = None,  # Model no longer used directly
         host: str = "127.0.0.1",
         port: int = 4533,
         verbose: bool = False,
@@ -42,8 +42,8 @@ class RotatorController:
         self.port = port
         self.device_path = device_path
         self.verbose = verbose
-        self.reader: Optional[asyncio.StreamReader] = None
-        self.writer: Optional[asyncio.StreamWriter] = None
+        self.reader: asyncio.StreamReader | None = None
+        self.writer: asyncio.StreamWriter | None = None
         self.connected = False
         self.timeout = timeout
 
@@ -61,7 +61,7 @@ class RotatorController:
 
             # Create a persistent connection
             reader_writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port), timeout=self.timeout
+                asyncio.open_connection(self.host, self.port), timeout=self.timeout,
             )
             self.reader, self.writer = reader_writer
 
@@ -114,7 +114,7 @@ class RotatorController:
             try:
                 # Use asyncio's open_connection with timeout
                 reader, writer = await asyncio.wait_for(
-                    asyncio.open_connection(self.host, self.port), timeout=self.timeout
+                    asyncio.open_connection(self.host, self.port), timeout=self.timeout,
                 )
                 yield reader, writer
             finally:
@@ -146,7 +146,7 @@ class RotatorController:
             if waitforreply:
                 # Read the response
                 response_bytes = await asyncio.wait_for(
-                    self.reader.read(1000), timeout=self.timeout
+                    self.reader.read(1000), timeout=self.timeout,
                 )
 
                 response = response_bytes.decode("utf-8", errors="replace").strip()
@@ -216,7 +216,7 @@ class RotatorController:
             self.logger.exception(e)
             return False
 
-    async def get_position(self) -> Tuple[float, float]:
+    async def get_position(self) -> tuple[float, float]:
         """Get the current azimuth and elevation."""
         try:
             response = await self._send_command("p")
@@ -291,7 +291,7 @@ class RotatorController:
         update_interval: float = 2,
         az_tolerance: float = 1.0,
         el_tolerance: float = 1.0,
-    ) -> AsyncGenerator[Tuple[float, float, bool], None]:
+    ) -> AsyncGenerator[tuple[float, float, bool], None]:
         """Set the rotator position and yield updates until it reaches the target."""
         # Start the slew operation
         try:
@@ -422,7 +422,7 @@ class RotatorController:
             try:
                 # Just log a warning rather than trying to run async code
                 self.logger.warning(
-                    "Object RotatorController being garbage collected while still connected"
+                    "Object RotatorController being garbage collected while still connected",
                 )
 
                 # If there's a synchronous way to close the underlying connection, use it

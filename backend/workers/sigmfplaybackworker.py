@@ -19,7 +19,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import psutil
@@ -30,7 +30,7 @@ SUPPORTED_DATATYPES = {"cf32_le", "ci16_le", "ci16", "ci8", "ci8_le", "cu8", "cu
 
 
 def sigmf_playback_worker_process(
-    config_queue, data_queue, stop_event, iq_queue_fft=None, iq_queue_demod=None
+    config_queue, data_queue, stop_event, iq_queue_fft=None, iq_queue_demod=None,
 ):
     """
     Worker process for playing back SigMF recordings.
@@ -139,13 +139,13 @@ def sigmf_playback_worker_process(
         total_recording_duration_seconds = total_samples_in_file / sample_rate
         logger.info(
             f"Recording duration: {total_recording_duration_seconds:.2f} seconds "
-            f"({total_samples_in_file} samples)"
+            f"({total_samples_in_file} samples)",
         )
 
         # Calculate samples per scan (similar to other workers)
         num_samples = calculate_samples_per_scan(sample_rate, fft_size)
         logger.info(
-            f"Playback configured: rate={sample_rate/1e6:.2f} MS/s, block_size={num_samples}"
+            f"Playback configured: rate={sample_rate/1e6:.2f} MS/s, block_size={num_samples}",
         )
 
         # Track current capture segment
@@ -160,7 +160,7 @@ def sigmf_playback_worker_process(
             try:
                 # Parse ISO format datetime (e.g., "2025-11-29T11:07:23Z")
                 recording_start_datetime = datetime.fromisoformat(
-                    datetime_str.replace("Z", "+00:00")
+                    datetime_str.replace("Z", "+00:00"),
                 )
                 logger.info(f"Recording start datetime: {recording_start_datetime}")
             except Exception as e:
@@ -173,11 +173,11 @@ def sigmf_playback_worker_process(
                 "client_id": client_id,
                 "message": None,
                 "timestamp": time.time(),
-            }
+            },
         )
 
         # Performance monitoring stats
-        stats: Dict[str, Any] = {
+        stats: dict[str, Any] = {
             "samples_read": 0,
             "iq_chunks_out": 0,
             "read_errors": 0,
@@ -224,7 +224,7 @@ def sigmf_playback_worker_process(
                         "sdr_id": sdr_id,
                         "stats": stats.copy(),
                         "timestamp": current_time,
-                    }
+                    },
                 )
                 last_stats_send = current_time
             # Check for configuration updates
@@ -262,7 +262,7 @@ def sigmf_playback_worker_process(
                     old_config = new_config
 
             except Exception as e:
-                logger.error(f"Error processing configuration: {str(e)}")
+                logger.error(f"Error processing configuration: {e!s}")
 
             try:
                 # Read samples from file
@@ -301,7 +301,7 @@ def sigmf_playback_worker_process(
                         current_capture_idx = idx
                         current_freq = captures[idx].get("core:frequency", current_freq)
                         logger.info(
-                            f"Moved to capture segment {idx}: freq={current_freq/1e6:.3f} MHz"
+                            f"Moved to capture segment {idx}: freq={current_freq/1e6:.3f} MHz",
                         )
 
                 # Remove DC offset
@@ -321,12 +321,12 @@ def sigmf_playback_worker_process(
 
                         if recording_start_datetime is not None:
                             current_recording_datetime = recording_start_datetime + timedelta(
-                                seconds=playback_elapsed_seconds
+                                seconds=playback_elapsed_seconds,
                             )
                             # Format as ISO string with Z suffix
                             recording_datetime = (
                                 current_recording_datetime.replace(
-                                    microsecond=0, tzinfo=None
+                                    microsecond=0, tzinfo=None,
                                 ).isoformat()
                                 + "Z"
                             )
@@ -398,7 +398,7 @@ def sigmf_playback_worker_process(
                                 stats["queue_drops"] += 1
 
                     except Exception as e:
-                        logger.debug(f"Could not queue IQ data: {str(e)}")
+                        logger.debug(f"Could not queue IQ data: {e!s}")
 
                 # Timing: sleep to simulate real-time playback
                 # Calculate time this block should take at the given sample rate
@@ -406,7 +406,7 @@ def sigmf_playback_worker_process(
                 time.sleep(block_duration)
 
             except Exception as e:
-                logger.error(f"Error processing playback data: {str(e)}")
+                logger.error(f"Error processing playback data: {e!s}")
 
                 logger.exception(e)
 
@@ -419,14 +419,14 @@ def sigmf_playback_worker_process(
                         "client_id": client_id,
                         "message": str(e),
                         "timestamp": time.time(),
-                    }
+                    },
                 )
 
                 # Pause before retrying
                 time.sleep(1)
 
     except Exception as e:
-        error_msg = f"Error in SigMF playback worker process: {str(e)}"
+        error_msg = f"Error in SigMF playback worker process: {e!s}"
         logger.error(error_msg)
         logger.exception(e)
 
@@ -437,7 +437,7 @@ def sigmf_playback_worker_process(
                 "client_id": client_id,
                 "message": error_msg,
                 "timestamp": time.time(),
-            }
+            },
         )
 
     finally:
@@ -451,7 +451,7 @@ def sigmf_playback_worker_process(
                 data_file.close()
                 logger.info("SigMF data file closed")
             except Exception as e:
-                logger.error(f"Error closing SigMF data file: {str(e)}")
+                logger.error(f"Error closing SigMF data file: {e!s}")
 
         # Send termination signal
         data_queue.put(
@@ -460,7 +460,7 @@ def sigmf_playback_worker_process(
                 "client_id": client_id,
                 "sdr_id": sdr_id,
                 "timestamp": time.time(),
-            }
+            },
         )
 
         logger.info("SigMF playback worker process terminated")
@@ -546,7 +546,7 @@ def remove_dc_offset(samples):
     # Check for invalid values (inf/nan from overflow)
     if not np.isfinite(mean_i) or not np.isfinite(mean_q):
         logger.warning(
-            f"Invalid mean values detected (mean_i={mean_i}, mean_q={mean_q}), skipping DC offset removal"
+            f"Invalid mean values detected (mean_i={mean_i}, mean_q={mean_q}), skipping DC offset removal",
         )
         return samples
 

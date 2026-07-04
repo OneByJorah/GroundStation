@@ -21,7 +21,7 @@ import queue
 import threading
 import time
 from dataclasses import asdict
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from vfos.state import VFOManager
 
@@ -49,7 +49,7 @@ class IQBroadcaster(threading.Thread):
         super().__init__(daemon=True, name=f"IQBroadcaster-{sdr_id}")
         self.source_queue = source_queue
         self.sdr_id = sdr_id
-        self.subscribers: Dict[str, dict] = {}  # session_id -> {queue, delivered, dropped}
+        self.subscribers: dict[str, dict] = {}  # session_id -> {queue, delivered, dropped}
         self.running = True
         self.lock = threading.Lock()
         self.logger = logging.getLogger("iq-broadcaster")
@@ -58,7 +58,7 @@ class IQBroadcaster(threading.Thread):
         self.vfo_manager = VFOManager()
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "messages_in": 0,
             "messages_broadcast": 0,
             "messages_dropped": 0,
@@ -73,8 +73,8 @@ class IQBroadcaster(threading.Thread):
         session_id: str,
         maxsize: int = 50,
         for_process: bool = False,
-        session_id_hint: Optional[str] = None,
-    ) -> Union[queue.Queue[Any], multiprocessing.Queue[Any]]:
+        session_id_hint: str | None = None,
+    ) -> queue.Queue[Any] | multiprocessing.Queue[Any]:
         """
         Create a new subscriber queue for a session.
 
@@ -94,7 +94,7 @@ class IQBroadcaster(threading.Thread):
         with self.lock:
             if session_id not in self.subscribers:
                 # Create appropriate queue type based on subscriber needs
-                subscriber_queue: Union[queue.Queue[Any], multiprocessing.Queue[Any]]
+                subscriber_queue: queue.Queue[Any] | multiprocessing.Queue[Any]
                 if for_process:
                     subscriber_queue = multiprocessing.Queue(maxsize=maxsize)
                     queue_type = "multiprocessing"
@@ -114,7 +114,7 @@ class IQBroadcaster(threading.Thread):
                     "dropped": 0,
                 }
                 self.logger.info(f"Subscribed session {session_id} (queue: {queue_type})")
-            result: Union[queue.Queue[Any], multiprocessing.Queue[Any]] = self.subscribers[
+            result: queue.Queue[Any] | multiprocessing.Queue[Any] = self.subscribers[
                 session_id
             ]["queue"]
             return result
@@ -160,7 +160,7 @@ class IQBroadcaster(threading.Thread):
                         break
                 if flushed_count > 0:
                     self.logger.debug(
-                        f"Flushed {flushed_count} items from queue for session {session_id}"
+                        f"Flushed {flushed_count} items from queue for session {session_id}",
                     )
 
     def _extract_session_id(self, subscription_key: str) -> str:
@@ -203,8 +203,8 @@ class IQBroadcaster(threading.Thread):
         return parts[1]
 
     def _enrich_iq_message_with_vfo_states(
-        self, iq_message: Dict[str, Any], session_id: str
-    ) -> Dict[str, Any]:
+        self, iq_message: dict[str, Any], session_id: str,
+    ) -> dict[str, Any]:
         """
         Add VFO states to IQ message for the given session.
 
@@ -275,12 +275,12 @@ class IQBroadcaster(threading.Thread):
 
                         # Extract session_id from subscription key and enrich message with VFO states
                         session_id = subscriber_info.get("session_id") or self._extract_session_id(
-                            subscription_key
+                            subscription_key,
                         )
                         if session_id:
                             # Create enriched message with VFO states for this specific session
                             enriched_message = self._enrich_iq_message_with_vfo_states(
-                                iq_message.copy(), session_id
+                                iq_message.copy(), session_id,
                             )
                         else:
                             # Fallback if we can't extract session_id (shouldn't happen)
@@ -312,7 +312,7 @@ class IQBroadcaster(threading.Thread):
                             else:
                                 # Mark subscriber for removal if there's an error
                                 self.logger.warning(
-                                    f"Error broadcasting to {subscription_key}: {e}"
+                                    f"Error broadcasting to {subscription_key}: {e}",
                                 )
                                 dead_subscribers.append(subscription_key)
 

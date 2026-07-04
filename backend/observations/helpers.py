@@ -16,11 +16,15 @@
 """Helper functions for observation executor."""
 
 import traceback
-from typing import Any, Optional
+from typing import Any
 
 from common.logger import logger
-from crud.scheduledobservations import log_observation_event, update_scheduled_observation_status
+from crud.scheduledobservations import (
+    log_observation_event,
+    update_scheduled_observation_status,
+)
 from db import AsyncSessionLocal
+
 from observations.events import observation_sync
 
 
@@ -28,7 +32,7 @@ async def update_observation_status(
     sio: Any,
     observation_id: str,
     status: str,
-    error_message: Optional[str] = None,
+    error_message: str | None = None,
 ) -> None:
     """
     Update observation status in database.
@@ -42,7 +46,7 @@ async def update_observation_status(
     try:
         async with AsyncSessionLocal() as session:
             result = await update_scheduled_observation_status(
-                session, observation_id, status, error_message
+                session, observation_id, status, error_message,
             )
             if not result["success"]:
                 logger.error(f"Failed to update observation status: {result.get('error')}")

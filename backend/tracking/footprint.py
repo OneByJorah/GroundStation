@@ -64,7 +64,7 @@ def get_satellite_coverage_circle(sat_lat, sat_lon, altitude_km, num_points=36):
 
         # Using spherical trigonometry to compute a point d away from (lat0,lon0)
         lat_i = math.asin(
-            math.sin(lat0) * math.cos(d) + math.cos(lat0) * math.sin(d) * math.cos(theta)
+            math.sin(lat0) * math.cos(d) + math.cos(lat0) * math.sin(d) * math.cos(theta),
         )
         lon_i = lon0 + math.atan2(
             math.sin(d) * math.sin(theta) * math.cos(lat0),
@@ -99,10 +99,10 @@ def get_satellite_coverage_circle(sat_lat, sat_lon, altitude_km, num_points=36):
 
         # manually add correcting points so that the coverage is realistic
         circle_points.insert(
-            min_lat_index + 1, {"lat": -90.0, "lon": circle_points[min_lat_index]["lon"]}
+            min_lat_index + 1, {"lat": -90.0, "lon": circle_points[min_lat_index]["lon"]},
         )
         circle_points.insert(
-            min_lat_index + 2, {"lat": -90.0, "lon": circle_points[min_lat_index + 2]["lon"]}
+            min_lat_index + 2, {"lat": -90.0, "lon": circle_points[min_lat_index + 2]["lon"]},
         )
 
     return circle_points

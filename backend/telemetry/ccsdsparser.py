@@ -7,11 +7,11 @@ Parses the 6-byte primary header and returns fields plus remaining payload.
 Does not attempt to parse secondary headers.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class CCSDSParser:
-    def parse(self, packet: bytes) -> Dict[str, Any]:
+    def parse(self, packet: bytes) -> dict[str, Any]:
         if len(packet) < 6:
             return {"success": False, "error": "Packet too short for CCSDS primary header"}
 

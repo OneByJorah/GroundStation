@@ -16,13 +16,12 @@
 
 import logging
 import logging.config
-from typing import Any, Dict, List, Optional, Set, TypedDict
+from typing import Any, TypedDict
 
 import SoapySDR
 import yaml
-from SoapySDR import SOAPY_SDR_RX, SOAPY_SDR_TX
-
 from common.logconfig import resolve_log_config_path
+from SoapySDR import SOAPY_SDR_RX, SOAPY_SDR_TX
 
 # Load logger configuration
 with open(resolve_log_config_path(None), "r", encoding="utf-8") as f:
@@ -33,8 +32,8 @@ logger = logging.getLogger("soapyremote-probe")
 
 
 class AntennaInfo(TypedDict):
-    rx: List[str]
-    tx: List[str]
+    rx: list[str]
+    tx: list[str]
 
 
 class FrequencyRange(TypedDict):
@@ -43,31 +42,31 @@ class FrequencyRange(TypedDict):
 
 
 class ClockInfo(TypedDict):
-    ref_locked: Optional[str]
-    clock_source: Optional[str]
-    available_sensors: List[str]
-    available_settings: Dict[str, Dict[str, Optional[str]]]
+    ref_locked: str | None
+    clock_source: str | None
+    available_sensors: list[str]
+    available_settings: dict[str, dict[str, str | None]]
 
 
 class SDRData(TypedDict):
-    rates: List[float]
-    gains: List[float]
+    rates: list[float]
+    gains: list[float]
     has_soapy_agc: bool
     antennas: AntennaInfo
-    frequency_ranges: Dict[str, FrequencyRange]
+    frequency_ranges: dict[str, FrequencyRange]
     clock_info: ClockInfo
-    temperature: Dict[str, str]
-    capabilities: Dict[str, Any]
+    temperature: dict[str, str]
+    capabilities: dict[str, Any]
 
 
 class ProbeReply(TypedDict):
-    success: Optional[bool]
-    data: Optional[SDRData]
-    error: Optional[str]
-    log: List[str]
+    success: bool | None
+    data: SDRData | None
+    error: str | None
+    log: list[str]
 
 
-def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
+def probe_remote_soapy_sdr(sdr_details: dict[str, Any]) -> ProbeReply:
     """
     Connect to a SoapySDR server and retrieve valid sample rates and gain values for a given SDR device.
 
@@ -94,21 +93,21 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
         "log": [],
     }
 
-    rates: List[float] = []
-    gains: List[float] = []
+    rates: list[float] = []
+    gains: list[float] = []
     has_agc: bool = False
     antennas: AntennaInfo = {"rx": [], "tx": []}
-    frequency_ranges: Dict[str, FrequencyRange] = {}
+    frequency_ranges: dict[str, FrequencyRange] = {}
     clock_info: ClockInfo = {
         "ref_locked": None,
         "clock_source": None,
         "available_sensors": [],
         "available_settings": {},
     }
-    temp_info: Dict[str, str] = {}
-    capabilities: Dict[str, Any] = {}
+    temp_info: dict[str, str] = {}
+    capabilities: dict[str, Any] = {}
 
-    def _serialize_range(range_obj: Any) -> Optional[Dict[str, Any]]:
+    def _serialize_range(range_obj: Any) -> dict[str, Any] | None:
         if range_obj is None:
             return None
         if hasattr(range_obj, "minimum") and hasattr(range_obj, "maximum"):
@@ -158,7 +157,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
             return type_map.get(int(type_value), type_value)
         return type_value
 
-    def _postprocess_caps(caps: Dict[str, Any]) -> Dict[str, Any]:
+    def _postprocess_caps(caps: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(caps, dict):
             return caps
         # Normalize empty bandwidth lists to null
@@ -180,8 +179,8 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
                 caps[key] = None
         return caps
 
-    def _collect_capabilities(device: Any, channel_index: int) -> Dict[str, Any]:
-        caps: Dict[str, Any] = {
+    def _collect_capabilities(device: Any, channel_index: int) -> dict[str, Any]:
+        caps: dict[str, Any] = {
             "settings": [],
             "sensors": [],
             "sensor_values": {},
@@ -209,7 +208,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
                         "name": getattr(setting, "name", None),
                         "description": getattr(setting, "description", None),
                         "type": _normalize_setting_type(
-                            _normalize_value(getattr(setting, "type", None))
+                            _normalize_value(getattr(setting, "type", None)),
                         ),
                         "units": _normalize_value(getattr(setting, "units", None)),
                         "range": _serialize_range(getattr(setting, "range", None)),
@@ -280,7 +279,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
             try:
                 if hasattr(device, "listGains"):
                     caps["gain_elements"][direction_name] = device.listGains(
-                        direction, channel_index
+                        direction, channel_index,
                     )
                     for gain_name in caps["gain_elements"][direction_name]:
                         try:
@@ -298,7 +297,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
             try:
                 if hasattr(device, "listBandwidths"):
                     caps["bandwidths"][direction_name] = device.listBandwidths(
-                        direction, channel_index
+                        direction, channel_index,
                     )
             except Exception:
                 pass
@@ -320,7 +319,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
             try:
                 if hasattr(device, "getStreamFormats"):
                     caps["stream_formats"][direction_name] = device.getStreamFormats(
-                        direction, channel_index
+                        direction, channel_index,
                     )
                 if hasattr(device, "getNativeStreamFormat"):
                     fmt, full_scale = device.getNativeStreamFormat(direction, channel_index)
@@ -358,7 +357,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
         device_model = sdr_str.split(":")[1] if ":" in sdr_str else sdr_str
 
         reply["log"].append(
-            f"INFO: Connected to {device_name} ({device_model}) at {hostname}:{port}"
+            f"INFO: Connected to {device_name} ({device_model}) at {hostname}:{port}",
         )
 
         # Get channel (default to 0)
@@ -375,7 +374,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
 
             # Fall back to generating rates from ranges
             sample_rate_ranges = sdr.getSampleRateRange(SOAPY_SDR_RX, channel)
-            rates_set: Set[int] = set()
+            rates_set: set[int] = set()
 
             for rate_range in sample_rate_ranges:
                 min_val = rate_range.minimum()
@@ -401,7 +400,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
         if step <= 0.0001:  # Threshold for considering a step too small
             step = 1.0  # Default to 1.0 dB steps
             reply["log"].append(
-                "WARNING: Gain step is zero or too small, defaulting to 1.0 dB steps"
+                "WARNING: Gain step is zero or too small, defaulting to 1.0 dB steps",
             )
 
         max_iterations = 100
@@ -416,7 +415,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
 
         if iteration >= max_iterations:
             reply["log"].append(
-                f"WARNING: Reached maximum iterations ({max_iterations}) when calculating gain values. Check gain range."
+                f"WARNING: Reached maximum iterations ({max_iterations}) when calculating gain values. Check gain range.",
             )
 
         # Check if automatic gain control is supported
@@ -424,9 +423,9 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
             has_agc = sdr.hasGainMode(SOAPY_SDR_RX, channel)
         except Exception as e:
             reply["log"].append(
-                "WARNING: Could not determine if automatic gain control is supported"
+                "WARNING: Could not determine if automatic gain control is supported",
             )
-            reply["log"].append(f"EXCEPTION: {str(e)}\n{e.__class__.__name__}: {str(e)}")
+            reply["log"].append(f"EXCEPTION: {e!s}\n{e.__class__.__name__}: {e!s}")
 
         # Get information about antennas
         try:
@@ -447,7 +446,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
             reply["log"].append(f"INFO: Antennas: {ant_info}")
         except Exception as e:
             reply["log"].append(f"WARNING: Could not get antenna information: {e}")
-            reply["log"].append(f"EXCEPTION: {str(e)}\n{e.__class__.__name__}: {str(e)}")
+            reply["log"].append(f"EXCEPTION: {e!s}\n{e.__class__.__name__}: {e!s}")
 
         # Get frequency range information
         try:
@@ -474,7 +473,7 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
             reply["log"].append(f"WARNING: Could not get frequency range information: {e}")
 
         # Get a list of available sensors
-        sensors: List[str] = []
+        sensors: list[str] = []
         try:
             sensors = sdr.listSensors()
             clock_info["available_sensors"] = sensors
@@ -561,8 +560,8 @@ def probe_remote_soapy_sdr(sdr_details: Dict[str, Any]) -> ProbeReply:
         capabilities = _collect_capabilities(sdr, channel)
 
     except Exception as e:
-        reply["log"].append(f"ERROR: Error connecting to SoapySDR device: {str(e)}")
-        reply["log"].append(f"EXCEPTION: {str(e)}\n{e.__class__.__name__}: {str(e)}")
+        reply["log"].append(f"ERROR: Error connecting to SoapySDR device: {e!s}")
+        reply["log"].append(f"EXCEPTION: {e!s}\n{e.__class__.__name__}: {e!s}")
         reply["success"] = False
         reply["error"] = str(e)
 

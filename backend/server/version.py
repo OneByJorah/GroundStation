@@ -5,11 +5,10 @@ import re
 import subprocess
 import time
 from datetime import datetime, timezone
-from typing import Any, Optional, TypedDict, cast
+from typing import Any, TypedDict, cast
 
 import psutil
 import requests
-
 from common.logger import logger
 
 # Path to the version.json file containing the base version
@@ -23,15 +22,15 @@ VERSION_FILE_PATH = os.path.join(os.path.dirname(__file__), "version-info.json")
 class UpdateCheckData(TypedDict):
     currentVersion: str
     latestVersion: str
-    latestTag: Optional[str]
-    latestUrl: Optional[str]
-    publishedAt: Optional[str]
+    latestTag: str | None
+    latestUrl: str | None
+    publishedAt: str | None
     isUpdateAvailable: bool
 
 
 class UpdateCheckCache(TypedDict):
     timestamp: float
-    data: Optional[UpdateCheckData]
+    data: UpdateCheckData | None
 
 
 _version_info = None
@@ -125,7 +124,7 @@ def get_update_check(cache_ttl_seconds: int = 21600) -> UpdateCheckData:
                 "latestUrl": release.get("html_url"),
                 "publishedAt": release.get("published_at"),
                 "isUpdateAvailable": _compare_versions(latest_version, current_base) > 0,
-            }
+            },
         )
     except Exception as exc:
         logger.warning(f"Update check failed: {exc}")
@@ -227,7 +226,7 @@ def _get_cpu_usage_percent_nonblocking(prime: bool = False) -> float:
 
 
 def get_system_info(
-    include_load_avg: bool = False, include_cpu_temp: bool = False, nonblocking_cpu: bool = False
+    include_load_avg: bool = False, include_cpu_temp: bool = False, nonblocking_cpu: bool = False,
 ):
     """Get system information (CPU, memory, disk usage).
 
@@ -361,7 +360,7 @@ def get_system_info(
     except Exception as e:
         logger.error(f"Error gathering system information: {e}")
         return {
-            "error": f"Failed to gather system info: {str(e)}",
+            "error": f"Failed to gather system info: {e!s}",
         }
 
 
@@ -413,6 +412,6 @@ def write_version_info_during_build(version_info_override=None):
         json.dump(version_info, f)
     logger.info(
         f"Version information written to {VERSION_FILE_PATH}: {version_info} with overrides: "
-        f"{version_info_override}"
+        f"{version_info_override}",
     )
     return version_info

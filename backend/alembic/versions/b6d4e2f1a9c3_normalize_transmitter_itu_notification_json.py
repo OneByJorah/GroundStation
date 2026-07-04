@@ -7,17 +7,16 @@ Create Date: 2026-03-12 16:55:00.000000
 """
 
 import json
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-
 from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b6d4e2f1a9c3"
-down_revision: Union[str, None] = "a91f8c3d4e2b"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "a91f8c3d4e2b"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _normalize_itu_notification_value(raw_value):
@@ -58,8 +57,8 @@ def upgrade() -> None:
             FROM transmitters
             WHERE itu_notification IS NOT NULL
               AND json_valid(CAST(itu_notification AS TEXT)) = 0
-            """
-        )
+            """,
+        ),
     ).fetchall()
 
     for row in rows:

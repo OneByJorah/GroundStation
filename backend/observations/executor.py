@@ -19,7 +19,7 @@ import asyncio
 import json
 import traceback
 from pathlib import Path
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 from common.constants import TrackingStateNames
 from common.logger import logger
@@ -28,6 +28,10 @@ from crud import trackingstate
 from crud.hardware import fetch_sdr
 from crud.scheduledobservations import fetch_scheduled_observations
 from db import AsyncSessionLocal
+from session.service import session_service
+from session.tracker import session_tracker
+from vfos.state import INTERNAL_VFO_NUMBER, VFOManager
+
 from observations.constants import (
     STATUS_CANCELLED,
     STATUS_COMPLETED,
@@ -45,9 +49,6 @@ from observations.tasks.decoderhandler import DecoderHandler
 from observations.tasks.recorderhandler import RecorderHandler
 from observations.tasks.trackerhandler import TrackerHandler
 from observations.tasks.transcriptionhandler import TranscriptionHandler
-from session.service import session_service
-from session.tracker import session_tracker
-from vfos.state import INTERNAL_VFO_NUMBER, VFOManager
 
 KNOWN_SATDUMP_PIPELINES = {
     "meteor_m2-x_lrpt",
@@ -86,8 +87,8 @@ class ObservationExecutor:
 
         # Track actively executing observations to prevent concurrent starts
         self._running_observations: set[str] = set()
-        self._observations_lock: Optional[asyncio.Lock] = None  # Will be initialized lazily
-        self._iq_recording_info: Dict[str, Dict[str, Dict[int, Dict[str, Any]]]] = {}
+        self._observations_lock: asyncio.Lock | None = None  # Will be initialized lazily
+        self._iq_recording_info: dict[str, dict[str, dict[int, dict[str, Any]]]] = {}
 
     @property
     def vfo_manager(self):
@@ -104,11 +105,11 @@ class ObservationExecutor:
             self._observations_lock = asyncio.Lock()
         return self._observations_lock
 
-    def _get_session_key(self, session: Dict[str, Any], session_index: int) -> str:
+    def _get_session_key(self, session: dict[str, Any], session_index: int) -> str:
         sdr_id = session.get("sdr", {}).get("id") if isinstance(session, dict) else None
         return str(sdr_id) if sdr_id else f"session-{session_index}"
 
-    async def start_observation(self, observation_id: str) -> Dict[str, Any]:
+    async def start_observation(self, observation_id: str) -> dict[str, Any]:
         """
         Start an observation at AOS time.
 
@@ -127,7 +128,7 @@ class ObservationExecutor:
         Returns:
             Dictionary with success status and error message if failed
         """
-        started_sessions: list[tuple[str, Dict[str, Any]]] = []
+        started_sessions: list[tuple[str, dict[str, Any]]] = []
         try:
             logger.info(f"Starting observation: {observation_id}")
             await log_execution_event(observation_id, "Start requested", "info")
@@ -166,7 +167,7 @@ class ObservationExecutor:
             if status != STATUS_SCHEDULED:
                 error_msg = f"Invalid status: {observation.get('status')}"
                 logger.warning(
-                    f"Observation {observation_id} has status {observation.get('status')}, skipping"
+                    f"Observation {observation_id} has status {observation.get('status')}, skipping",
                 )
                 await log_execution_event(observation_id, error_msg, "warning")
                 return {"success": False, "error": error_msg}
@@ -185,7 +186,7 @@ class ObservationExecutor:
             if rotator_config.get("tracking_enabled") and rotator_config.get("id"):
                 async with AsyncSessionLocal() as session:
                     tracking_state_reply = await trackingstate.get_tracking_state(
-                        session, TrackingStateNames.SATELLITE_TRACKING
+                        session, TrackingStateNames.SATELLITE_TRACKING,
                     )
                 if tracking_state_reply.get("success"):
                     tracking_value = (tracking_state_reply.get("data") or {}).get("value", {})
@@ -201,7 +202,7 @@ class ObservationExecutor:
                 else:
                     logger.warning(
                         f"Failed to fetch tracking state; proceeding with observation "
-                        f"{observation_id}: {tracking_state_reply.get('error')}"
+                        f"{observation_id}: {tracking_state_reply.get('error')}",
                     )
 
             # 4. Check if SDRs are available (not in use by other sessions)
@@ -214,7 +215,7 @@ class ObservationExecutor:
                     logger.error(error_msg)
                     await log_execution_event(observation_id, error_msg, "error")
                     await update_observation_status(
-                        self.sio, observation_id, STATUS_FAILED, error_msg
+                        self.sio, observation_id, STATUS_FAILED, error_msg,
                     )
                     await remove_scheduled_stop_job(observation_id)
                     return {"success": False, "error": error_msg}
@@ -231,27 +232,27 @@ class ObservationExecutor:
             # 5. Execute observation sessions
             logger.info(f"Executing observation tasks for {observation['name']}")
             await log_execution_event(
-                observation_id, f"Starting tasks for {observation['name']}", "info"
+                observation_id, f"Starting tasks for {observation['name']}", "info",
             )
 
             for session_index, session in enumerate(sessions, start=1):
                 session_key = self._get_session_key(session, session_index)
                 await self._execute_observation_session(
-                    observation_id, session_key, observation, session
+                    observation_id, session_key, observation, session,
                 )
                 started_sessions.append((session_key, session))
                 if session_index < len(sessions):
                     await asyncio.sleep(0.5)
 
             # 6. Start tracker once using combined tasks
-            combined_tasks: list[Dict[str, Any]] = []
+            combined_tasks: list[dict[str, Any]] = []
             for session in sessions:
                 combined_tasks.extend(session.get("tasks", []) if isinstance(session, dict) else [])
 
             rotator_config = observation.get("rotator", {})
             satellite = observation.get("satellite", {})
             await self.tracker_handler.start_tracker_task(
-                observation_id, satellite, rotator_config, combined_tasks
+                observation_id, satellite, rotator_config, combined_tasks,
             )
 
             # 7. Update observation status to RUNNING
@@ -272,11 +273,11 @@ class ObservationExecutor:
                 for session_key, session in started_sessions:
                     try:
                         await self._stop_observation_session(
-                            observation_id, session_key, session, satellite
+                            observation_id, session_key, session, satellite,
                         )
                     except Exception as cleanup_error:
                         logger.error(
-                            f"Failed to clean up session {session_key} after start error: {cleanup_error}"
+                            f"Failed to clean up session {session_key} after start error: {cleanup_error}",
                         )
 
             # Clean up running observation tracking
@@ -287,7 +288,7 @@ class ObservationExecutor:
             await remove_scheduled_stop_job(observation_id)
             return {"success": False, "error": error_msg}
 
-    async def stop_observation(self, observation_id: str) -> Dict[str, Any]:
+    async def stop_observation(self, observation_id: str) -> dict[str, Any]:
         """
         Stop an observation at LOS time.
 
@@ -337,21 +338,21 @@ class ObservationExecutor:
                 combined_errors = "; ".join(stop_errors)
                 warning_msg = f"Completed with cleanup warnings: {combined_errors}"
                 await update_observation_status(
-                    self.sio, observation_id, STATUS_COMPLETED, warning_msg
+                    self.sio, observation_id, STATUS_COMPLETED, warning_msg,
                 )
                 await log_execution_event(observation_id, warning_msg, "warning")
                 logger.warning(f"Observation {observation_id} completed but cleanup had issues")
             else:
                 await update_observation_status(self.sio, observation_id, STATUS_COMPLETED)
                 await log_execution_event(
-                    observation_id, "Observation completed successfully", "info"
+                    observation_id, "Observation completed successfully", "info",
                 )
 
             # 4. Remove from running observations tracking
             self._running_observations.discard(observation_id)
 
             logger.info(
-                f"Observation {observation['name']} ({observation_id}) stopped successfully"
+                f"Observation {observation['name']} ({observation_id}) stopped successfully",
             )
             return {"success": len(stop_errors) == 0, "errors": stop_errors}
 
@@ -373,7 +374,7 @@ class ObservationExecutor:
 
             return {"success": False, "error": error_msg}
 
-    async def cancel_observation(self, observation_id: str) -> Dict[str, Any]:
+    async def cancel_observation(self, observation_id: str) -> dict[str, Any]:
         """
         Cancel a running or scheduled observation.
 
@@ -437,8 +438,8 @@ class ObservationExecutor:
         self,
         observation_id: str,
         session_key: str,
-        observation: Dict[str, Any],
-        session: Dict[str, Any],
+        observation: dict[str, Any],
+        session: dict[str, Any],
     ) -> None:
         """
         Execute a single SDR session for an observation at AOS time.
@@ -529,7 +530,7 @@ class ObservationExecutor:
                     # Assign VFO number for this task (1-VFO_NUMBER)
                     if vfo_counter > INTERNAL_VFO_NUMBER:
                         logger.warning(
-                            f"Maximum of {INTERNAL_VFO_NUMBER} VFOs supported, skipping additional tasks in observation {observation_id}"
+                            f"Maximum of {INTERNAL_VFO_NUMBER} VFOs supported, skipping additional tasks in observation {observation_id}",
                         )
                         continue
                     vfo_number = vfo_counter
@@ -540,7 +541,7 @@ class ObservationExecutor:
                     vfo_number = task_config.get("vfo_number")
 
                     await self.decoder_handler.start_decoder_task(
-                        observation_id, session_id, sdr_id, sdr_config, task_config, vfo_number
+                        observation_id, session_id, sdr_id, sdr_config, task_config, vfo_number,
                     )
 
                 elif task_type == "iq_recording":
@@ -555,7 +556,7 @@ class ObservationExecutor:
                     )
                     if recording_path:
                         self._iq_recording_info.setdefault(observation_id, {}).setdefault(
-                            session_key, {}
+                            session_key, {},
                         )[task_index] = {
                             "recording_path": recording_path,
                             "task_config": task_config,
@@ -564,13 +565,13 @@ class ObservationExecutor:
                 elif task_type == "audio_recording":
                     vfo_number = task_config.get("vfo_number")
                     await self.recorder_handler.start_audio_recording_task(
-                        observation_id, session_id, sdr_id, sdr_config, satellite, task_config
+                        observation_id, session_id, sdr_id, sdr_config, satellite, task_config,
                     )
 
                 elif task_type == "transcription":
                     vfo_number = task_config.get("vfo_number")
                     await self.transcription_handler.start_transcription_task(
-                        observation_id, session_id, sdr_id, sdr_config, satellite, task_config
+                        observation_id, session_id, sdr_id, sdr_config, satellite, task_config,
                     )
 
             logger.info(f"Observation {observation_id} session {session_key} started successfully")
@@ -581,7 +582,7 @@ class ObservationExecutor:
             raise
 
     async def _stop_observation_task(
-        self, observation_id: str, observation: Dict[str, Any]
+        self, observation_id: str, observation: dict[str, Any],
     ) -> None:
         """
         Stop the observation task at LOS time.
@@ -609,11 +610,11 @@ class ObservationExecutor:
             for session_index, session in enumerate(sessions, start=1):
                 session_key = self._get_session_key(session, session_index)
                 await self._stop_observation_session(
-                    observation_id, session_key, session, satellite
+                    observation_id, session_key, session, satellite,
                 )
 
             logger.info(
-                f"Observation task {observation_id} cleaned up (decoders stopped, sessions unregistered, VFOs cleaned)"
+                f"Observation task {observation_id} cleaned up (decoders stopped, sessions unregistered, VFOs cleaned)",
             )
 
         except Exception as e:
@@ -625,8 +626,8 @@ class ObservationExecutor:
         self,
         observation_id: str,
         session_key: str,
-        session: Dict[str, Any],
-        satellite: Dict[str, Any],
+        session: dict[str, Any],
+        satellite: dict[str, Any],
     ) -> None:
         session_id = VFOManager.make_internal_session_id(observation_id, session_key)
         sdr_id = session.get("sdr", {}).get("id")
@@ -674,7 +675,7 @@ class ObservationExecutor:
                     self.recorder_handler.stop_audio_recording_task(sdr_id, session_id, vfo_number)
                 if has_transcription_task:
                     self.transcription_handler.stop_transcription_task(
-                        sdr_id, session_id, vfo_number
+                        sdr_id, session_id, vfo_number,
                     )
 
             if has_iq_task:
@@ -686,20 +687,20 @@ class ObservationExecutor:
                 )
                 if skip_auto_waterfall:
                     logger.info(
-                        "Skipping auto-waterfall generation because IQ recording will be deleted after SatDump"
+                        "Skipping auto-waterfall generation because IQ recording will be deleted after SatDump",
                     )
                 stopped_count = (
                     self.process_manager.recorder_manager.stop_all_recorders_for_session(
-                        sdr_id, session_id, skip_auto_waterfall=skip_auto_waterfall
+                        sdr_id, session_id, skip_auto_waterfall=skip_auto_waterfall,
                     )
                 )
                 if stopped_count == 0:
                     self.recorder_handler.stop_iq_recording_task(
-                        sdr_id, session_id, skip_auto_waterfall=skip_auto_waterfall
+                        sdr_id, session_id, skip_auto_waterfall=skip_auto_waterfall,
                     )
 
                 await self._start_satdump_postprocessing(
-                    observation_id, session_key, tasks, session.get("sdr", {}) or {}
+                    observation_id, session_key, tasks, session.get("sdr", {}) or {},
                 )
 
         await session_service.cleanup_internal_observation(observation_id, session_key=session_key)
@@ -708,7 +709,7 @@ class ObservationExecutor:
         vfo_manager.cleanup_internal_vfos(observation_id, session_key=session_key)
 
         logger.info(
-            f"Observation {observation_id} session {session_key} cleaned up for {satellite.get('name', 'unknown')}"
+            f"Observation {observation_id} session {session_key} cleaned up for {satellite.get('name', 'unknown')}",
         )
 
     async def _start_satdump_postprocessing(
@@ -716,7 +717,7 @@ class ObservationExecutor:
         observation_id: str,
         session_key: str,
         tasks: list[dict],
-        sdr_config: Dict[str, Any],
+        sdr_config: dict[str, Any],
     ) -> None:
         task_info = self._iq_recording_info.get(observation_id, {}).get(session_key, {})
 
@@ -749,19 +750,19 @@ class ObservationExecutor:
             pipeline = task_config.get("post_process_pipeline")
             if not pipeline:
                 logger.warning(
-                    f"No SatDump pipeline configured for IQ task {task_index} in {observation_id}"
+                    f"No SatDump pipeline configured for IQ task {task_index} in {observation_id}",
                 )
                 continue
             if pipeline not in KNOWN_SATDUMP_PIPELINES:
                 logger.warning(
-                    f"SatDump pipeline '{pipeline}' is not in the known list; continuing anyway"
+                    f"SatDump pipeline '{pipeline}' is not in the known list; continuing anyway",
                 )
 
             recording_entry = task_info.get(task_index)
             recording_path = recording_entry.get("recording_path") if recording_entry else None
             if not recording_path:
                 logger.warning(
-                    f"No recording path available for IQ task {task_index} in {observation_id}"
+                    f"No recording path available for IQ task {task_index} in {observation_id}",
                 )
                 continue
 
@@ -781,7 +782,7 @@ class ObservationExecutor:
                         "baseband_format": baseband_format,
                         "finish_processing": True,
                         "delete_input_after": task_config.get(
-                            "delete_after_post_processing", False
+                            "delete_after_post_processing", False,
                         ),
                     },
                     name=f"SatDump: {recording_name} ({pipeline})",
@@ -795,19 +796,19 @@ class ObservationExecutor:
             if not self._iq_recording_info[observation_id]:
                 self._iq_recording_info.pop(observation_id, None)
 
-    def _load_sigmf_metadata(self, recording_path: str) -> Dict[str, Any]:
+    def _load_sigmf_metadata(self, recording_path: str) -> dict[str, Any]:
         meta_path = Path(f"{recording_path}.sigmf-meta")
         if not meta_path.exists():
             return {}
         try:
             with meta_path.open("r") as handle:
-                return cast(Dict[str, Any], json.load(handle))
+                return cast(dict[str, Any], json.load(handle))
         except Exception as e:
             logger.warning(f"Failed to load SigMF metadata from {meta_path}: {e}")
             return {}
 
     def _resolve_samplerate(
-        self, metadata: Dict[str, Any], sdr_config: Dict[str, Any], task_config: Dict[str, Any]
+        self, metadata: dict[str, Any], sdr_config: dict[str, Any], task_config: dict[str, Any],
     ) -> int:
         sample_rate = metadata.get("global", {}).get("core:sample_rate")
         if sample_rate:
@@ -822,7 +823,7 @@ class ObservationExecutor:
                 return int(float(sdr_rate))
         return 0
 
-    def _resolve_baseband_format(self, metadata: Dict[str, Any]) -> str:
+    def _resolve_baseband_format(self, metadata: dict[str, Any]) -> str:
         datatype = metadata.get("global", {}).get("core:datatype", "")
         datatype = datatype.lower() if datatype else ""
         if "cf32" in datatype or "c32" in datatype:

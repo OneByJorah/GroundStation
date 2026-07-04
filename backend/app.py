@@ -8,7 +8,6 @@ import threading
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import uvicorn  # noqa: E402
-
 from common.arguments import arguments  # noqa: E402
 from common.logger import get_logger_config, logger  # noqa: E402
 from handlers.socket import register_socketio_handlers  # noqa: E402
@@ -46,7 +45,7 @@ def print_banner():
   ╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 
                             v{version}
-    """
+    """,
     )
 
 
@@ -95,7 +94,7 @@ def main() -> None:
         cleanup_everything()
         os._exit(0)
     except Exception as e:  # pragma: no cover - startup errors
-        logger.error(f"Error starting Ground Station server: {str(e)}")
+        logger.error(f"Error starting Ground Station server: {e!s}")
         logger.exception(e)
         cleanup_everything()
         os._exit(1)

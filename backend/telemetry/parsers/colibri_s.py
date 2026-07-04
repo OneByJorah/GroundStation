@@ -33,12 +33,12 @@ error for that field but continues with others.
 from __future__ import annotations
 
 import struct
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 
 class ColibriSGeoscanAx25Parser:
-    def parse(self, payload: bytes) -> Dict[str, Any]:
-        out: Dict[str, Any] = {"satellite": "COLIBRI-S", "length": len(payload)}
+    def parse(self, payload: bytes) -> dict[str, Any]:
+        out: dict[str, Any] = {"satellite": "COLIBRI-S", "length": len(payload)}
 
         def u8(off: int) -> int:
             return cast(int, struct.unpack_from("<B", payload, off)[0])
@@ -57,8 +57,8 @@ class ColibriSGeoscanAx25Parser:
             out["error"] = "payload too short for COLIBRI-S Type-I mapping"
             return out
 
-        values: Dict[str, Any] = {}
-        raw: Dict[str, Any] = {}
+        values: dict[str, Any] = {}
+        raw: dict[str, Any] = {}
 
         # ID
         try:

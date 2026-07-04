@@ -15,13 +15,13 @@
 
 """Conflict detection helpers for observation generation."""
 
+from collections.abc import Sequence
 from datetime import datetime, timedelta
-from typing import Optional, Sequence
 
+from db.models import ScheduledObservations
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.models import ScheduledObservations
 from observations.constants import (
     PASS_OVERLAP_TOLERANCE_MINUTES,
     STATUS_CANCELLED,
@@ -38,7 +38,7 @@ async def find_overlapping_observation(
     event_start: datetime,
     event_end: datetime,
     monitored_satellite_id: str,
-) -> Optional[ScheduledObservations]:
+) -> ScheduledObservations | None:
     """
     Check if an observation already exists for the given pass window.
 
@@ -65,7 +65,7 @@ async def find_overlapping_observation(
             # Check for time window overlap
             ScheduledObservations.event_start <= search_end,
             ScheduledObservations.event_end >= search_start,
-        )
+        ),
     )
 
     result = await session.execute(stmt)
@@ -98,9 +98,9 @@ async def find_any_time_conflict(
     session: AsyncSession,
     event_start: datetime,
     event_end: datetime,
-    exclude_observation_id: Optional[str] = None,
-    task_start: Optional[datetime] = None,
-    task_end: Optional[datetime] = None,
+    exclude_observation_id: str | None = None,
+    task_start: datetime | None = None,
+    task_end: datetime | None = None,
 ) -> Sequence[ScheduledObservations]:
     """
     Check if ANY observations exist that overlap with this time window,

@@ -19,11 +19,10 @@ import logging
 import queue
 import threading
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy import signal
-
 from vfos.state import VFOManager
 
 logger = logging.getLogger("fm-demodulator")
@@ -87,9 +86,9 @@ class FMDemodulator(threading.Thread):
         self.current_bandwidth = None
 
         # Filters (will be initialized when we know sample rates)
-        self.decimation_filter: Optional[Tuple[np.ndarray, int]] = None
-        self.audio_filter: Optional[np.ndarray] = None
-        self.deemphasis_filter: Optional[Tuple[np.ndarray, np.ndarray]] = None
+        self.decimation_filter: tuple[np.ndarray, int] | None = None
+        self.audio_filter: np.ndarray | None = None
+        self.deemphasis_filter: tuple[np.ndarray, np.ndarray] | None = None
 
         # De-emphasis time constant (75 microseconds for US, 50 for EU)
         self.deemphasis_tau = 75e-6
@@ -100,7 +99,7 @@ class FMDemodulator(threading.Thread):
         self.last_rf_power_db = None  # Cache last measured power
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "iq_samples_in": 0,
             "audio_chunks_out": 0,
@@ -301,7 +300,7 @@ class FMDemodulator(threading.Thread):
         return demodulated
 
     def _is_vfo_in_sdr_bandwidth(
-        self, vfo_center: float, sdr_center: float, sdr_sample_rate: float
+        self, vfo_center: float, sdr_center: float, sdr_sample_rate: float,
     ):
         """
         Check if VFO center frequency is within SDR bandwidth (with small edge margin).
@@ -398,7 +397,7 @@ class FMDemodulator(threading.Thread):
 
                     # Design filters
                     stages, total_decimation = self._design_decimation_filter(
-                        sdr_sample_rate, vfo_bandwidth
+                        sdr_sample_rate, vfo_bandwidth,
                     )
                     self.decimation_filter = (stages, total_decimation)
 
@@ -415,7 +414,7 @@ class FMDemodulator(threading.Thread):
 
                     # Initialize audio filter states
                     audio_filter_state = self._resize_filter_state(
-                        audio_filter_state, self.audio_filter, 0
+                        audio_filter_state, self.audio_filter, 0,
                     )
                     b_deemph, a_deemph = self.deemphasis_filter  # type: ignore[misc]
                     deemph_state = self._resize_filter_state(deemph_state, b_deemph, 0, a_deemph)
@@ -423,7 +422,7 @@ class FMDemodulator(threading.Thread):
                     logger.info(
                         f"Filters initialized (internal_mode={self.internal_mode}): SDR rate={sdr_sample_rate/1e6:.2f} MHz, "
                         f"stages={len(stages)}, total_decimation={total_decimation}, "
-                        f"intermediate={intermediate_rate/1e3:.1f} kHz"
+                        f"intermediate={intermediate_rate/1e3:.1f} kHz",
                     )
 
                 # Step 1: Frequency translation (tune to VFO frequency)
@@ -434,7 +433,7 @@ class FMDemodulator(threading.Thread):
 
                 # Validate VFO center is within SDR bandwidth (with edge margin)
                 is_in_band, vfo_offset, margin = self._is_vfo_in_sdr_bandwidth(
-                    vfo_center_freq, sdr_center_freq, sdr_sample_rate
+                    vfo_center_freq, sdr_center_freq, sdr_sample_rate,
                 )
 
                 if not is_in_band:
@@ -461,7 +460,7 @@ class FMDemodulator(threading.Thread):
                         self.stats["is_sleeping"] = False
                     logger.info(
                         f"VFO back in SDR bandwidth, resuming FM demodulation: VFO={vfo_center_freq/1e6:.3f}MHz, "
-                        f"SDR={sdr_center_freq/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz"
+                        f"SDR={sdr_center_freq/1e6:.3f}MHz, offset={vfo_offset/1e3:.1f}kHz",
                     )
 
                 offset_freq = vfo_center_freq - sdr_center_freq
@@ -483,7 +482,7 @@ class FMDemodulator(threading.Thread):
 
                     # Apply IIR filter
                     filtered, decimation_state[stage_idx] = signal.lfilter(
-                        b, a, decimated, zi=decimation_state[stage_idx]
+                        b, a, decimated, zi=decimation_state[stage_idx],
                     )
 
                     # Decimate
@@ -522,7 +521,7 @@ class FMDemodulator(threading.Thread):
                     audio_filter_state = signal.lfilter_zi(self.audio_filter, 1) * demodulated[0]
 
                 audio_filtered, audio_filter_state = signal.lfilter(
-                    self.audio_filter, 1, demodulated, zi=audio_filter_state
+                    self.audio_filter, 1, demodulated, zi=audio_filter_state,
                 )
 
                 # Step 5: De-emphasis
@@ -536,7 +535,7 @@ class FMDemodulator(threading.Thread):
 
                 # Step 6: Resample to audio rate (44.1 kHz)
                 num_output_samples = int(
-                    len(deemphasized) * self.audio_sample_rate / intermediate_rate
+                    len(deemphasized) * self.audio_sample_rate / intermediate_rate,
                 )
                 if num_output_samples > 0:
                     audio = signal.resample(deemphasized, num_output_samples)
@@ -597,12 +596,12 @@ class FMDemodulator(threading.Thread):
                         if not self.internal_mode:
                             logger.warning(
                                 f"Audio buffer overflow ({len(self.audio_buffer)} samples), "
-                                f"dropping old audio to prevent lag buildup"
+                                f"dropping old audio to prevent lag buildup",
                             )
                         else:
                             logger.debug(
                                 f"Audio buffer overflow ({len(self.audio_buffer)} samples), "
-                                f"dropping old audio (internal mode)"
+                                f"dropping old audio (internal mode)",
                             )
 
                     # Send chunks of target size when buffer is full enough
@@ -632,16 +631,16 @@ class FMDemodulator(threading.Thread):
                         except queue.Full:
                             # Queue is full - drop this chunk to prevent lag accumulation
                             logger.debug(
-                                f"Audio queue full, dropping chunk for session {self.session_id}"
+                                f"Audio queue full, dropping chunk for session {self.session_id}",
                             )
                             break  # Exit while loop to process next IQ samples
                         except Exception as e:
-                            logger.warning(f"Could not queue audio: {str(e)}")
+                            logger.warning(f"Could not queue audio: {e!s}")
                             break
 
             except Exception as e:
                 if self.running:
-                    logger.error(f"Error in FM demodulator: {str(e)}")
+                    logger.error(f"Error in FM demodulator: {e!s}")
                     logger.exception(e)
                     with self.stats_lock:
                         self.stats["errors"] += 1

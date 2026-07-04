@@ -16,7 +16,7 @@
 """Tracker task handler - manages rotator tracking lifecycle."""
 
 import traceback
-from typing import Any, Dict, List
+from typing import Any
 
 from common.logger import logger
 from tracker.runner import get_tracker_manager
@@ -28,9 +28,9 @@ class TrackerHandler:
     async def start_tracker_task(
         self,
         observation_id: str,
-        satellite: Dict[str, Any],
-        rotator_config: Dict[str, Any],
-        tasks: List[Dict[str, Any]],
+        satellite: dict[str, Any],
+        rotator_config: dict[str, Any],
+        tasks: list[dict[str, Any]],
     ) -> bool:
         """
         Start rotator tracking for an observation.
@@ -73,7 +73,7 @@ class TrackerHandler:
 
             logger.info(
                 f"Started tracking {satellite.get('name')} (NORAD {satellite.get('norad_id')}) "
-                f"for observation {observation_id}"
+                f"for observation {observation_id}",
             )
             return True
 

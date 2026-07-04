@@ -23,7 +23,7 @@ import queue
 import threading
 import time
 from enum import Enum
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pmt  # noqa: F401
@@ -36,9 +36,9 @@ os.environ.setdefault("GR_BUFFER_TYPE", "vmcirc_mmap_tmpfile")
 
 from gnuradio import blocks, gr, lora_sdr  # noqa: E402,F401
 from scipy import signal  # noqa: E402
+from telemetry.parser import TelemetryParser  # noqa: E402
 
 from demodulators.basedecoderprocess import BaseDecoderProcess  # noqa: E402
-from telemetry.parser import TelemetryParser  # noqa: E402
 
 logger = logging.getLogger("loradecoder")
 
@@ -174,7 +174,7 @@ class LoRaDecoder(BaseDecoderProcess):
         self.current_power_dbfs = None
 
         logger.debug(
-            f"LoRaDecoder initialized: packet_count=0, SHM threshold={shm_restart_threshold}"
+            f"LoRaDecoder initialized: packet_count=0, SHM threshold={shm_restart_threshold}",
         )
 
         # Extract LoRa parameters from config with standard defaults for testing
@@ -264,7 +264,7 @@ class LoRaDecoder(BaseDecoderProcess):
         # Single consolidated initialization log with all relevant parameters
         logger.info(
             f"LoRa decoder initialized: session={session_id}, VFO {vfo} | {sat_info} | {tx_info} | {params_str} | "
-            f"src: {self.config_source}"
+            f"src: {self.config_source}",
         )
 
         os.makedirs(self.output_dir, exist_ok=True)
@@ -490,7 +490,7 @@ class LoRaDecoder(BaseDecoderProcess):
         self.telemetry_parser = TelemetryParser()
 
         # Initialize stats in subprocess
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "iq_chunks_in": 0,
             "samples_in": 0,
             "samples_dropped_out_of_band": 0,
@@ -593,7 +593,7 @@ class LoRaDecoder(BaseDecoderProcess):
 
                         # Design decimation filter
                         self.decimation_filter = self._design_decimation_filter(
-                            self.decimation_factor, vfo_bandwidth, self.sdr_sample_rate
+                            self.decimation_factor, vfo_bandwidth, self.sdr_sample_rate,
                         )
 
                         if self.bw is not None:
@@ -601,14 +601,14 @@ class LoRaDecoder(BaseDecoderProcess):
                                 f"LoRa decoder: BW: {self.bw/1e3:.0f}kHz, target rate: {target_sample_rate/1e6:.2f}MS/s (4x oversample), "
                                 f"SDR rate: {self.sdr_sample_rate/1e6:.2f} MS/s, VFO BW: {vfo_bandwidth/1e3:.0f} kHz, "
                                 f"decimation: {self.decimation_factor}, output rate: {self.sample_rate/1e6:.2f} MS/s, "
-                                f"VFO center: {vfo_center/1e6:.3f} MHz, SDR center: {sdr_center/1e6:.3f} MHz"
+                                f"VFO center: {vfo_center/1e6:.3f} MHz, SDR center: {sdr_center/1e6:.3f} MHz",
                             )
                         else:
                             logger.info(
                                 f"LoRa decoder: Using default BW {default_bw/1e3:.0f}kHz for initialization, "
                                 f"target rate: {target_sample_rate/1e6:.2f}MS/s (4x oversample), "
                                 f"SDR rate: {self.sdr_sample_rate/1e6:.2f} MS/s, VFO BW: {vfo_bandwidth/1e3:.0f} kHz, "
-                                f"decimation: {self.decimation_factor}, output rate: {self.sample_rate/1e6:.2f} MS/s"
+                                f"decimation: {self.decimation_factor}, output rate: {self.sample_rate/1e6:.2f} MS/s",
                             )
 
                         # Calculate buffer sizes
@@ -616,7 +616,7 @@ class LoRaDecoder(BaseDecoderProcess):
                         process_samples = int(self.sample_rate * process_interval)
                         logger.info(
                             f"Will buffer {buffer_samples} samples ({buffer_duration}s) "
-                            f"and process every {process_samples} samples ({process_interval}s)"
+                            f"and process every {process_samples} samples ({process_interval}s)",
                         )
 
                     # Step 1: Frequency translation to VFO center
@@ -625,7 +625,7 @@ class LoRaDecoder(BaseDecoderProcess):
                     # Optional out-of-band accounting/parity with FSK
                     try:
                         in_band, _, margin_hz = self._is_vfo_in_sdr_bandwidth(
-                            vfo_center, sdr_center, sdr_rate
+                            vfo_center, sdr_center, sdr_rate,
                         )
                     except Exception:
                         in_band = True
@@ -640,7 +640,7 @@ class LoRaDecoder(BaseDecoderProcess):
                             self.stats["last_activity"] = time.time()
                         if chunks_received % 50 == 0:
                             logger.info(
-                                f"LoRa: VFO out of SDR band by {abs(margin_hz):.0f} Hz, skipping chunk"
+                                f"LoRa: VFO out of SDR band by {abs(margin_hz):.0f} Hz, skipping chunk",
                             )
                         chunks_received += 1
                         # Send stats periodically even if skipping
@@ -654,11 +654,11 @@ class LoRaDecoder(BaseDecoderProcess):
                     if chunks_received % 100 == 0:
                         logger.debug(
                             f"Frequency translation: SDR={sdr_center/1e6:.6f}MHz, "
-                            f"VFO={vfo_center/1e6:.6f}MHz, offset={offset_freq/1e3:.1f}kHz"
+                            f"VFO={vfo_center/1e6:.6f}MHz, offset={offset_freq/1e3:.1f}kHz",
                         )
 
                     translated = self._frequency_translate(
-                        samples, offset_freq, self.sdr_sample_rate
+                        samples, offset_freq, self.sdr_sample_rate,
                     )
 
                     # Measure signal power AFTER frequency translation, BEFORE decimation
@@ -711,7 +711,7 @@ class LoRaDecoder(BaseDecoderProcess):
                             f"Batch: {len(samples_buffer)} samp ({time_elapsed:.1f}s, {flow_rate_sps/1e3:.1f}kS/s) | "
                             f"LoRa: {sf_str}, {bw_str}, {cr_str}, {extra_params} | "
                             f"VFO: {vfo_center:.0f}Hz, BW={vfo_bandwidth:.0f}Hz | "
-                            f"Packets decoded so far: {self.packet_count}"
+                            f"Packets decoded so far: {self.packet_count}",
                         )
 
                         # Update tracking for next batch
@@ -740,7 +740,7 @@ class LoRaDecoder(BaseDecoderProcess):
                                 chunks_received % 30 == 0
                             ):  # Every 30 batches (~90s), log what we're trying
                                 logger.info(
-                                    f"Auto-detection: trying SF{sfs_to_try[0]}, BW{bws_to_try[0]/1000:.0f}kHz, CR4/{crs_to_try[0]+4}"
+                                    f"Auto-detection: trying SF{sfs_to_try[0]}, BW{bws_to_try[0]/1000:.0f}kHz, CR4/{crs_to_try[0]+4}",
                                 )
 
                         # Determine parameters to use
@@ -753,7 +753,7 @@ class LoRaDecoder(BaseDecoderProcess):
                         # Log parameter changes
                         if current_params is not None and current_params != params:
                             logger.info(
-                                f"Parameters changed to SF{sf}, BW{bw/1000:.0f}kHz, CR4/{cr+4}"
+                                f"Parameters changed to SF{sf}, BW{bw/1000:.0f}kHz, CR4/{cr+4}",
                             )
                         current_params = params
 
@@ -768,10 +768,10 @@ class LoRaDecoder(BaseDecoderProcess):
                             if len(samples_buffer) < MIN_FRAME_SYNC_SAMPLES:
                                 padding_needed = MIN_FRAME_SYNC_SAMPLES - len(samples_buffer)
                                 samples_buffer = np.concatenate(
-                                    [samples_buffer, np.zeros(padding_needed, dtype=np.complex64)]
+                                    [samples_buffer, np.zeros(padding_needed, dtype=np.complex64)],
                                 )
                                 logger.debug(
-                                    f"Padded buffer with {padding_needed} zeros for frame_sync"
+                                    f"Padded buffer with {padding_needed} zeros for frame_sync",
                                 )
 
                             # Create new flowgraph for this batch
@@ -800,7 +800,7 @@ class LoRaDecoder(BaseDecoderProcess):
                         if self.packet_count > 0:
                             if sf != self.sf or cr != self.cr or bw != self.bw:
                                 logger.info(
-                                    f"Auto-detected working parameters! SF{sf}, BW{bw/1000:.0f}kHz, CR4/{cr+4}, impl_head={impl_head}"
+                                    f"Auto-detected working parameters! SF{sf}, BW{bw/1000:.0f}kHz, CR4/{cr+4}, impl_head={impl_head}",
                                 )
                                 self.sf = sf
                                 self.bw = bw
@@ -844,7 +844,7 @@ class LoRaDecoder(BaseDecoderProcess):
 
         logger.info(
             f"LoRa decoder process stopped for {self.session_id}. "
-            f"Final SHM segments: {self.get_shm_segment_count()}"
+            f"Final SHM segments: {self.get_shm_segment_count()}",
         )
 
         # stop() method removed - now in BaseDecoderProcess

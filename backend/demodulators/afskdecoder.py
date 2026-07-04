@@ -56,7 +56,7 @@ import os
 import queue
 import time
 from enum import Enum
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import psutil
@@ -75,11 +75,13 @@ os.environ.setdefault("GR_BUFFER_TYPE", "vmcirc_mmap_tmpfile")
 
 from gnuradio import blocks, gr  # noqa: E402
 from satellites.components.deframers.ax25_deframer import ax25_deframer  # noqa: E402
-from satellites.components.demodulators.afsk_demodulator import afsk_demodulator  # noqa: E402
-
-from demodulators.basedecoderprocess import BaseDecoderProcess  # noqa: E402
+from satellites.components.demodulators.afsk_demodulator import (
+    afsk_demodulator,  # noqa: E402
+)
 from telemetry.parser import TelemetryParser  # noqa: E402
 from vfos.state import VFOManager  # noqa: E402
+
+from demodulators.basedecoderprocess import BaseDecoderProcess  # noqa: E402
 
 logger = logging.getLogger("afskdecoder")
 
@@ -303,7 +305,7 @@ class AFSKFlowgraph(gr.top_block):
             logger.info(
                 f"Batch: {len(samples_to_process)} samp ({self.batch_interval}s) | "
                 f"AFSK: {self.baudrate}bd, {self.sample_rate:.0f}sps, af_carrier={self.af_carrier}, dev={self.deviation} | "
-                f"Frame: AX25(G3RUH)"
+                f"Frame: AX25(G3RUH)",
             )
 
             # Create message handler for this batch
@@ -416,7 +418,7 @@ class AFSKDecoder(BaseDecoderProcess):
         self.batch_interval = batch_interval
 
         logger.debug(
-            f"AFSKDecoder initialized: packet_count=0, SHM threshold={shm_restart_threshold}"
+            f"AFSKDecoder initialized: packet_count=0, SHM threshold={shm_restart_threshold}",
         )
 
         # Extract all parameters from resolved config (including metadata)
@@ -465,7 +467,7 @@ class AFSKDecoder(BaseDecoderProcess):
         # Single consolidated initialization log with all relevant parameters
         logger.info(
             f"AFSK decoder initialized: session={session_id}, VFO {vfo} | {sat_info} | {tx_info} | {params_str} | "
-            f"batch={self.batch_interval}s | src: {self.config_source}"
+            f"batch={self.batch_interval}s | src: {self.config_source}",
         )
 
         os.makedirs(self.output_dir, exist_ok=True)
@@ -474,7 +476,7 @@ class AFSKDecoder(BaseDecoderProcess):
         self.flowgraph = None
 
         # Performance monitoring stats
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "audio_chunks_in": 0,
             "samples_in": 0,
             "data_messages_out": 0,
@@ -641,7 +643,7 @@ class AFSKDecoder(BaseDecoderProcess):
                 "cpu_percent": 0.0,
                 "memory_mb": 0.0,
                 "memory_percent": 0.0,
-            }
+            },
         )
 
         logger.info(f"AFSK decoder started for {self.session_id}")
@@ -681,7 +683,7 @@ class AFSKDecoder(BaseDecoderProcess):
             logger.info(
                 f"AFSK decoder started: session={self.session_id} | "
                 f"{self.baudrate}bd, af_carrier={self.af_carrier}Hz, dev={self.deviation}Hz, {self.framing.upper()} | "
-                f"audio_rate={self.audio_sample_rate}Hz | batch={self.batch_interval}s{tx_info}"
+                f"audio_rate={self.audio_sample_rate}Hz | batch={self.batch_interval}s{tx_info}",
             )
 
             while self.running.value == 1:  # Changed from self.running
@@ -769,7 +771,7 @@ class AFSKDecoder(BaseDecoderProcess):
 
         logger.info(
             f"AFSK decoder process stopped for {self.session_id}. "
-            f"Final SHM segments: {self.get_shm_segment_count()}"
+            f"Final SHM segments: {self.get_shm_segment_count()}",
         )
 
         # stop() method removed - now in BaseDecoderProcess

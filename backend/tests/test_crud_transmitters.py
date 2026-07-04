@@ -20,7 +20,6 @@ Unit tests for transmitter CRUD operations.
 import uuid
 
 import pytest
-
 from crud.satellites import add_satellite
 from crud.transmitters import (
     add_transmitter,

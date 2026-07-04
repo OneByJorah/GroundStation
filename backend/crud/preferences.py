@@ -16,16 +16,14 @@
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import List, Union
-
-from sqlalchemy import delete, insert, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from db.models import Preferences, TrackingState
+from sqlalchemy import delete, insert, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def fetch_preference(session: AsyncSession, preference_id: Union[uuid.UUID, str]) -> dict:
+async def fetch_preference(session: AsyncSession, preference_id: uuid.UUID | str) -> dict:
     """
     Fetch a single preference by its UUID.
     """
@@ -165,7 +163,7 @@ async def edit_preference(session: AsyncSession, data: dict) -> dict:
         return {"success": False, "error": str(e)}
 
 
-async def set_preferences(session: AsyncSession, preferences: List[dict]) -> dict:
+async def set_preferences(session: AsyncSession, preferences: list[dict]) -> dict:
     """
     Edit or upsert preference records for provided fields.
     """
@@ -269,7 +267,7 @@ async def set_preferences(session: AsyncSession, preferences: List[dict]) -> dic
         return {"success": False, "error": str(e)}
 
 
-async def delete_preference(session: AsyncSession, preference_id: Union[uuid.UUID, str]) -> dict:
+async def delete_preference(session: AsyncSession, preference_id: uuid.UUID | str) -> dict:
     """
     Delete a preference record by its UUID.
     """
@@ -321,7 +319,7 @@ async def set_map_settings(session: AsyncSession, data: dict) -> dict:
         data["updated"] = now
 
         existing_record = await session.execute(
-            select(TrackingState).where(TrackingState.name == data["name"])
+            select(TrackingState).where(TrackingState.name == data["name"]),
         )
         existing_record = existing_record.scalar_one_or_none()
 
@@ -363,7 +361,7 @@ async def get_map_settings(session: AsyncSession, name: str) -> dict:
     try:
         # Query map settings from the database using the provided name
         map_settings = await session.execute(
-            select(TrackingState).where(TrackingState.name == name)
+            select(TrackingState).where(TrackingState.name == name),
         )
         map_settings_row = map_settings.scalars().first()
 
@@ -374,6 +372,6 @@ async def get_map_settings(session: AsyncSession, name: str) -> dict:
             return {"success": True, "data": {}}
 
     except Exception as e:
-        logger.error(f"Error retrieving map settings: {str(e)}")
+        logger.error(f"Error retrieving map settings: {e!s}")
         logger.exception(e)
         return {"success": False, "data": {}, "error": str(e)}

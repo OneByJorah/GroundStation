@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import struct
 from datetime import datetime
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 
 class RS52SGeoscanAx25Parser:
@@ -46,8 +46,8 @@ class RS52SGeoscanAx25Parser:
     Expects the pure AX.25 info field bytes (no AX.25 addresses/control/PID).
     """
 
-    def parse(self, payload: bytes) -> Dict[str, Any]:
-        out: Dict[str, Any] = {"satellite": "RS52S", "length": len(payload)}
+    def parse(self, payload: bytes) -> dict[str, Any]:
+        out: dict[str, Any] = {"satellite": "RS52S", "length": len(payload)}
 
         def u16le(off: int) -> int:
             return cast(int, struct.unpack_from("<H", payload, off)[0])

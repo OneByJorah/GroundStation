@@ -17,11 +17,10 @@
 Tests for tlesync/utils.py utility functions.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 import requests
-
 from tlesync.utils import (
     create_final_success_message,
     create_initial_sync_state,
@@ -222,7 +221,7 @@ class TestGetNoradIds:
                 "name": "ISS (ZARYA)",
                 "line1": "1 25544U 98067A   23109.65481637  .00012345  00000-0  21914-3 0  9997",
                 "line2": "2 25544  51.6416 247.4627 0006703 130.5360 325.0288 15.72125391563537",
-            }
+            },
         ]
 
         result = get_norad_ids(tle_objects)
@@ -394,7 +393,7 @@ class TestCreateProgressTracker:
         progress_phases = {"phase1": 50, "phase2": 50}
 
         update_progress, completed_phases, highest_progress = create_progress_tracker(
-            progress_phases, sync_state, MockStateManager()
+            progress_phases, sync_state, MockStateManager(),
         )
 
         # Update phase1 to 50% complete
@@ -414,7 +413,7 @@ class TestCreateProgressTracker:
         progress_phases = {"phase1": 100}
 
         update_progress, completed_phases, highest_progress = create_progress_tracker(
-            progress_phases, sync_state, MockStateManager()
+            progress_phases, sync_state, MockStateManager(),
         )
 
         # Set progress to 50
@@ -436,7 +435,7 @@ class TestCreateProgressTracker:
         progress_phases = {"phase1": 50, "phase2": 50}
 
         update_progress, completed_phases, highest_progress = create_progress_tracker(
-            progress_phases, sync_state, MockStateManager()
+            progress_phases, sync_state, MockStateManager(),
         )
 
         # Complete phase1

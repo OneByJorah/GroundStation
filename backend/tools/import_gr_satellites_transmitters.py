@@ -4,8 +4,9 @@ import datetime as dt
 import sqlite3
 import sys
 import uuid
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional, Protocol, cast
+from typing import Protocol, cast
 
 import yaml
 
@@ -207,7 +208,7 @@ def build_rows(yaml_files: Iterable[Path], satellites_in_db: set[int], args: arg
     return rows, skipped_missing_sat, skipped_no_frequency
 
 
-def resolve_yaml_dir(yaml_dir: Optional[Path]) -> Optional[Path]:
+def resolve_yaml_dir(yaml_dir: Path | None) -> Path | None:
     if yaml_dir and yaml_dir.exists():
         return yaml_dir
 
@@ -247,7 +248,7 @@ class SatYamlProtocol(Protocol):
     def yaml_files(self) -> Iterable[str]: ...
 
 
-def load_satyaml() -> Optional[SatYamlProtocol]:
+def load_satyaml() -> SatYamlProtocol | None:
     try:
         from satellites.satyaml.satyaml import SatYAML
 
@@ -257,7 +258,7 @@ def load_satyaml() -> Optional[SatYamlProtocol]:
         return None
 
 
-def collect_yaml_files(yaml_dir: Optional[Path], satyaml: Optional[SatYamlProtocol]) -> list[Path]:
+def collect_yaml_files(yaml_dir: Path | None, satyaml: SatYamlProtocol | None) -> list[Path]:
     if satyaml is not None:
         try:
             return [Path(path) for path in satyaml.yaml_files()]
@@ -362,7 +363,7 @@ def main() -> int:
     try:
         satellites_in_db = {row[0] for row in conn.execute("SELECT norad_id FROM satellites")}
         rows, skipped_missing_sat, skipped_no_frequency = build_rows(
-            yaml_files, satellites_in_db, args
+            yaml_files, satellites_in_db, args,
         )
 
         purged_source = 0

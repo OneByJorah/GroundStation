@@ -15,26 +15,26 @@
 
 """VFO (Virtual Frequency Oscillator) handlers."""
 
-from typing import Any, Dict, Optional, Union
-
-from sqlalchemy import select
+from typing import Any
 
 from crud.preferences import fetch_all_preferences
 from db import AsyncSessionLocal
 from db.models import Satellites, Transmitters
-from handlers.entities.sdr import handle_vfo_demodulator_state
 from pipeline.config.decoderconfigservice import decoder_config_service
 from pipeline.orchestration.processmanager import process_manager
 from pipeline.registries.decoderregistry import decoder_registry
 from server.startup import audio_queue
 from session.service import get_sdr_session, session_service
 from session.tracker import session_tracker
+from sqlalchemy import select
 from vfos.state import VFOManager
+
+from handlers.entities.sdr import handle_vfo_demodulator_state
 
 # Module-level cache for decoder parameter overrides from UI
 # Key format: "{session_id}_{vfo_number}"
 # Value: Dict of decoder-specific parameters (e.g., {"sf": 7, "bw": 125000, ...})
-_decoder_param_overrides_cache: Dict[str, Dict[str, Any]] = {}
+_decoder_param_overrides_cache: dict[str, dict[str, Any]] = {}
 
 
 async def _fetch_transmitter_and_satellite(transmitter_id: str) -> tuple:
@@ -50,7 +50,7 @@ async def _fetch_transmitter_and_satellite(transmitter_id: str) -> tuple:
     try:
         async with AsyncSessionLocal() as db_session:
             result = await db_session.execute(
-                select(Transmitters).where(Transmitters.id == transmitter_id)
+                select(Transmitters).where(Transmitters.id == transmitter_id),
             )
             transmitter_record = result.scalar_one_or_none()
             if not transmitter_record:
@@ -68,7 +68,7 @@ async def _fetch_transmitter_and_satellite(transmitter_id: str) -> tuple:
 
             # Fetch satellite
             sat_result = await db_session.execute(
-                select(Satellites).where(Satellites.norad_id == transmitter_record.norad_cat_id)
+                select(Satellites).where(Satellites.norad_id == transmitter_record.norad_cat_id),
             )
             satellite_record = sat_result.scalar_one_or_none()
             satellite_dict = None
@@ -92,8 +92,8 @@ async def _fetch_transmitter_and_satellite(transmitter_id: str) -> tuple:
 
 
 async def update_vfo_parameters(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Update VFO parameters and manage demodulator state.
 
@@ -214,12 +214,12 @@ async def update_vfo_parameters(
                         demod_entry = process_info.get("demodulators", {}).get(sid, {})
                         if isinstance(demod_entry, dict) and vfo_id in demod_entry:
                             logger.info(
-                                f"Stopping audio demodulator for VFO {vfo_id} - switching to raw IQ decoder {vfo_state.decoder}"
+                                f"Stopping audio demodulator for VFO {vfo_id} - switching to raw IQ decoder {vfo_state.decoder}",
                             )
                             process_manager.stop_demodulator(sdr_id, sid, vfo_id)
 
                 logger.debug(
-                    f"Skipping demodulator for VFO {vfo_id} - decoder {vfo_state.decoder} works on raw IQ"
+                    f"Skipping demodulator for VFO {vfo_id} - decoder {vfo_state.decoder} works on raw IQ",
                 )
             else:
                 # Normal audio mode (FM/AM/SSB) or audio-based decoder - manage demodulator state
@@ -239,7 +239,7 @@ async def update_vfo_parameters(
                 transmitter_changed = True
                 logger.info(
                     f"Locked transmitter changed for VFO {vfo_id} (from {old_locked_transmitter_id} to {new_locked_transmitter_id}) "
-                    f"with active decoder {vfo_state.decoder} - restarting decoder"
+                    f"with active decoder {vfo_state.decoder} - restarting decoder",
                 )
                 await handle_vfo_decoder_state(vfo_state, sid, logger, force_restart=True)
 
@@ -257,17 +257,17 @@ async def update_vfo_parameters(
                     # Parameters disabled - clear cache so decoder uses defaults
                     if override_key in _decoder_param_overrides_cache:
                         logger.info(
-                            f"Custom parameters disabled for VFO {vfo_id} - clearing overrides and restarting decoder with defaults"
+                            f"Custom parameters disabled for VFO {vfo_id} - clearing overrides and restarting decoder with defaults",
                         )
                         del _decoder_param_overrides_cache[override_key]
                     else:
                         logger.info(
-                            f"Custom parameters disabled for VFO {vfo_id} - restarting decoder with defaults"
+                            f"Custom parameters disabled for VFO {vfo_id} - restarting decoder with defaults",
                         )
                 else:
                     # Parameters enabled - use cached overrides (if any)
                     logger.info(
-                        f"Custom parameters enabled for VFO {vfo_id} - restarting decoder with custom values"
+                        f"Custom parameters enabled for VFO {vfo_id} - restarting decoder with custom values",
                     )
 
                 await handle_vfo_decoder_state(vfo_state, sid, logger, force_restart=True)
@@ -299,7 +299,7 @@ async def update_vfo_parameters(
             )
             if params_changed:
                 logger.info(
-                    f"Decoder parameters changed for VFO {vfo_id} with decoder {vfo_state.decoder} - restarting decoder"
+                    f"Decoder parameters changed for VFO {vfo_id} with decoder {vfo_state.decoder} - restarting decoder",
                 )
                 await handle_vfo_decoder_state(vfo_state, sid, logger, force_restart=True)
 
@@ -307,8 +307,8 @@ async def update_vfo_parameters(
 
 
 async def toggle_transcription(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, dict, str]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict | str]:
     """
     Toggle transcription for a specific VFO.
 
@@ -338,7 +338,7 @@ async def toggle_transcription(
 
     logger.debug(
         f"[VFO {vfo_number}] Transcription settings from frontend: "
-        f"provider={provider}, language={language}, translate_to={translate_to}"
+        f"provider={provider}, language={language}, translate_to={translate_to}",
     )
 
     # Get VFO state (may not exist if no SDR is streaming yet)
@@ -353,7 +353,7 @@ async def toggle_transcription(
     if enabled and sdr_id:
         logger.info(
             f"Starting {provider} transcription for VFO {vfo_number} "
-            f"(language={language}, translate_to={translate_to})"
+            f"(language={language}, translate_to={translate_to})",
         )
 
         # Get process manager and transcription manager
@@ -403,10 +403,10 @@ async def toggle_transcription(
                                     "",
                                 )
                                 transcription_manager.set_google_translate_api_key(
-                                    google_translate_key
+                                    google_translate_key,
                                 )
                                 logger.info(
-                                    "Updated transcription manager with Google Translate API key"
+                                    "Updated transcription manager with Google Translate API key",
                                 )
                             else:
                                 logger.warning("Deepgram API key not configured in preferences")
@@ -426,7 +426,7 @@ async def toggle_transcription(
                             ):
                                 transmitter_dict, satellite_dict = (
                                     await _fetch_transmitter_and_satellite(
-                                        vfo_state.locked_transmitter_id
+                                        vfo_state.locked_transmitter_id,
                                     )
                                 )
 
@@ -445,7 +445,7 @@ async def toggle_transcription(
                             if not success:
                                 logger.warning(
                                     f"Failed to start {provider} transcription worker for VFO {vfo_number}, "
-                                    f"updating VFO state only"
+                                    f"updating VFO state only",
                                 )
                     else:
                         logger.warning("Failed to fetch preferences, updating VFO state only")
@@ -482,7 +482,7 @@ async def toggle_transcription(
     vfo_state = vfomanager.get_vfo_state(sid, vfo_number)
 
     logger.info(
-        f"Transcription {'enabled' if enabled else 'disabled'} for VFO {vfo_number} (session: {sid})"
+        f"Transcription {'enabled' if enabled else 'disabled'} for VFO {vfo_number} (session: {sid})",
     )
 
     return {
@@ -558,7 +558,7 @@ async def check_decoder_params_changed(sdr_id, session_id, vfo_state, logger):
     if vfo_state.locked_transmitter_id:
         async with AsyncSessionLocal() as db_session:
             result = await db_session.execute(
-                select(Transmitters).where(Transmitters.id == vfo_state.locked_transmitter_id)
+                select(Transmitters).where(Transmitters.id == vfo_state.locked_transmitter_id),
             )
             transmitter_record = result.scalar_one_or_none()
 
@@ -577,7 +577,7 @@ async def check_decoder_params_changed(sdr_id, session_id, vfo_state, logger):
 
                 # Fetch satellite info
                 sat_result = await db_session.execute(
-                    select(Satellites).where(Satellites.norad_id == transmitter_record.norad_cat_id)
+                    select(Satellites).where(Satellites.norad_id == transmitter_record.norad_cat_id),
                 )
                 satellite_record = sat_result.scalar_one_or_none()
 
@@ -684,14 +684,14 @@ async def handle_vfo_decoder_state(vfo_state, session_id, logger, force_restart=
         if not force_restart:
             # Same decoder already running for this VFO, do nothing
             logger.debug(
-                f"Decoder {requested_decoder} already running for session {session_id} VFO {vfo_number}"
+                f"Decoder {requested_decoder} already running for session {session_id} VFO {vfo_number}",
             )
             return
         else:
             # Force restart requested (e.g., transmitter changed)
             logger.info(
                 f"Force restarting {requested_decoder} decoder for session {session_id} VFO {vfo_number} "
-                f"(transmitter configuration changed)"
+                f"(transmitter configuration changed)",
             )
             process_manager.stop_decoder(sdr_id, session_id, vfo_number)
             # Fall through to start new decoder with updated config
@@ -699,7 +699,7 @@ async def handle_vfo_decoder_state(vfo_state, session_id, logger, force_restart=
     # Stop this VFO's current decoder if it's a different type
     if current_decoder:
         logger.info(
-            f"Switching decoder for VFO {vfo_number} from {type(current_decoder).__name__} to {decoder_class.__name__}"
+            f"Switching decoder for VFO {vfo_number} from {type(current_decoder).__name__} to {decoder_class.__name__}",
         )
         process_manager.stop_decoder(sdr_id, session_id, vfo_number)
 
@@ -739,8 +739,8 @@ async def handle_vfo_decoder_state(vfo_state, session_id, logger, force_restart=
                 async with AsyncSessionLocal() as db_session:
                     result = await db_session.execute(
                         select(Transmitters).where(
-                            Transmitters.id == vfo_state.locked_transmitter_id
-                        )
+                            Transmitters.id == vfo_state.locked_transmitter_id,
+                        ),
                     )
                     transmitter_record = result.scalar_one_or_none()
 
@@ -759,14 +759,14 @@ async def handle_vfo_decoder_state(vfo_state, session_id, logger, force_restart=
                         }
                         logger.info(
                             f"{requested_decoder.upper()} decoder using locked transmitter: {transmitter_record.description} "
-                            f"(baud: {transmitter_record.baud}, NORAD: {transmitter_record.norad_cat_id})"
+                            f"(baud: {transmitter_record.baud}, NORAD: {transmitter_record.norad_cat_id})",
                         )
 
                         # Fetch satellite info for this transmitter
                         sat_result = await db_session.execute(
                             select(Satellites).where(
-                                Satellites.norad_id == transmitter_record.norad_cat_id
-                            )
+                                Satellites.norad_id == transmitter_record.norad_cat_id,
+                            ),
                         )
                         satellite_record = sat_result.scalar_one_or_none()
 
@@ -779,11 +779,11 @@ async def handle_vfo_decoder_state(vfo_state, session_id, logger, force_restart=
                                 "image": satellite_record.image,
                             }
                             logger.info(
-                                f"Loaded satellite info: {satellite_record.name} (NORAD {satellite_record.norad_id})"
+                                f"Loaded satellite info: {satellite_record.name} (NORAD {satellite_record.norad_id})",
                             )
                     else:
                         logger.warning(
-                            f"Locked transmitter ID {vfo_state.locked_transmitter_id} not found in database"
+                            f"Locked transmitter ID {vfo_state.locked_transmitter_id} not found in database",
                         )
 
             # If no transmitter locked or not found, create a default placeholder
@@ -796,7 +796,7 @@ async def handle_vfo_decoder_state(vfo_state, session_id, logger, force_restart=
                 }
                 logger.warning(
                     f"No locked transmitter for {requested_decoder.upper()} decoder on VFO {vfo_number} - using default settings. "
-                    f"Lock a transmitter to use its baud rate."
+                    f"Lock a transmitter to use its baud rate.",
                 )
 
             decoder_kwargs["satellite"] = satellite_info
@@ -810,11 +810,11 @@ async def handle_vfo_decoder_state(vfo_state, session_id, logger, force_restart=
 
         if success:
             logger.info(
-                f"Started {requested_decoder} decoder for session {session_id} VFO {vfo_number}"
+                f"Started {requested_decoder} decoder for session {session_id} VFO {vfo_number}",
             )
         else:
             logger.error(
-                f"Failed to start {requested_decoder} decoder for session {session_id} VFO {vfo_number}"
+                f"Failed to start {requested_decoder} decoder for session {session_id} VFO {vfo_number}",
             )
 
     except Exception as e:
@@ -828,5 +828,5 @@ def register_handlers(registry):
         {
             "update-vfo-parameters": (update_vfo_parameters, "data_submission"),
             "toggle-transcription": (toggle_transcription, "data_submission"),
-        }
+        },
     )

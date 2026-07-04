@@ -9,7 +9,6 @@ import logging
 import multiprocessing
 from multiprocessing import Queue
 from pathlib import Path
-from typing import Optional
 
 try:
     import setproctitle
@@ -24,7 +23,7 @@ logger = logging.getLogger("waterfall-task")
 
 
 def generate_waterfall_task(
-    recording_path: str, config_path: Optional[str] = None, _progress_queue: Optional[Queue] = None
+    recording_path: str, config_path: str | None = None, _progress_queue: Queue | None = None,
 ):
     """
     Generate waterfall spectrogram from a SigMF recording.
@@ -49,7 +48,7 @@ def generate_waterfall_task(
 
         recording_path_str = str(recording_path_obj)
         if recording_path_str.startswith("/recordings/") or recording_path_str.startswith(
-            "/decoded/"
+            "/decoded/",
         ):
             backend_dir = Path(__file__).parent.parent
             recording_path_obj = backend_dir / "data" / recording_path_str.lstrip("/")
@@ -64,7 +63,7 @@ def generate_waterfall_task(
                     "output": f"Starting waterfall generation for: {recording_path_obj.name}",
                     "stream": "stdout",
                     "progress": 0,
-                }
+                },
             )
 
         # Load configuration
@@ -96,7 +95,7 @@ def generate_waterfall_task(
                                 "output": msg,
                                 "stream": "stdout",
                                 "progress": progress,
-                            }
+                            },
                         )
                     except (ValueError, IndexError):
                         _progress_queue.put({"type": "output", "output": msg, "stream": "stdout"})
@@ -116,7 +115,7 @@ def generate_waterfall_task(
                         "output": "Waterfall generation completed successfully!",
                         "stream": "stdout",
                         "progress": 100,
-                    }
+                    },
                 )
 
             return {
@@ -131,7 +130,7 @@ def generate_waterfall_task(
             raise RuntimeError(error_msg)
 
     except Exception as e:
-        error_msg = f"Error generating waterfall: {str(e)}"
+        error_msg = f"Error generating waterfall: {e!s}"
         logger.error(error_msg)
         if _progress_queue:
             _progress_queue.put({"type": "error", "error": error_msg, "stream": "stderr"})

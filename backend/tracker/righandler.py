@@ -126,7 +126,7 @@ class RigHandler:
 
                 if not rig_details:
                     raise Exception(
-                        f"No rig details provided for ID: {self.tracker.current_rig_id}"
+                        f"No rig details provided for ID: {self.tracker.current_rig_id}",
                     )
 
                 # Create appropriate controller
@@ -134,7 +134,7 @@ class RigHandler:
                     self.tracker.rig_controller = SDRController(sdr_details=rig_details)
                 else:
                     self.tracker.rig_controller = RigController(
-                        host=rig_details["host"], port=rig_details["port"]
+                        host=rig_details["host"], port=rig_details["port"],
                     )
 
                 self.tracker.rig_details.update(
@@ -160,7 +160,7 @@ class RigHandler:
                         "tx_control_mode": rig_details.get("tx_control_mode", "auto"),
                         "active_tx_control_mode": "vfo_switch",
                         "retune_interval_ms": int(rig_details.get("retune_interval_ms", 2000)),
-                    }
+                    },
                 )
 
                 self.tracker.queue_out.put(
@@ -170,7 +170,7 @@ class RigHandler:
                             DictKeys.EVENTS: [{DictKeys.NAME: TrackingEvents.RIG_CONNECTED}],
                             DictKeys.RIG_DATA: self.tracker.rig_data.copy(),
                         },
-                    }
+                    },
                 )
 
             except Exception as e:
@@ -188,7 +188,7 @@ class RigHandler:
                 "error": True,
                 "host": self.tracker.rig_data.get("host", ""),
                 "port": self.tracker.rig_data.get("port", ""),
-            }
+            },
         )
 
         updated_tracking_state = dict(self.tracker.input_tracking_state or {})
@@ -200,12 +200,12 @@ class RigHandler:
                 DictKeys.EVENT: SocketEvents.SATELLITE_TRACKING,
                 DictKeys.DATA: {
                     DictKeys.EVENTS: [
-                        {DictKeys.NAME: TrackingEvents.RIG_ERROR, "error": str(error)}
+                        {DictKeys.NAME: TrackingEvents.RIG_ERROR, "error": str(error)},
                     ],
                     DictKeys.RIG_DATA: self.tracker.rig_data.copy(),
                     DictKeys.TRACKING_STATE: updated_tracking_state,
                 },
-            }
+            },
         )
 
         self.tracker.rig_controller = None
@@ -241,7 +241,7 @@ class RigHandler:
             try:
                 await self.tracker.rig_controller.disconnect()
                 self.tracker.rig_data.update(
-                    {"connected": False, "tracking": False, "tuning": False}
+                    {"connected": False, "tracking": False, "tuning": False},
                 )
                 self.tracker.queue_out.put(
                     {
@@ -250,7 +250,7 @@ class RigHandler:
                             DictKeys.EVENTS: [{DictKeys.NAME: TrackingEvents.RIG_DISCONNECTED}],
                             DictKeys.RIG_DATA: self.tracker.rig_data.copy(),
                         },
-                    }
+                    },
                 )
             except Exception as e:
                 logger.error(f"Error disconnecting from rig: {e}")
@@ -272,7 +272,7 @@ class RigHandler:
 
             if current_transmitter:
                 downlink_freq = self._normalize_frequency(
-                    current_transmitter.get("downlink_low", 0)
+                    current_transmitter.get("downlink_low", 0),
                 )
                 uplink_freq = self._normalize_frequency(current_transmitter.get("uplink_low", 0))
 
@@ -426,7 +426,7 @@ class RigHandler:
                 # SDR: Don't set center frequency - user controls that manually from UI
                 # VFO frequency updates are handled in vfos/updates.py:handle_vfo_updates_for_tracking()
                 logger.debug(
-                    f"SDR tracking - doppler freq: {self.tracker.rig_data['downlink_observed_freq']:.0f} Hz (VFO updates handled separately)"
+                    f"SDR tracking - doppler freq: {self.tracker.rig_data['downlink_observed_freq']:.0f} Hz (VFO updates handled separately)",
                 )
 
             else:
@@ -461,10 +461,10 @@ class RigHandler:
                     downlink_vfo = "2"
 
                 configured_tx_control_mode = (self.tracker.rig_details or {}).get(
-                    "tx_control_mode", "auto"
+                    "tx_control_mode", "auto",
                 )
                 effective_tx_control_mode = self._resolve_tx_control_mode(
-                    configured_tx_control_mode
+                    configured_tx_control_mode,
                 )
                 configured_radio_mode = (self.tracker.rig_details or {}).get("radio_mode", "duplex")
 
@@ -485,13 +485,13 @@ class RigHandler:
                     [
                         self.tracker.current_vfo1 == "downlink" and vfo1_freq and vfo1_freq > 0,
                         self.tracker.current_vfo2 == "downlink" and vfo2_freq and vfo2_freq > 0,
-                    ]
+                    ],
                 )
                 allow_uplink = any(
                     [
                         self.tracker.current_vfo1 == "uplink" and vfo1_freq and vfo1_freq > 0,
                         self.tracker.current_vfo2 == "uplink" and vfo2_freq and vfo2_freq > 0,
-                    ]
+                    ],
                 )
 
                 self.tracker.rig_data["radio_mode"] = configured_radio_mode
@@ -510,7 +510,7 @@ class RigHandler:
                         return
                     except Exception as e:
                         logger.warning(
-                            "split_tx_cmd strategy failed (%s); attempting fallback strategy", e
+                            "split_tx_cmd strategy failed (%s); attempting fallback strategy", e,
                         )
                         self.failed_tx_control_modes.add("split_tx_cmd")
                         if (
@@ -545,7 +545,7 @@ class RigHandler:
                         return
                     except Exception as e:
                         logger.warning(
-                            "vfo_explicit strategy failed (%s); falling back to vfo_switch", e
+                            "vfo_explicit strategy failed (%s); falling back to vfo_switch", e,
                         )
                         self.failed_tx_control_modes.add("vfo_explicit")
                         self.tracker.rig_data["active_tx_control_mode"] = "vfo_switch"
@@ -589,7 +589,7 @@ class RigHandler:
             return False
 
     async def _control_split_tx_cmd(
-        self, transmitter, vfo1_freq, vfo2_freq, allow_downlink: bool, allow_uplink: bool
+        self, transmitter, vfo1_freq, vfo2_freq, allow_downlink: bool, allow_uplink: bool,
     ):
         if not isinstance(self.tracker.rig_controller, RigController):
             return
@@ -704,7 +704,7 @@ class RigHandler:
 
         if vfo1_freq and vfo1_freq > 0:
             success = await self.tracker.rig_controller.set_frequency_explicit_vfo(
-                "VFOA", vfo1_freq
+                "VFOA", vfo1_freq,
             )
             if not success:
                 raise RuntimeError("Failed to set explicit VFOA frequency")
@@ -717,7 +717,7 @@ class RigHandler:
 
         if vfo2_freq and vfo2_freq > 0:
             success = await self.tracker.rig_controller.set_frequency_explicit_vfo(
-                "VFOB", vfo2_freq
+                "VFOB", vfo2_freq,
             )
             if not success:
                 raise RuntimeError("Failed to set explicit VFOB frequency")

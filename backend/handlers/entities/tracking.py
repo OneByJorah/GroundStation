@@ -15,7 +15,7 @@
 
 """Tracking state handlers and emission functions."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
@@ -45,7 +45,7 @@ async def emit_tracker_data(dbsession, sio, logger):
         logger.debug("Sending tracker data to clients...")
 
         tracking_state_reply = await crud.trackingstate.get_tracking_state(
-            dbsession, name="satellite-tracking"
+            dbsession, name="satellite-tracking",
         )
 
         # Check if tracking state exists (not None for first-time users)
@@ -85,7 +85,7 @@ async def emit_ui_tracker_values(dbsession, sio, logger):
         logger.debug("Sending UI tracker value to clients...")
 
         tracking_state_reply = await crud.trackingstate.get_tracking_state(
-            dbsession, name="satellite-tracking"
+            dbsession, name="satellite-tracking",
         )
 
         # Check if tracking state exists (not None for first-time users)
@@ -110,8 +110,8 @@ async def emit_ui_tracker_values(dbsession, sio, logger):
 
 
 async def get_tracking_state(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get current tracking state and emit tracker data.
 
@@ -127,7 +127,7 @@ async def get_tracking_state(
     async with AsyncSessionLocal() as dbsession:
         logger.debug(f"Fetching tracking state, data: {data}")
         tracking_state = await crud.trackingstate.get_tracking_state(
-            dbsession, name="satellite-tracking"
+            dbsession, name="satellite-tracking",
         )
         await emit_tracker_data(dbsession, sio, logger)
         await emit_ui_tracker_values(dbsession, sio, logger)
@@ -135,8 +135,8 @@ async def get_tracking_state(
 
 
 async def set_tracking_state(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, dict]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | dict]:
     """
     Update tracking state and emit tracker data.
 
@@ -190,8 +190,8 @@ async def set_tracking_state(
 
 
 async def fetch_next_passes(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list, float]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list | float]:
     """
     Fetch next passes for a satellite.
 
@@ -210,11 +210,11 @@ async def fetch_next_passes(
     force_recalculate = data.get("force_recalculate", False) if data else False
     logger.info(
         f"Handling request from client_id={sid}, norad_id={norad_id}, hours={hours}, "
-        f"min_elevation={min_elevation}, force_recalculate={force_recalculate} (get_next_passes)"
+        f"min_elevation={min_elevation}, force_recalculate={force_recalculate} (get_next_passes)",
     )
     # Always calculate passes from horizon (above_el=0) to get complete pass times
     next_passes = await fetch_next_events_for_satellite(
-        norad_id=norad_id, hours=hours, above_el=0, force_recalculate=force_recalculate
+        norad_id=norad_id, hours=hours, above_el=0, force_recalculate=force_recalculate,
     )
 
     # Filter passes by peak elevation if min_elevation is specified
@@ -239,5 +239,5 @@ def register_handlers(registry):
             "get-tracking-state": (get_tracking_state, "data_request"),
             "set-tracking-state": (set_tracking_state, "data_submission"),
             "fetch-next-passes": (fetch_next_passes, "data_request"),
-        }
+        },
     )

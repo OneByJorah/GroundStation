@@ -20,7 +20,6 @@ Unit tests for TLE sources CRUD operations.
 import uuid
 
 import pytest
-
 from crud.groups import add_satellite_group
 from crud.satellites import add_satellite
 from crud.tlesources import (
@@ -73,10 +72,10 @@ class TestTLESourcesCRUD:
         """Test fetching all TLE sources."""
         # Add multiple sources
         await add_satellite_tle_source(
-            db_session, {"name": "Source 1", "url": "https://example.com/source1.txt"}
+            db_session, {"name": "Source 1", "url": "https://example.com/source1.txt"},
         )
         await add_satellite_tle_source(
-            db_session, {"name": "Source 2", "url": "https://example.com/source2.txt"}
+            db_session, {"name": "Source 2", "url": "https://example.com/source2.txt"},
         )
 
         result = await fetch_satellite_tle_source(db_session)
@@ -87,7 +86,7 @@ class TestTLESourcesCRUD:
     async def test_fetch_tle_source_by_id(self, db_session):
         """Test fetching a single TLE source by ID."""
         add_result = await add_satellite_tle_source(
-            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"}
+            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"},
         )
 
         source_id = add_result["data"]["id"]
@@ -107,7 +106,7 @@ class TestTLESourcesCRUD:
     async def test_edit_tle_source_success(self, db_session):
         """Test successful TLE source editing."""
         add_result = await add_satellite_tle_source(
-            db_session, {"name": "Old Name", "url": "https://example.com/old.txt"}
+            db_session, {"name": "Old Name", "url": "https://example.com/old.txt"},
         )
 
         source_id = str(add_result["data"]["id"])
@@ -133,7 +132,7 @@ class TestTLESourcesCRUD:
     async def test_edit_tle_source_removes_metadata(self, db_session):
         """Test that edit removes added/updated/id from data."""
         add_result = await add_satellite_tle_source(
-            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"}
+            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"},
         )
 
         source_id = str(add_result["data"]["id"])
@@ -156,7 +155,7 @@ class TestTLESourcesCRUD:
     async def test_delete_tle_source_simple(self, db_session):
         """Test deleting TLE source without associated data."""
         add_result = await add_satellite_tle_source(
-            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"}
+            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"},
         )
 
         source_id = str(add_result["data"]["id"])
@@ -175,7 +174,7 @@ class TestTLESourcesCRUD:
         """Test deleting TLE source cascades to satellites and groups."""
         # Add TLE source
         tle_result = await add_satellite_tle_source(
-            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"}
+            db_session, {"name": "Test Source", "url": "https://example.com/test.txt"},
         )
         identifier = tle_result["data"]["identifier"]
 
@@ -228,10 +227,10 @@ class TestTLESourcesCRUD:
     async def test_delete_multiple_tle_sources(self, db_session):
         """Test deleting multiple TLE sources at once."""
         source1 = await add_satellite_tle_source(
-            db_session, {"name": "Source 1", "url": "https://example.com/source1.txt"}
+            db_session, {"name": "Source 1", "url": "https://example.com/source1.txt"},
         )
         source2 = await add_satellite_tle_source(
-            db_session, {"name": "Source 2", "url": "https://example.com/source2.txt"}
+            db_session, {"name": "Source 2", "url": "https://example.com/source2.txt"},
         )
 
         source_ids = [str(source1["data"]["id"]), str(source2["data"]["id"])]
@@ -255,7 +254,7 @@ class TestTLESourcesCRUD:
         """Test deleting mix of existing and non-existent sources."""
         # Add one real source
         real_source = await add_satellite_tle_source(
-            db_session, {"name": "Real Source", "url": "https://example.com/real.txt"}
+            db_session, {"name": "Real Source", "url": "https://example.com/real.txt"},
         )
 
         real_id = str(real_source["data"]["id"])

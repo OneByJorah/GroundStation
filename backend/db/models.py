@@ -377,7 +377,7 @@ class MonitoredSatellites(Base):
     hardware_config = Column(JSON, nullable=False)  # {"rotator": {...}, "rig": {...}}
     generation_config = Column(JSON, nullable=False)  # {"min_elevation": 20, "lookahead_hours": 24}
     sessions = Column(
-        JSON, nullable=False
+        JSON, nullable=False,
     )  # [{"sdr": {...}, "tasks": [{"type": "iq_recording", "config": {}}]}]
 
     # Metadata
@@ -414,10 +414,10 @@ class ScheduledObservations(Base):
     event_start = Column(AwareDateTime, nullable=False, index=True)  # AOS - horizon crossing
     event_end = Column(AwareDateTime, nullable=False)  # LOS - horizon crossing
     task_start = Column(
-        AwareDateTime, nullable=True, index=True
+        AwareDateTime, nullable=True, index=True,
     )  # When tasks actually start (at elevation threshold)
     task_end = Column(
-        AwareDateTime, nullable=True
+        AwareDateTime, nullable=True,
     )  # When tasks actually end (usually same as event_end)
 
     # Hardware FKs
@@ -429,10 +429,10 @@ class ScheduledObservations(Base):
     satellite_config = Column(JSON, nullable=False)  # {"name": "ISS (ZARYA)", "group_id": "..."}
     pass_config = Column(JSON, nullable=False)  # {"peak_altitude": 22.268358}
     hardware_config = Column(
-        JSON, nullable=False
+        JSON, nullable=False,
     )  # {"rotator": {...}, "rig": {...}, "transmitter": {...}}
     sessions = Column(
-        JSON, nullable=False
+        JSON, nullable=False,
     )  # [{"sdr": {...}, "tasks": [{"type": "iq_recording", "config": {}}]}]
 
     # Auto-generation tracking (nullable if manually created)

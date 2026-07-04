@@ -22,11 +22,10 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import aiohttp
 import numpy as np
-
 from audio.transcriptionworker import TranscriptionWorker
 
 try:
@@ -63,9 +62,9 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
         vfo_number: int,
         language: str = "auto",
         translate_to: str = "none",
-        google_translate_api_key: Optional[str] = None,
-        satellite: Optional[Dict[str, Any]] = None,
-        transmitter: Optional[Dict[str, Any]] = None,
+        google_translate_api_key: str | None = None,
+        satellite: dict[str, Any] | None = None,
+        transmitter: dict[str, Any] | None = None,
     ):
         super().__init__(
             transcription_queue=transcription_queue,
@@ -87,7 +86,7 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
         # Deepgram-specific settings
         self.target_sample_rate = 16000  # Deepgram prefers 16kHz
         self.websocket = None
-        self.keepalive_task: Optional[asyncio.Task] = None
+        self.keepalive_task: asyncio.Task | None = None
 
         # Deepgram API endpoint
         self.websocket_url = self._build_websocket_url()
@@ -180,7 +179,7 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
                 # Language not supported by Deepgram - don't specify language and let it auto-detect
                 logger.warning(
                     f"Language '{self.language}' is not supported by Deepgram. "
-                    f"Using auto-detection instead."
+                    f"Using auto-detection instead.",
                 )
 
         # Note: Deepgram doesn't have built-in translation like Gemini
@@ -188,7 +187,7 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
         if self.translate_to and self.translate_to != "none":
             logger.warning(
                 f"Deepgram does not support built-in translation. "
-                f"Translation from {self.language} to {self.translate_to} will be skipped."
+                f"Translation from {self.language} to {self.translate_to} will be skipped.",
             )
 
         url = f"{base_url}?{'&'.join(params)}"
@@ -215,7 +214,7 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
             self.last_connection_attempt = 0  # Reset backoff
 
             logger.info(
-                f"Connected to Deepgram Streaming API for session {self.session_id[:8]} VFO {self.vfo_number}"
+                f"Connected to Deepgram Streaming API for session {self.session_id[:8]} VFO {self.vfo_number}",
             )
 
             # Start keepalive task (Deepgram requires messages every 10 seconds)
@@ -369,7 +368,7 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
             logger.error(f"Deepgram receiver error: {e}")
             self.connected = False
 
-    async def _translate_text(self, text: str, source_lang: str, target_lang: str) -> Optional[str]:
+    async def _translate_text(self, text: str, source_lang: str, target_lang: str) -> str | None:
         """
         Translate text using Google Cloud Translation API REST endpoint.
 
@@ -409,13 +408,13 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
                         result = await response.json()
                         translated_text: str = result["data"]["translations"][0]["translatedText"]
                         logger.debug(
-                            f"Translated '{text}' from {source_lang} to {target_lang}: '{translated_text}'"
+                            f"Translated '{text}' from {source_lang} to {target_lang}: '{translated_text}'",
                         )
                         return translated_text
                     else:
                         error_text = await response.text()
                         logger.error(
-                            f"Google Translate API error (status {response.status}): {error_text}"
+                            f"Google Translate API error (status {response.status}): {error_text}",
                         )
                         return None
 
@@ -427,7 +426,7 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
             return None
 
     async def _emit_transcription(
-        self, text: str, language: str, is_final: bool, confidence: Optional[float] = None
+        self, text: str, language: str, is_final: bool, confidence: float | None = None,
     ):
         """
         Override to add translation step for Deepgram transcriptions.
@@ -445,7 +444,7 @@ class DeepgramTranscriptionWorker(TranscriptionWorker):
                 if translated_text:
                     # Emit translated text with original language preserved
                     await super()._emit_transcription(
-                        translated_text, language, is_final, confidence
+                        translated_text, language, is_final, confidence,
                     )
                 else:
                     # Translation failed, emit original text

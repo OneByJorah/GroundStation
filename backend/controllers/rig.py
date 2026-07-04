@@ -16,14 +16,14 @@
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional, Tuple
 
 
 class RigController:
     def __init__(
         self,
-        model: Optional[int] = None,  # Model is no longer used directly
+        model: int | None = None,  # Model is no longer used directly
         host: str = "127.0.0.1",
         port: int = 4532,
         verbose: bool = False,
@@ -39,8 +39,8 @@ class RigController:
         self.port = port
         self.device_path = device_path
         self.verbose = verbose
-        self.reader: Optional[asyncio.StreamReader] = None
-        self.writer: Optional[asyncio.StreamWriter] = None
+        self.reader: asyncio.StreamReader | None = None
+        self.writer: asyncio.StreamWriter | None = None
         self.connected = False
         self.timeout = timeout
         self.command_lock = asyncio.Lock()
@@ -63,7 +63,7 @@ class RigController:
 
             # Create a persistent connection
             reader_writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port), timeout=self.timeout
+                asyncio.open_connection(self.host, self.port), timeout=self.timeout,
             )
             self.reader, self.writer = reader_writer
 
@@ -121,7 +121,7 @@ class RigController:
             try:
                 # Use asyncio's open_connection with timeout
                 reader, writer = await asyncio.wait_for(
-                    asyncio.open_connection(self.host, self.port), timeout=self.timeout
+                    asyncio.open_connection(self.host, self.port), timeout=self.timeout,
                 )
                 yield reader, writer
             finally:
@@ -155,7 +155,7 @@ class RigController:
                 if waitforreply:
                     # Read first response line
                     first_line = await asyncio.wait_for(
-                        self.reader.readline(), timeout=self.timeout
+                        self.reader.readline(), timeout=self.timeout,
                     )
                     response = first_line.decode("utf-8", errors="replace").strip()
                     self.logger.debug(f"RX <- {response}")
@@ -164,7 +164,7 @@ class RigController:
                     while True:
                         try:
                             extra_line = await asyncio.wait_for(
-                                self.reader.readline(), timeout=0.03
+                                self.reader.readline(), timeout=0.03,
                             )
                         except asyncio.TimeoutError:
                             break
@@ -233,7 +233,7 @@ class RigController:
             return False
 
     @staticmethod
-    def _parse_rprt_code(response: str) -> Optional[int]:
+    def _parse_rprt_code(response: str) -> int | None:
         if not response.startswith("RPRT"):
             return None
         try:
@@ -332,7 +332,7 @@ class RigController:
             self.logger.error(f"Error getting frequency: {e}")
             raise RuntimeError(f"Error getting frequency: {e}")
 
-    async def get_mode(self) -> Tuple[str, int]:
+    async def get_mode(self) -> tuple[str, int]:
         """Get the current mode and bandwidth."""
         try:
             response = await self._send_command("m")
@@ -410,7 +410,7 @@ class RigController:
         update_interval: float = 0.5,
         freq_tolerance: float = 10.0,
         vfo: str = "1",
-    ) -> AsyncGenerator[Tuple[float, bool], None]:
+    ) -> AsyncGenerator[tuple[float, bool], None]:
         """Set the rig frequency and yield updates until it reaches the target."""
         # Map VFO string to rigctld VFO name
         vfo_map = {
@@ -790,7 +790,7 @@ class RigController:
             self.logger.error(f"Error setting split VFO: {e}")
             raise RuntimeError(f"Error setting split VFO: {e}")
 
-    async def get_vfo_frequency_and_mode(self, vfo: str) -> Tuple[float, str, int]:
+    async def get_vfo_frequency_and_mode(self, vfo: str) -> tuple[float, str, int]:
         """Get frequency and mode for a specific VFO.
 
         Args:
@@ -866,7 +866,7 @@ class RigController:
             # Just log a warning
             if hasattr(self, "logger"):
                 self.logger.warning(
-                    "Object RigController being destroyed while still connected to rig"
+                    "Object RigController being destroyed while still connected to rig",
                 )
 
             # Close the writer (synchronously)

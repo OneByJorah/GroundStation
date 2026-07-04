@@ -15,7 +15,7 @@
 
 """Location handlers."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import crud
 from db import AsyncSessionLocal
@@ -23,8 +23,8 @@ from tracker.runner import get_tracker_manager
 
 
 async def get_locations(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, list]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | list]:
     """
     Get all locations.
 
@@ -44,8 +44,8 @@ async def get_locations(
 
 
 async def submit_location(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, None]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | None]:
     """
     Add a new location.
 
@@ -68,8 +68,8 @@ async def submit_location(
 
 
 async def edit_location(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, None]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | None]:
     """
     Edit an existing location.
 
@@ -92,8 +92,8 @@ async def edit_location(
 
 
 async def delete_location(
-    sio: Any, data: Optional[Dict], logger: Any, sid: str
-) -> Dict[str, Union[bool, None]]:
+    sio: Any, data: dict | None, logger: Any, sid: str,
+) -> dict[str, bool | None]:
     """
     Delete a location.
 
@@ -123,5 +123,5 @@ def register_handlers(registry):
             "submit-location": (submit_location, "data_submission"),
             "edit-location": (edit_location, "data_submission"),
             "delete-location": (delete_location, "data_submission"),
-        }
+        },
     )

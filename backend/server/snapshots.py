@@ -69,5 +69,5 @@ def save_waterfall_snapshot(waterfall_image: str, snapshot_name: str = "") -> di
             raise Exception("Invalid waterfall image data URL format")
 
     except Exception as e:
-        logger.error(f"Error saving waterfall snapshot: {str(e)}")
+        logger.error(f"Error saving waterfall snapshot: {e!s}")
         return {"success": False, "error": str(e)}

@@ -16,11 +16,10 @@
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import psutil
-
 from fft.averager import FFTAverager
 from workers.common import window_functions
 
@@ -53,7 +52,7 @@ def fft_processor_process(iq_queue, data_queue, stop_event, client_id):
     fft_averager = FFTAverager(logger, averaging_factor=fft_averaging)
 
     # Performance monitoring stats
-    stats: Dict[str, Any] = {
+    stats: dict[str, Any] = {
         "iq_chunks_in": 0,
         "iq_samples_in": 0,
         "fft_results_out": 0,
@@ -178,7 +177,7 @@ def fft_processor_process(iq_queue, data_queue, stop_event, client_id):
                 if num_segments <= 0:
                     overlap_type = "with overlap" if fft_overlap else "without overlap"
                     logger.debug(
-                        f"Not enough samples for FFT {overlap_type}: {len(samples)} < {actual_fft_size}"
+                        f"Not enough samples for FFT {overlap_type}: {len(samples)} < {actual_fft_size}",
                     )
                     continue
 
@@ -206,7 +205,7 @@ def fft_processor_process(iq_queue, data_queue, stop_event, client_id):
                         window_correction = np.sum(window**2) / N
 
                     power = 10 * np.log10(
-                        (np.abs(fft_segment) ** 2) / (N * window_correction) + 1e-10
+                        (np.abs(fft_segment) ** 2) / (N * window_correction) + 1e-10,
                     )
                     fft_result += power
 
@@ -277,13 +276,13 @@ def fft_processor_process(iq_queue, data_queue, stop_event, client_id):
 
             except Exception as e:
                 if not stop_event.is_set():
-                    logger.error(f"Error processing IQ data for FFT: {str(e)}")
+                    logger.error(f"Error processing IQ data for FFT: {e!s}")
                     logger.exception(e)
                     stats["errors"] += 1
                 time.sleep(0.1)
 
     except Exception as e:
-        logger.error(f"Fatal error in FFT processor: {str(e)}")
+        logger.error(f"Fatal error in FFT processor: {e!s}")
         logger.exception(e)
     finally:
         logger.info(f"FFT processor terminated for client {client_id}")

@@ -16,12 +16,11 @@
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Tuple
-
-from Hamlib import Hamlib
 
 from common.arguments import arguments as args
+from Hamlib import Hamlib
 
 
 class RotatorController:
@@ -110,7 +109,7 @@ class RotatorController:
         try:
             # Use asyncio's open_connection with timeout
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port), timeout=self.timeout
+                asyncio.open_connection(self.host, self.port), timeout=self.timeout,
             )
             yield reader, writer
 
@@ -181,7 +180,7 @@ class RotatorController:
             self.logger.exception(e)
             return False
 
-    async def get_position(self) -> Tuple[float, float]:
+    async def get_position(self) -> tuple[float, float]:
         self.check_connection()
 
         try:
@@ -232,7 +231,7 @@ class RotatorController:
             try:
                 # Just log a warning rather than trying to run async code
                 self.logger.warning(
-                    "Object RotatorController being garbage collected while still connected"
+                    "Object RotatorController being garbage collected while still connected",
                 )
 
                 # If there's a synchronous way to close the underlying connection, use it
@@ -284,7 +283,7 @@ class RotatorController:
         update_interval: float = 2,
         az_tolerance: float = 2.0,
         el_tolerance: float = 2.0,
-    ) -> AsyncGenerator[Tuple[float, float, bool], None]:
+    ) -> AsyncGenerator[tuple[float, float, bool], None]:
 
         # Start the slew operation
         try:

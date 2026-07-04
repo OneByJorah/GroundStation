@@ -20,7 +20,6 @@ Unit tests for tracking state CRUD operations.
 import uuid
 
 import pytest
-
 from crud.trackingstate import get_tracking_state, set_tracking_state
 
 
@@ -73,7 +72,7 @@ class TestTrackingStateCRUD:
         tracking_data = {
             "name": "satellite-tracking",
             "value": {
-                "norad_id": 25544
+                "norad_id": 25544,
                 # Missing required fields
             },
         }

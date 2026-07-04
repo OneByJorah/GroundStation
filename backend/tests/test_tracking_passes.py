@@ -20,8 +20,11 @@ Tests for tracking/passes.py satellite pass calculation functions.
 import numpy as np
 import pytest
 from skyfield.api import EarthSatellite, load
-
-from tracking.passes import analyze_satellite_orbit, calculate_azimuth_path, calculate_next_events
+from tracking.passes import (
+    analyze_satellite_orbit,
+    calculate_azimuth_path,
+    calculate_next_events,
+)
 
 
 # Test fixtures with real TLE data
@@ -95,7 +98,7 @@ class TestAnalyzeSatelliteOrbit:
         """Test analyzing geostationary satellite orbit."""
         ts = load.timescale()
         satellite = EarthSatellite(
-            geo_satellite_tle["line1"], geo_satellite_tle["line2"], geo_satellite_tle["name"], ts
+            geo_satellite_tle["line1"], geo_satellite_tle["line2"], geo_satellite_tle["name"], ts,
         )
 
         result = analyze_satellite_orbit(satellite)
@@ -117,7 +120,7 @@ class TestAnalyzeSatelliteOrbit:
         """Test analyzing Molniya orbit (high eccentricity, high inclination)."""
         ts = load.timescale()
         satellite = EarthSatellite(
-            molniya_tle["line1"], molniya_tle["line2"], molniya_tle["name"], ts
+            molniya_tle["line1"], molniya_tle["line2"], molniya_tle["name"], ts,
         )
 
         result = analyze_satellite_orbit(satellite)
@@ -330,7 +333,7 @@ class TestCalculateNextEventsIntegration:
         home_location = {"lat": 37.7749, "lon": -122.4194}  # San Francisco
 
         result = calculate_next_events(
-            satellite_data=iss_tle, home_location=home_location, hours=24, above_el=0
+            satellite_data=iss_tle, home_location=home_location, hours=24, above_el=0,
         )
 
         assert result["success"] is True
@@ -346,7 +349,7 @@ class TestCalculateNextEventsIntegration:
         home_location = {"lat": 37.7749, "lon": -122.4194}
 
         result = calculate_next_events(
-            satellite_data=satellite_list, home_location=home_location, hours=6, above_el=10
+            satellite_data=satellite_list, home_location=home_location, hours=6, above_el=10,
         )
 
         assert result["success"] is True
@@ -359,7 +362,7 @@ class TestCalculateNextEventsIntegration:
         invalid_location = {"invalid": "data"}
 
         result = calculate_next_events(
-            satellite_data=iss_tle, home_location=invalid_location, hours=6
+            satellite_data=iss_tle, home_location=invalid_location, hours=6,
         )
 
         assert result["success"] is False
@@ -371,7 +374,7 @@ class TestCalculateNextEventsIntegration:
         home_location = {"lat": 37.7749, "lon": -122.4194}
 
         result = calculate_next_events(
-            satellite_data="invalid", home_location=home_location, hours=6
+            satellite_data="invalid", home_location=home_location, hours=6,
         )
 
         assert result["success"] is False
@@ -383,7 +386,7 @@ class TestCalculateNextEventsIntegration:
         home_location = {"lat": 37.7749, "lon": -122.4194}
 
         result = calculate_next_events(
-            satellite_data=iss_tle, home_location=home_location, hours=24, above_el=30
+            satellite_data=iss_tle, home_location=home_location, hours=24, above_el=30,
         )
 
         assert result["success"] is True
@@ -398,7 +401,7 @@ class TestCalculateNextEventsIntegration:
         home_location = {"lat": 37.7749, "lon": -122.4194}
 
         result = calculate_next_events(
-            satellite_data=iss_tle, home_location=home_location, hours=48, above_el=0
+            satellite_data=iss_tle, home_location=home_location, hours=48, above_el=0,
         )
 
         assert result["success"] is True

@@ -21,7 +21,7 @@ import multiprocessing
 import subprocess
 import time
 import uuid
-from typing import Any, Dict
+from typing import Any
 
 from demodulators.basedecoder import BaseDecoder
 
@@ -83,7 +83,7 @@ class BaseDecoderProcess(BaseDecoder, multiprocessing.Process):
 
         # Initialize multiprocessing.Process
         multiprocessing.Process.__init__(
-            self, daemon=False, name=f"{decoder_type}Decoder-{session_id}-VFO{vfo}"
+            self, daemon=False, name=f"{decoder_type}Decoder-{session_id}-VFO{vfo}",
         )
 
         # Store queue references (will work across process boundary)
@@ -110,7 +110,7 @@ class BaseDecoderProcess(BaseDecoder, multiprocessing.Process):
 
         # Note: stats dict will be initialized in run() method (subprocess)
         # DO NOT initialize stats here - it won't be accessible across process boundary
-        self.stats: Dict[str, Any] = {}
+        self.stats: dict[str, Any] = {}
 
         # Extract metadata from config (these are simple types that pickle correctly)
         self.satellite = config.satellite if config else {}
@@ -208,11 +208,11 @@ class BaseDecoderProcess(BaseDecoder, multiprocessing.Process):
             # Only request restart if not already requested (prevent spam)
             if segment_count > self.shm_restart_threshold and self.restart_requested.value == 0:
                 self.request_restart(
-                    f"SHM segments exceeded threshold: {segment_count} > {self.shm_restart_threshold}"
+                    f"SHM segments exceeded threshold: {segment_count} > {self.shm_restart_threshold}",
                 )
                 logger.warning(
                     f"{self.name}: SHM segments ({segment_count}) exceeded threshold "
-                    f"({self.shm_restart_threshold}), restart requested"
+                    f"({self.shm_restart_threshold}), restart requested",
                 )
 
     def get_shm_segment_count(self) -> int:

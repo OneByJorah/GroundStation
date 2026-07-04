@@ -3,14 +3,14 @@ import argparse
 import json
 import math
 import os
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
 
 def _update_meta(meta_in_path: str, meta_out_path: str, shift_hz: float) -> None:
     with open(meta_in_path, "r", encoding="utf-8") as f:
-        meta: Dict[str, Any] = json.load(f)
+        meta: dict[str, Any] = json.load(f)
 
     captures = meta.get("captures", [])
     for cap in captures:
@@ -28,7 +28,7 @@ def _update_meta(meta_in_path: str, meta_out_path: str, shift_hz: float) -> None
 
 
 def shift_iq(
-    in_path: str, out_path: str, sample_rate: float, shift_hz: float, chunk_samples: int
+    in_path: str, out_path: str, sample_rate: float, shift_hz: float, chunk_samples: int,
 ) -> None:
     phase_inc = 2.0 * math.pi * shift_hz / sample_rate
     sample_offset = 0
@@ -51,7 +51,7 @@ def main() -> None:
     parser.add_argument("input", help="Input .sigmf-data path")
     parser.add_argument("output", help="Output .sigmf-data path")
     parser.add_argument(
-        "--samplerate", type=float, required=True, help="Sample rate in Hz (e.g. 4e6)"
+        "--samplerate", type=float, required=True, help="Sample rate in Hz (e.g. 4e6)",
     )
     parser.add_argument(
         "--shift",

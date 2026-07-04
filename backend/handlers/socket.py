@@ -1,9 +1,12 @@
 import os
 import threading
 import time
-from typing import Dict
 
 from common.logger import logger
+from pipeline.orchestration.processmanager import process_manager
+from server.shutdown import cleanup_everything
+from session.service import session_service
+from session.tracker import session_tracker
 
 # Import all entity modules to register their handlers
 from handlers.entities import (
@@ -16,9 +19,11 @@ from handlers.entities import (
     scheduler,
     sessions,
     systeminfo,
+    tracking,
+    transmitters,
+    vfo,
 )
 from handlers.entities import tlesources as tle_sources
-from handlers.entities import tracking, transmitters, vfo
 from handlers.entities.databasebackup import (
     backup_table,
     full_backup,
@@ -29,13 +34,9 @@ from handlers.entities.databasebackup import (
 from handlers.entities.filebrowser import filebrowser_request_routing
 from handlers.entities.sdr import sdr_data_request_routing
 from handlers.routing import dispatch_request, handler_registry
-from pipeline.orchestration.processmanager import process_manager
-from server.shutdown import cleanup_everything
-from session.service import session_service
-from session.tracker import session_tracker
 
 # hold a list of sessions
-SESSIONS: Dict[str, Dict] = {}
+SESSIONS: dict[str, dict] = {}
 
 
 def _register_all_handlers():
@@ -136,11 +137,11 @@ def register_socketio_handlers(sio):
     @sio.on("service_control")
     async def handle_service_control_requests(sid, cmd, data=None):
         logger.info(
-            f"Received service control event from: {sid}, with cmd: {cmd}, and data: {data}"
+            f"Received service control event from: {sid}, with cmd: {cmd}, and data: {data}",
         )
         if cmd == "restart_service":
             logger.info(
-                f"Service restart requested by client {sid} with IP {SESSIONS[sid]['REMOTE_ADDR']}"
+                f"Service restart requested by client {sid} with IP {SESSIONS[sid]['REMOTE_ADDR']}",
             )
 
             def delayed_shutdown():
@@ -177,7 +178,7 @@ def register_socketio_handlers(sio):
     async def handle_database_backup(sid, data=None):
         """Handle database backup and restore operations."""
         logger.info(
-            f"Database backup event from: {sid}, action: {data.get('action') if data else None}"
+            f"Database backup event from: {sid}, action: {data.get('action') if data else None}",
         )
 
         if not data or "action" not in data:
@@ -221,20 +222,21 @@ def register_socketio_handlers(sio):
                 return {"success": False, "error": f"Unknown action: {action}"}
 
         except Exception as e:
-            logger.error(f"Error in database backup handler: {str(e)}")
+            logger.error(f"Error in database backup handler: {e!s}")
             return {"success": False, "error": str(e)}
 
     @sio.on("transmitter_import")
     async def handle_transmitter_import(sid, data=None):
         """Handle transmitter imports from external sources."""
         from db import AsyncSessionLocal
+
         from handlers.entities.transmitterimport import (
             import_gr_satellites_transmitters,
             import_satdump_transmitters,
         )
 
         logger.info(
-            f"Transmitter import event from: {sid}, source: {data.get('source') if data else None}"
+            f"Transmitter import event from: {sid}, source: {data.get('source') if data else None}",
         )
 
         if not data or "source" not in data:
@@ -250,7 +252,7 @@ def register_socketio_handlers(sio):
 
                 return {"success": False, "error": f"Unknown source: {source}"}
         except Exception as e:
-            logger.error(f"Error in transmitter import handler: {str(e)}")
+            logger.error(f"Error in transmitter import handler: {e!s}")
             return {"success": False, "error": str(e)}
 
     @sio.on("background_task:start")
@@ -282,13 +284,13 @@ def register_socketio_handlers(sio):
 
             # Start the task
             task_id = await background_task_manager.start_task(
-                func=task_func, args=args, kwargs=kwargs, name=name, task_id=task_id
+                func=task_func, args=args, kwargs=kwargs, name=name, task_id=task_id,
             )
 
             return {"success": True, "task_id": task_id}
 
         except Exception as e:
-            logger.error(f"Error starting background task: {str(e)}")
+            logger.error(f"Error starting background task: {e!s}")
             return {"success": False, "error": str(e)}
 
     @sio.on("background_task:stop")
@@ -317,7 +319,7 @@ def register_socketio_handlers(sio):
                 return {"success": False, "error": "Task not found or already finished"}
 
         except Exception as e:
-            logger.error(f"Error stopping background task: {str(e)}")
+            logger.error(f"Error stopping background task: {e!s}")
             return {"success": False, "error": str(e)}
 
     @sio.on("background_task:get")
@@ -343,7 +345,7 @@ def register_socketio_handlers(sio):
                 return {"success": False, "error": "Task not found"}
 
         except Exception as e:
-            logger.error(f"Error getting background task: {str(e)}")
+            logger.error(f"Error getting background task: {e!s}")
             return {"success": False, "error": str(e)}
 
     @sio.on("background_task:list")
@@ -367,7 +369,7 @@ def register_socketio_handlers(sio):
             return {"success": True, "tasks": tasks}
 
         except Exception as e:
-            logger.error(f"Error listing background tasks: {str(e)}")
+            logger.error(f"Error listing background tasks: {e!s}")
             return {"success": False, "error": str(e)}
 
     return SESSIONS

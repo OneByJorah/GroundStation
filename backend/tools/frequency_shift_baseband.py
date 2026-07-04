@@ -106,7 +106,7 @@ def process_baseband_file(input_file, output_file, shift_hz, chunk_size=10_000_0
             if not np.all(np.isfinite(iq_chunk)):
                 raise ValueError(
                     f"Input file contains invalid values (inf/nan) at chunk {chunk_num}. "
-                    f"The input recording is corrupted."
+                    f"The input recording is corrupted.",
                 )
 
             # Apply frequency shift with phase continuity
@@ -122,7 +122,7 @@ def process_baseband_file(input_file, output_file, shift_hz, chunk_size=10_000_0
             if not np.all(np.isfinite(shifted_chunk)):
                 raise ValueError(
                     f"Frequency shift produced invalid values (inf/nan) at chunk {chunk_num}. "
-                    f"This may indicate input data corruption or numerical overflow."
+                    f"This may indicate input data corruption or numerical overflow.",
                 )
 
             # Update phase for next chunk (wrap to keep it bounded)
@@ -162,7 +162,7 @@ def process_baseband_file(input_file, output_file, shift_hz, chunk_size=10_000_0
             "core:sample_start": 0,
             "core:sample_count": num_samples,
             "core:comment": f"Frequency shifted by {shift_hz} Hz using frequency_shift_baseband.py",
-        }
+        },
     )
 
     with open(output_meta_file, "w") as f:
@@ -212,7 +212,7 @@ Examples:
         process_baseband_file(args.input_file, args.output_file, args.shift_hz, args.chunk_size)
         print("\nSuccess! You can now decode with satdump:")
         print(
-            f"  satdump meteor_m2-x_lrpt baseband {args.output_file} output_dir --samplerate 1e6 --baseband_format cf32 --dc_block"
+            f"  satdump meteor_m2-x_lrpt baseband {args.output_file} output_dir --samplerate 1e6 --baseband_format cf32 --dc_block",
         )
     except Exception as e:
         print(f"\nError: {e}")

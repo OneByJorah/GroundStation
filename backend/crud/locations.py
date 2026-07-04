@@ -16,16 +16,14 @@
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, Union
-
-from sqlalchemy import delete, insert, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.common import logger, serialize_object
 from db.models import Locations
+from sqlalchemy import delete, insert, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def fetch_location(session: AsyncSession, location_id: Union[uuid.UUID, str]) -> dict:
+async def fetch_location(session: AsyncSession, location_id: uuid.UUID | str) -> dict:
     """
     Fetch a single location by its UUID or its string representation.
     """
@@ -130,7 +128,7 @@ async def edit_location(session: AsyncSession, data: dict) -> dict:
         return {"success": False, "error": str(e)}
 
 
-async def delete_location(session: AsyncSession, location_id: Union[uuid.UUID, str]) -> dict:
+async def delete_location(session: AsyncSession, location_id: uuid.UUID | str) -> dict:
     """
     Delete a location record by its UUID.
     """

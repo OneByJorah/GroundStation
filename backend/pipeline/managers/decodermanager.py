@@ -77,7 +77,7 @@ class DecoderManager:
             self.logger.warning(f"Error while force-killing process {name}: {e}")
 
     def start_decoder(
-        self, sdr_id, session_id, decoder_class, data_queue, audio_out_queue=None, **kwargs
+        self, sdr_id, session_id, decoder_class, data_queue, audio_out_queue=None, **kwargs,
     ):
         """
         Start a decoder thread for a specific session.
@@ -151,7 +151,7 @@ class DecoderManager:
                                 return True
                             # Restart wants to replace even same type
                             self.logger.warning(
-                                f"Force-replacing alive {existing_type} for {session_id} VFO{vfo_number} due to restart (pid={getattr(existing, 'pid', None)})"
+                                f"Force-replacing alive {existing_type} for {session_id} VFO{vfo_number} due to restart (pid={getattr(existing, 'pid', None)})",
                             )
                             self._force_kill_process(existing, existing_type or "Decoder")
                             try:
@@ -165,13 +165,13 @@ class DecoderManager:
                             if caller != "restart":
                                 self.logger.warning(
                                     f"Duplicate start prevented for {session_id} VFO{vfo_number}: "
-                                    f"existing {existing_type} (pid={getattr(existing, 'pid', None)}) alive; caller={caller}"
+                                    f"existing {existing_type} (pid={getattr(existing, 'pid', None)}) alive; caller={caller}",
                                 )
                                 return True
                             # Restart path: force-kill existing first
                             self.logger.warning(
                                 f"Force-killing existing decoder before restart for {session_id} VFO{vfo_number}: "
-                                f"{existing_type} (pid={getattr(existing, 'pid', None)})"
+                                f"{existing_type} (pid={getattr(existing, 'pid', None)})",
                             )
                             self._force_kill_process(existing, existing_type or "Decoder")
                             try:
@@ -220,7 +220,7 @@ class DecoderManager:
             if needs_raw_iq:
                 # Raw IQ decoder (like LoRa, GMSK, GFSK, BPSK) - no demodulator needed
                 self.logger.info(
-                    f"{decoder_class.__name__} receives raw IQ samples directly from SDR"
+                    f"{decoder_class.__name__} receives raw IQ samples directly from SDR",
                 )
                 # Skip all demodulator creation logic
             elif needs_internal_demod:
@@ -231,7 +231,7 @@ class DecoderManager:
                     need_to_create_demod = True
                     self.logger.info(
                         f"No active demodulator found for session {session_id}. "
-                        f"Creating internal {required_demodulator.upper()} demodulator for decoder."
+                        f"Creating internal {required_demodulator.upper()} demodulator for decoder.",
                     )
                 else:
                     # demod_entry is a nested dict {vfo_number: {instance, subscription_key}}
@@ -243,18 +243,18 @@ class DecoderManager:
                             need_to_create_demod = True
                             self.logger.info(
                                 f"Existing demodulator for session {session_id} VFO {vfo_number} is not in internal mode. "
-                                f"Stopping it and creating internal {required_demodulator.upper()} demodulator for decoder."
+                                f"Stopping it and creating internal {required_demodulator.upper()} demodulator for decoder.",
                             )
                             # Stop only the specific VFO's demodulator
                             self.demodulator_manager.stop_demodulator(
-                                sdr_id, session_id, vfo_number
+                                sdr_id, session_id, vfo_number,
                             )
                     elif isinstance(demod_entry, dict) and vfo_number:
                         # This VFO doesn't have a demodulator yet
                         need_to_create_demod = True
                         self.logger.info(
                             f"No demodulator for VFO {vfo_number} in session {session_id}. "
-                            f"Creating internal {required_demodulator.upper()} demodulator for decoder."
+                            f"Creating internal {required_demodulator.upper()} demodulator for decoder.",
                         )
 
                 if need_to_create_demod:
@@ -269,13 +269,13 @@ class DecoderManager:
 
                     # Get default bandwidth from registry
                     demod_bandwidth = demodulator_registry.get_default_bandwidth(
-                        required_demodulator
+                        required_demodulator,
                     )
 
                     self.logger.info(
                         f"Creating internal {required_demodulator.upper()} demodulator "
                         f"{'('+demodulator_mode.upper()+' mode) ' if demodulator_mode else ''}"
-                        f"for {decoder_class.__name__}"
+                        f"for {decoder_class.__name__}",
                     )
 
                     # Start internal demodulator with internal_mode enabled
@@ -300,7 +300,7 @@ class DecoderManager:
 
                     if not success:
                         self.logger.error(
-                            f"Failed to start internal {required_demodulator.upper()} demodulator for session {session_id}"
+                            f"Failed to start internal {required_demodulator.upper()} demodulator for session {session_id}",
                         )
                         return False
 
@@ -325,7 +325,7 @@ class DecoderManager:
                 # Use multiprocessing queue for process-based decoders (FSK, BPSK, LoRa, etc.)
                 # Increased maxsize from 3 to 10 for better burst handling on slower CPUs (RPi5)
                 iq_queue = iq_broadcaster.subscribe(
-                    subscription_key, maxsize=10, for_process=True, session_id_hint=session_id
+                    subscription_key, maxsize=10, for_process=True, session_id_hint=session_id,
                 )
 
                 # Resolve decoder configuration using DecoderConfigService
@@ -383,19 +383,19 @@ class DecoderManager:
                     audio_broadcaster = demod_entry[session_id][vfo_number].get("audio_broadcaster")
                     if not audio_broadcaster:
                         self.logger.error(
-                            f"No audio broadcaster found for demodulator session {session_id} VFO {vfo_number}"
+                            f"No audio broadcaster found for demodulator session {session_id} VFO {vfo_number}",
                         )
                         return False
                 else:
                     self.logger.error(
-                        f"No demodulator entry found for session {session_id} VFO {vfo_number}"
+                        f"No demodulator entry found for session {session_id} VFO {vfo_number}",
                     )
                     return False
 
                 # Subscribe decoder to audio broadcaster
                 # Use multiprocessing queue for process-based decoders (AFSK, etc.)
                 decoder_audio_queue = audio_broadcaster.subscribe(
-                    f"decoder:{session_id}", maxsize=10, for_process=True
+                    f"decoder:{session_id}", maxsize=10, for_process=True,
                 )
 
                 # Resolve decoder configuration using DecoderConfigService
@@ -429,7 +429,7 @@ class DecoderManager:
 
                 # Create and start the decoder with the audio queue from broadcaster
                 decoder = decoder_class(
-                    decoder_audio_queue, data_queue, session_id, **decoder_kwargs
+                    decoder_audio_queue, data_queue, session_id, **decoder_kwargs,
                 )
                 decoder.start()
 
@@ -472,12 +472,12 @@ class DecoderManager:
                 process_info["decoders"][session_id][vfo_number] = decoder_info
             else:
                 self.logger.error(
-                    f"vfo_number is required to start decoder {decoder_class.__name__} for session {session_id}"
+                    f"vfo_number is required to start decoder {decoder_class.__name__} for session {session_id}",
                 )
                 return False
 
             self.logger.info(
-                f"Started {decoder_class.__name__} for session {session_id} on device {sdr_id}"
+                f"Started {decoder_class.__name__} for session {session_id} on device {sdr_id}",
             )
             # Record last start timestamp for debounce
             self._last_start_ts[key] = int(time.time() * 1000)
@@ -517,14 +517,14 @@ class DecoderManager:
 
             # Stop specific VFO decoder
             return self._stop_single_decoder(
-                sdr_id, session_id, vfo_number, session_decoders[vfo_number], process_info
+                sdr_id, session_id, vfo_number, session_decoders[vfo_number], process_info,
             )
         else:
             # Stop all VFO decoders for this session
             success = True
             for vfo_num in list(session_decoders.keys()):
                 if not self._stop_single_decoder(
-                    sdr_id, session_id, vfo_num, session_decoders[vfo_num], process_info
+                    sdr_id, session_id, vfo_num, session_decoders[vfo_num], process_info,
                 ):
                     success = False
             return success
@@ -566,7 +566,7 @@ class DecoderManager:
                 decoder.join(timeout=5.0)
                 if decoder.is_alive():
                     self.logger.warning(
-                        f"{decoder_name} did not stop gracefully within 5s, terminating forcefully"
+                        f"{decoder_name} did not stop gracefully within 5s, terminating forcefully",
                     )
                     decoder.terminate()
                     decoder.join(timeout=1.0)
@@ -617,7 +617,9 @@ class DecoderManager:
 
                 if should_stop_demod:
                     # Get demodulator type name from the instance class
-                    from pipeline.registries.demodulatorregistry import demodulator_registry
+                    from pipeline.registries.demodulatorregistry import (
+                        demodulator_registry,
+                    )
 
                     demod_class_name = type(vfo_demod).__name__
                     demod_type = "UNKNOWN"
@@ -630,12 +632,12 @@ class DecoderManager:
                             break
 
                     self.logger.info(
-                        f"Stopping internal {demod_type} demodulator for session {session_id} VFO {vfo_number}"
+                        f"Stopping internal {demod_type} demodulator for session {session_id} VFO {vfo_number}",
                     )
                     self.demodulator_manager.stop_demodulator(sdr_id, session_id, vfo_number)
                 else:
                     self.logger.debug(
-                        f"Internal demodulator for session {session_id} was already replaced, skipping cleanup"
+                        f"Internal demodulator for session {session_id} was already replaced, skipping cleanup",
                     )
 
             # Delete the decoder entry
@@ -654,7 +656,7 @@ class DecoderManager:
             return True
 
         except Exception as e:
-            self.logger.error(f"Error stopping decoder: {str(e)}")
+            self.logger.error(f"Error stopping decoder: {e!s}")
             return False
 
     def get_active_decoder(self, sdr_id, session_id, vfo_number=None):
@@ -745,7 +747,7 @@ class DecoderManager:
                             pass
                         except Exception as e:
                             self.logger.warning(
-                                f"Failed to SIGKILL {decoder_name} (pid={pid}): {e}"
+                                f"Failed to SIGKILL {decoder_name} (pid={pid}): {e}",
                             )
 
                     # Best-effort short join to reap the process
@@ -760,7 +762,7 @@ class DecoderManager:
             decoder_config = decoder_entry.get("config")
             if not decoder_config:
                 self.logger.error(
-                    f"Cannot restart decoder {session_id} VFO{vfo_number}: no config found"
+                    f"Cannot restart decoder {session_id} VFO{vfo_number}: no config found",
                 )
                 return False
 
@@ -768,7 +770,7 @@ class DecoderManager:
             decoder_type = decoder_entry.get("decoder_type")
             if not decoder_type:
                 self.logger.error(
-                    f"Cannot restart decoder {session_id} VFO{vfo_number}: no decoder type found"
+                    f"Cannot restart decoder {session_id} VFO{vfo_number}: no decoder type found",
                 )
                 return False
 
@@ -782,7 +784,7 @@ class DecoderManager:
             if not decoder_class:
                 self.logger.error(
                     f"Cannot restart decoder {session_id} VFO{vfo_number}: "
-                    f"decoder class {decoder_type} not found in registry"
+                    f"decoder class {decoder_type} not found in registry",
                 )
                 return False
 
@@ -808,7 +810,7 @@ class DecoderManager:
                     dec_instance = live_entry["instance"]
                     dec_name = type(dec_instance).__name__
                     self.logger.warning(
-                        f"Force-killing existing decoder for {session_id} VFO{vfo_number} before restart"
+                        f"Force-killing existing decoder for {session_id} VFO{vfo_number} before restart",
                     )
                     _force_kill_decoder(dec_instance, dec_name)
 
@@ -827,7 +829,7 @@ class DecoderManager:
                                 try:
                                     iq_broadcaster.unsubscribe(subscription_key)
                                     self.logger.debug(
-                                        f"Unsubscribed {subscription_key} from IQBroadcaster during restart cleanup"
+                                        f"Unsubscribed {subscription_key} from IQBroadcaster during restart cleanup",
                                     )
                                 except Exception:
                                     # Best effort; don't block restart
@@ -849,7 +851,7 @@ class DecoderManager:
                             if internal_demod:
                                 try:
                                     self.demodulator_manager.stop_demodulator(
-                                        sdr_id, session_id, vfo_number
+                                        sdr_id, session_id, vfo_number,
                                     )
                                 except Exception:
                                     pass
@@ -875,7 +877,7 @@ class DecoderManager:
             for attempt in range(attempts):
                 if attempt > 0:
                     self.logger.warning(
-                        f"Retrying decoder start {session_id} VFO{vfo_number} (attempt {attempt+1}/{attempts})"
+                        f"Retrying decoder start {session_id} VFO{vfo_number} (attempt {attempt+1}/{attempts})",
                     )
                 ok = self.start_decoder(
                     sdr_id=sdr_id,
@@ -904,7 +906,7 @@ class DecoderManager:
                     pass
 
             self.logger.error(
-                f"Failed to start decoder after retries for {session_id} VFO{vfo_number}"
+                f"Failed to start decoder after retries for {session_id} VFO{vfo_number}",
             )
             return False
 

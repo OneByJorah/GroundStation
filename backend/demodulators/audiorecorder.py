@@ -22,7 +22,7 @@ import time
 import wave
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -72,7 +72,7 @@ class AudioRecorder(threading.Thread):
         )
 
         # Performance monitoring
-        self.stats: Dict[str, Any] = {
+        self.stats: dict[str, Any] = {
             "audio_chunks_in": 0,
             "audio_samples_in": 0,
             "samples_written": 0,
@@ -134,7 +134,7 @@ class AudioRecorder(threading.Thread):
 
             except Exception as e:
                 if self.running:
-                    logger.error(f"Error in audio recorder: {str(e)}")
+                    logger.error(f"Error in audio recorder: {e!s}")
                     logger.exception(e)
                     with self.stats_lock:
                         self.stats["errors"] += 1
@@ -209,5 +209,5 @@ class AudioRecorder(threading.Thread):
             json.dump(metadata, f, indent=2)
 
         logger.info(
-            f"Audio recording finalized: {duration_seconds:.2f}s, " f"{self.total_samples} samples"
+            f"Audio recording finalized: {duration_seconds:.2f}s, " f"{self.total_samples} samples",
         )

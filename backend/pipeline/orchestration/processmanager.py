@@ -17,17 +17,18 @@
 import asyncio
 import logging
 import signal
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from common.constants import SocketEvents
 from monitoring.performancemonitor import PerformanceMonitor
+from server import shutdown
+
 from pipeline.managers.audiorecordermanager import AudioRecorderManager
 from pipeline.managers.decodermanager import DecoderManager
 from pipeline.managers.demodulatormanager import DemodulatorManager
 from pipeline.managers.recordermanager import RecorderManager
 from pipeline.managers.transcriptionmanager import TranscriptionManager
 from pipeline.orchestration.processlifecycle import ProcessLifecycleManager
-from server import shutdown
 
 
 class ProcessManager:
@@ -46,7 +47,7 @@ class ProcessManager:
         self.logger = logging.getLogger("process-manager")
         self.sio = sio
         self.event_loop = event_loop
-        self.processes: Dict[str, Dict[str, Any]] = {}  # Map of sdr_id to process information
+        self.processes: dict[str, dict[str, Any]] = {}  # Map of sdr_id to process information
 
         # Initialize specialized managers
         self.demodulator_manager = DemodulatorManager(self.processes)
@@ -91,7 +92,7 @@ class ProcessManager:
         # Initialize transcription manager if we have both sio and event loop
         if self.event_loop and not self.transcription_manager:
             self.transcription_manager = TranscriptionManager(
-                self.processes, self.sio, self.event_loop
+                self.processes, self.sio, self.event_loop,
             )
             # Update lifecycle manager with transcription manager
             self.lifecycle_manager.transcription_manager = self.transcription_manager
@@ -112,7 +113,7 @@ class ProcessManager:
         # Initialize transcription manager if we have both sio and event loop
         if self.sio and not self.transcription_manager:
             self.transcription_manager = TranscriptionManager(
-                self.processes, self.sio, self.event_loop
+                self.processes, self.sio, self.event_loop,
             )
             # Update lifecycle manager with transcription manager
             self.lifecycle_manager.transcription_manager = self.transcription_manager
@@ -159,7 +160,7 @@ class ProcessManager:
                 # Get latest metrics from monitor (blocking with timeout)
                 # Timeout should be slightly longer than update_interval to avoid timeouts
                 metrics = await asyncio.get_event_loop().run_in_executor(
-                    None, self.performance_monitor.get_latest_metrics, 3.0
+                    None, self.performance_monitor.get_latest_metrics, 3.0,
                 )
 
                 if metrics and self.sio:
@@ -234,14 +235,14 @@ class ProcessManager:
 
     # ==================== Read-only Introspection Helpers ====================
 
-    def list_sdrs(self) -> List[str]:
+    def list_sdrs(self) -> list[str]:
         """Return a list of SDR IDs known to the manager (keys of the registry)."""
         return list(self.processes.keys())
 
-    def get_sdr_status(self, sdr_id: str) -> Dict[str, Any]:
+    def get_sdr_status(self, sdr_id: str) -> dict[str, Any]:
         """Return a simple status dict for a given SDR id (alive flag, pid, name)."""
-        info: Dict[str, Any] = {"alive": False}
-        pinfo: Optional[Dict[str, Any]] = self.processes.get(sdr_id)
+        info: dict[str, Any] = {"alive": False}
+        pinfo: dict[str, Any] | None = self.processes.get(sdr_id)
         if not pinfo:
             return info
         proc = pinfo.get("process")
@@ -255,7 +256,7 @@ class ProcessManager:
                 info["alive"] = False
         return info
 
-    def list_all_consumers(self) -> Dict[str, Dict[str, Any]]:
+    def list_all_consumers(self) -> dict[str, dict[str, Any]]:
         """
         Return a JSON-safe snapshot of clients and per-session consumers for all SDRs.
 
@@ -269,9 +270,9 @@ class ProcessManager:
           }
         }
         """
-        result: Dict[str, Dict[str, Any]] = {}
+        result: dict[str, dict[str, Any]] = {}
         for sdr_id, pinfo in self.processes.items():
-            entry: Dict[str, Any] = {
+            entry: dict[str, Any] = {
                 "clients": list(pinfo.get("clients", [])),
                 "demodulators": {},
                 "recorders": {},
@@ -323,7 +324,7 @@ class ProcessManager:
     # ==================== Demodulator Methods ====================
 
     def start_demodulator(
-        self, sdr_id, session_id, demodulator_class, audio_queue, vfo_number=None, **kwargs
+        self, sdr_id, session_id, demodulator_class, audio_queue, vfo_number=None, **kwargs,
     ):
         """
         Start a demodulator thread for a specific session and VFO.
@@ -340,7 +341,7 @@ class ProcessManager:
             bool: True if started successfully, False otherwise
         """
         return self.demodulator_manager.start_demodulator(
-            sdr_id, session_id, demodulator_class, audio_queue, vfo_number, **kwargs
+            sdr_id, session_id, demodulator_class, audio_queue, vfo_number, **kwargs,
         )
 
     def stop_demodulator(self, sdr_id, session_id, vfo_number=None):
@@ -440,7 +441,7 @@ class ProcessManager:
             bool: True if started successfully, False otherwise
         """
         return self.audio_recorder_manager.start_audio_recorder(
-            sdr_id, session_id, vfo_number, recorder_class, **kwargs
+            sdr_id, session_id, vfo_number, recorder_class, **kwargs,
         )
 
     def stop_audio_recorder(self, sdr_id, session_id, vfo_number):
@@ -488,7 +489,7 @@ class ProcessManager:
     # ==================== Decoder Methods ====================
 
     def start_decoder(
-        self, sdr_id, session_id, decoder_class, data_queue, audio_out_queue=None, **kwargs
+        self, sdr_id, session_id, decoder_class, data_queue, audio_out_queue=None, **kwargs,
     ):
         """
         Start a decoder thread for a specific session.
@@ -505,7 +506,7 @@ class ProcessManager:
             bool: True if started successfully, False otherwise
         """
         return self.decoder_manager.start_decoder(
-            sdr_id, session_id, decoder_class, data_queue, audio_out_queue, **kwargs
+            sdr_id, session_id, decoder_class, data_queue, audio_out_queue, **kwargs,
         )
 
     def stop_decoder(self, sdr_id, session_id, vfo_number=None):
