@@ -491,6 +491,13 @@ RUN sed -i 's/#enable-reflector=no/enable-reflector=yes/' /etc/avahi/avahi-daemo
     sed -i 's/#reflect-ipv=no/reflect-ipv=yes/' /etc/avahi/avahi-daemon.conf && \
     sed -i 's/use-ipv6=yes/use-ipv6=no/' /etc/avahi/avahi-daemon.conf
 
+# Create a non-root user for the application
+# Note: The container still runs as root in startup.sh to initialize system
+# services (D-Bus, Avahi, SDRplay). The groundstation user is available for
+# future privilege-dropping after service initialization.
+RUN useradd -m -s /bin/bash -d /home/groundstation groundstation && \
+    chown -R groundstation:groundstation /app/backend/data /app/frontend
+
 WORKDIR backend/
 
 # Command to run the application with UHD images downloader and conditional FPGA loading
