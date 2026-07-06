@@ -17,6 +17,7 @@
 import argparse
 import os
 import secrets
+import warnings
 from pathlib import Path
 
 from common.appconfig import load_app_config
@@ -85,7 +86,7 @@ if os.environ.get("ALEMBIC_CONTEXT"):
         temp_db=False,
         log_level="INFO",
         log_config="data/configs/log_config.yaml",
-        secret_key="YOUR_RANDOM_SECRET_KEY",
+        secret_key=os.environ.get("GS_SECRET_KEY", "YOUR_RANDOM_SECRET_KEY"),
         track_interval_ms=2000,
         enable_soapy_discovery=False,
         runonce_soapy_discovery=True,
@@ -134,3 +135,11 @@ if getattr(arguments, "temp_db", False):
 
 if getattr(arguments, "temp_db", False) or "GS_DB" not in os.environ:
     os.environ["GS_DB"] = arguments.db
+
+# Warn if the default placeholder secret key is in use
+if getattr(arguments, "secret_key", None) == "YOUR_RANDOM_SECRET_KEY":
+    warnings.warn(
+        "WARNING: Using default placeholder secret key 'YOUR_RANDOM_SECRET_KEY'. "
+        "Set GS_SECRET_KEY environment variable or pass --secret-key for a secure deployment.",
+        stacklevel=2,
+    )
