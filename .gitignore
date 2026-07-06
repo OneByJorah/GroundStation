@@ -88,6 +88,9 @@ venv.bak/
 /backend/data/recordings/
 /backend/data/snapshots/
 
+# Pipeline reports
+reports/
+
 # Old paths (kept for backwards compatibility during migration)
 /backend/recordings/
 /backend/snapshots/
