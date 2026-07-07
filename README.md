@@ -142,6 +142,15 @@ _(Screenshots will be added after hardware-backed build/run capture.)_
 
 ---
 
+## 🔀 Fork Notes
+
+This repository is a fork of the upstream GroundStation project maintained by **OneByJorah**.
+
+**Changes from upstream:**
+- Added `.env.example` with SDR, audio, WebRTC, and database configuration
+- `Dockerfile` already present (multi-stage with SDR hardware support)
+- No `docker-compose.yml` (hardware passthrough varies by setup)
+
 ## License
 
 GPL-3.0-only (frontend), MIT (unless otherwise noted in LICENSE)
