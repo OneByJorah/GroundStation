@@ -1,31 +1,25 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white">
-  <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black">
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white">
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white">
-</div>
 
-<br>
+![GroundStation banner](docs/assets/banner.svg)
 
-<div align="center">
-  <h1>GroundStation</h1>
-  <p><strong>All-in-One Satellite Monitoring Suite</strong></p>
-  <p>Real-time satellite tracking, telemetry decoding, and ground station management.</p>
-  <p>
-    <a href="#features">Features</a> •
-    <a href="#quick-start">Quick Start</a> •
-    <a href="#architecture">Architecture</a> •
-    <a href="#contributing">Contributing</a>
-  </p>
+# GroundStation
+
+All-in-one satellite monitoring suite
+
+![License](https://img.shields.io/badge/license-GPL-3.0-brightgreen)
+![Language](https://img.shields.io/badge/language-JavaScript-blue)
+![Fork](https://img.shields.io/badge/status-fork-orange)
 </div>
 
 ---
 
-## Screenshot
+<p align="center">
+  <img src="docs/assets/screenshot.png" alt="GroundStation preview" width="90%">
+</p>
 
-![GroundStation Dashboard](docs/screenshot.png)
-*Satellite monitoring dashboard with real-time tracking and telemetry visualization.*
+<br>
+
+---
 
 ## Features
 
@@ -53,7 +47,6 @@ Open **http://localhost:8000** in your browser.
 ### Local Development
 
 ```bash
-# Backend
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
@@ -152,7 +145,18 @@ MIT © Jhonattan L. Jimenez
 
 ---
 
-<div align="center">
-  <p>All-in-one satellite monitoring suite.</p>
-  <p><a href="https://github.com/OneByJorah">@OneByJorah</a></p>
-</div>
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## 🔒 Security
+
+Found a vulnerability? Please follow our [Security Policy](SECURITY.md) and report privately to `security@jorahone.com`.
+
+## 📄 License
+
+[GNU General Public License v3.0](LICENSE) © Jhonattan L. Jimenez (OneByJorah)
+
+---
+
+<p align="center">Built with 🌴 by <a href="https://github.com/OneByJorah">OneByJorah</a> · <a href="https://jorahone.com">jorahone.com</a></p>

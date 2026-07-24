@@ -99,3 +99,6 @@ backend/data/
 /external/
 /playground/
 /backend/backend/data/configs/app_config.json
+
+# OneByJorah portfolio tooling
+.venv-screenshot/
