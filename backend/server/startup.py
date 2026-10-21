@@ -259,6 +259,11 @@ app.mount(
 )
 
 
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
+
+
 # Add the version API endpoint BEFORE the catch-all route
 @app.get("/api/version")
 async def get_version():

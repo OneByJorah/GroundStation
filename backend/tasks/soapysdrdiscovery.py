@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 SoapySDR Server Discovery background task.
 

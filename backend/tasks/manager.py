@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Background Task Manager (Multiprocessing) - Manages long-running tasks with real-time progress updates.
 
@@ -103,7 +104,9 @@ class TaskInfo:
     return_code: int | None = None
     output_lines: list[str] = field(default_factory=list)
     error_lines: list[str] = field(default_factory=list)
-    queue: mp.Queue | None = None
+    # NOTE: mp.Queue is a factory function, not a type, so it cannot be used in
+    # an annotation expression (``mp.Queue | None`` fails at class creation).
+    queue: Any = None
     tracker_notified: bool = False
 
 

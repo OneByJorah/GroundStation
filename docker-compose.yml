@@ -1,15 +1,27 @@
-version: "3.8"
-
 services:
   groundstation:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5003:5000"
+      - "127.0.0.1:${GS_PORT:-5003}:7000"
     restart: unless-stopped
     privileged: true
     devices:
       - /dev/bus/usb:/dev/bus/usb
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - gs-data:/app/backend/data
     environment:
       - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  gs-data:
