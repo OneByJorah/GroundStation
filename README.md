@@ -6,9 +6,10 @@
 
 All-in-one satellite monitoring suite
 
-![License](https://img.shields.io/badge/license-GPL-3.0-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-brightgreen)
 ![Language](https://img.shields.io/badge/language-JavaScript-blue)
 ![Fork](https://img.shields.io/badge/status-fork-orange)
+![Tests](https://github.com/OneByJorah/GroundStation/actions/workflows/tests.yml/badge.svg)
 </div>
 
 ---
@@ -39,17 +40,17 @@ git clone https://github.com/OneByJorah/GroundStation.git
 cd GroundStation
 
 cp .env.example .env  # Configure your ground station
-docker compose up -d
+docker compose up -d --build
 ```
 
-Open **http://localhost:8000** in your browser.
+Open **[localhost:5003](http://localhost:5003)** in your browser.
 
 ### Local Development
 
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+python app.py
 
 # Frontend
 cd frontend
@@ -61,22 +62,33 @@ npm run dev
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `8000` | Backend API port |
-| `DATABASE_URL` | `sqlite:///groundstation.db` | Database connection string |
-| `TLE_UPDATE_INTERVAL` | `3600` | TLE data refresh interval (seconds) |
-| `ANTENNA_HOST` | — | Antenna controller IP |
-| `ROTATOR_HOST` | — | Rotator controller IP |
+| `HOST` | `0.0.0.0` | Interface the backend binds to |
+| `PORT` | `5000` | Backend port (the container listens on `7000`) |
+| `GS_ENVIRONMENT` | `development` | Runtime environment name |
+| `DATABASE_URL` | `sqlite:///./data/groundstation.db` | Database connection string |
+| `SDR_DEVICE_INDEX` | `0` | Index of the SDR device to open |
+| `SDR_SAMPLE_RATE` | `2.4e6` | SDR sample rate in Hz |
+| `SDR_CENTER_FREQ` | `100e6` | SDR center frequency in Hz |
+| `SDR_GAIN` | `20` | SDR gain in dB |
+| `DEEPGRAM_API_KEY` | — | Deepgram API key for transcription |
+| `GEMINI_API_KEY` | — | Gemini API key for transcription |
+| `STUN_SERVER` | `stun:stun.l.google.com:19302` | STUN server for WebRTC |
+| `TURN_SERVER` | — | TURN server for WebRTC |
+| `TURN_USERNAME` | — | TURN username |
+| `TURN_CREDENTIAL` | — | TURN credential |
+| `LOG_LEVEL` | `info` | Logging level |
 
 ## Architecture
 
-```
-Browser (React) ──API/WebSocket──▶ FastAPI Backend ──▶ SQLite
-                                        │
-                                        ├──▶ Satellite TLE Database
-                                        ├──▶ Antenna Controller
-                                        ├──▶ Rotator Controller
-                                        ├──▶ Telemetry Decoder
-                                        └──▶ Pass Predictor
+```mermaid
+flowchart LR
+    Browser["Browser (React)"] -->|"API / WebSocket"| Backend["FastAPI Backend"]
+    Backend --> DB[("SQLite")]
+    Backend --> TLE["Satellite TLE Database"]
+    Backend --> Antenna["Antenna Controller"]
+    Backend --> Rotator["Rotator Controller"]
+    Backend --> Decoder["Telemetry Decoder"]
+    Backend --> Predictor["Pass Predictor"]
 ```
 
 ## Tech Stack
@@ -90,24 +102,31 @@ Browser (React) ──API/WebSocket──▶ FastAPI Backend ──▶ SQLite
 
 ## Project Structure
 
-```
+```text
 GroundStation/
 ├── backend/
-│   ├── main.py              # FastAPI application
-│   ├── services/
-│   │   ├── satellite.py     # TLE and orbit calculations
-│   │   ├── antenna.py       # Antenna control
-│   │   ├── rotator.py       # Rotator control
-│   │   ├── telemetry.py     # Telemetry decoding
-│   │   └── predictor.py     # Pass prediction
-│   ├── routers/             # API endpoints
-│   └── models/              # Database models
+│   ├── app.py               # Entrypoint: builds the ASGI app and runs uvicorn
+│   ├── server/              # FastAPI app + routes (startup.py), lifespan, scheduler, versioning
+│   ├── tracking/            # TLE handling, passes, Doppler, footprints
+│   ├── telemetry/           # Telemetry decoding
+│   ├── demodulators/        # Demodulation chains
+│   ├── hardware/            # SDR and hardware access
+│   ├── pipeline/            # Demodulation / decoding process orchestration
+│   ├── observations/        # Observation scheduling and execution
+│   ├── handlers/            # Socket.IO event handlers
+│   ├── video/               # WebRTC routes
+│   ├── db/                  # Database models and Alembic migrations
+│   ├── data/                # Runtime data (database, recordings, snapshots)
+│   └── tests/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/      # React components
-│   │   └── pages/           # Dashboard pages
+│   │   └── ...
+│   ├── e2e/                 # Playwright end-to-end tests
 │   └── package.json
+├── .github/workflows/       # CI (tests, CodeQL, release)
 ├── docker-compose.yml       # Docker deployment
+├── Dockerfile
 └── .env.example             # Configuration template
 ```
 
@@ -137,25 +156,11 @@ Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 
 ## Security
 
-For security concerns, see [SECURITY.md](SECURITY.md). Please report vulnerabilities to **info@jorahone.com** — do not use public issues.
+For security concerns, see [SECURITY.md](SECURITY.md). Please report vulnerabilities to `info@jorahone.com` — do not use public issues.
 
 ## License
 
 MIT © Jhonattan L. Jimenez
-
----
-
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). All contributions follow the [Code of Conduct](CODE_OF_CONDUCT.md).
-
-## 🔒 Security
-
-Found a vulnerability? Please follow our [Security Policy](SECURITY.md) and report privately to `security@jorahone.com`.
-
-## 📄 License
-
-[GNU General Public License v3.0](LICENSE) © Jhonattan L. Jimenez (OneByJorah)
 
 ---
 

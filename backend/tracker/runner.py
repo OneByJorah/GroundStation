@@ -1,3 +1,4 @@
+from __future__ import annotations
 # Copyright (c) 2025 Efstratios Goudelis
 #
 # This program is free software: you can redistribute it and/or modify

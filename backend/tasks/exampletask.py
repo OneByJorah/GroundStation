@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Example background task for testing the multiprocessing-based background task manager.
 
