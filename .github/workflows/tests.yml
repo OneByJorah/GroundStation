@@ -110,7 +110,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: GroundStation-backend:test
+          tags: groundstation-backend:test
           cache-from: type=gha,scope=e2e-test
           cache-to: type=gha,mode=max,scope=e2e-test
 
@@ -122,7 +122,7 @@ jobs:
             -v $(pwd)/data:/app/backend/data \
             -e GS_BACKEND_HOST=0.0.0.0 \
             -e GS_BACKEND_PORT=7000 \
-            GroundStation-backend:test
+            groundstation-backend:test
 
       - name: Wait for backend to be ready
         run: |
